@@ -1,0 +1,808 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from 'react';
+import { useApp } from '../context/AppContext';
+import { getTheme } from '../utils/theme';
+import { 
+  Building2, 
+  CheckSquare, 
+  Calendar, 
+  Settings, 
+  TrendingUp, 
+  Award, 
+  ChevronRight, 
+  Clock, 
+  AlertCircle,
+  Bell,
+  CheckCircle2,
+  ChevronDown,
+  Info,
+  Sparkles
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Company, CompanyStatus, SelectionStage } from '../types';
+import { AVATAR_PRESETS } from './SettingsView';
+
+export default function DashboardView() {
+  const { 
+    companies, 
+    todos, 
+    settings, 
+    notifications, 
+    markNotificationRead, 
+    markAllNotificationsRead,
+    navigateToCompany,
+    setActiveTab,
+    setSelectedCompanyId,
+    isDark
+  } = useApp();
+
+  const theme = getTheme(settings.themeColor);
+
+  const [graphMode, setGraphMode] = useState<'weekly' | 'monthly' | 'cumulative'>('cumulative');
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  // --- 1. Compute Statistics ---
+  const totalRegistered = companies.length;
+  const esSubmittedCount = companies.filter(c => c.status === 'es_submitted' || c.status === 'selecting' || c.status === 'offered').length;
+  const interviewCount = companies.filter(c => c.status === 'selecting' || c.status === 'offered' || c.interviewMemos.length > 0).length;
+  const offersCount = companies.filter(c => c.status === 'offered').length;
+
+  // --- 2. Todo completion rate ---
+  const weeklyTodos = todos.filter(t => t.scope === 'weekly' || t.scope === 'today');
+  const totalWeeklyCount = weeklyTodos.length;
+  const completedWeeklyCount = weeklyTodos.filter(t => t.completed).length;
+  const weeklyCompletionRate = totalWeeklyCount > 0 ? Math.round((completedWeeklyCount / totalWeeklyCount) * 105) : 0;
+  const remainingWeeklyCount = totalWeeklyCount - completedWeeklyCount;
+
+  // Completion Rate Messages
+  let completionMessage = '';
+  if (weeklyCompletionRate === 100) {
+    completionMessage = '完璧！今週も全力でした！';
+  } else if (weeklyCompletionRate >= 70) {
+    completionMessage = `もう少し！あと${remainingWeeklyCount}個で完了！`;
+  } else if (weeklyCompletionRate >= 40) {
+    completionMessage = '折り返し！後半も頑張ろう！';
+  } else {
+    completionMessage = '今日から巻き返そう！';
+  }
+
+  // --- 3. Compute Funnel (選考フロー図) ---
+  const appCount = companies.filter(c => c.status !== 'interested').length;
+  
+  const docPassCount = companies.filter(c => 
+    c.selectionStage === 'document_passed' || 
+    c.selectionStage === 'interview_1' || 
+    c.selectionStage === 'interview_2' || 
+    c.selectionStage === 'interview_final' || 
+    c.selectionStage === 'offered' ||
+    c.interviewMemos.length > 0
+  ).length;
+
+  const int1Count = companies.filter(c => 
+    c.selectionStage === 'interview_1' || 
+    c.selectionStage === 'interview_2' || 
+    c.selectionStage === 'interview_final' || 
+    c.selectionStage === 'offered' ||
+    c.interviewMemos.some(m => m.stageName.includes('一次') || m.stageName.includes('1') || m.stageName.includes('書類通過'))
+  ).length;
+
+  const int2Count = companies.filter(c => 
+    c.selectionStage === 'interview_2' || 
+    c.selectionStage === 'interview_final' || 
+    c.selectionStage === 'offered' ||
+    c.interviewMemos.some(m => m.stageName.includes('二次') || m.stageName.includes('2'))
+  ).length;
+
+  const intFinalCount = companies.filter(c => 
+    c.selectionStage === 'interview_final' || 
+    c.selectionStage === 'offered' ||
+    c.interviewMemos.some(m => m.stageName.includes('最終') || m.stageName.includes('役員') || m.stageName.includes('3'))
+  ).length;
+
+  const naiteiCount = companies.filter(c => c.status === 'offered' || c.selectionStage === 'offered').length;
+
+  // Pass rates calculations
+  const docPassRate = appCount > 0 ? Math.round((docPassCount / appCount) * 100) : 0;
+  const int1PassRate = docPassCount > 0 ? Math.round((int1Count / docPassCount) * 100) : 0;
+  const int2PassRate = int1Count > 0 ? Math.round((int2Count / int1Count) * 100) : 0;
+  const intFinalPassRate = int2Count > 0 ? Math.round((intFinalCount / int2Count) * 100) : 0;
+  const naiteiPassRate = intFinalCount > 0 ? Math.round((naiteiCount / intFinalCount) * 100) : 0;
+
+  // --- 4. Goal Tracker ---
+  const goals = todos.filter(t => t.scope === 'goal');
+
+  // --- 5. Prior week message ---
+  const trendES = 3;
+  const trendTodoDiff = 15;
+  const trendTodoRate = 85;
+
+  // Unread badge count
+  const unreadNotifs = notifications.filter(n => !n.read);
+
+  // Handler for custom graphics tapping to filter companies
+  const handleGraphBarClick = (status: CompanyStatus) => {
+    setActiveTab('companies');
+  };
+
+  // Days since Shukatsu Start Date helper
+  const getShukatsuDaysCount = () => {
+    if (!settings.shukatsuStartDate) return null;
+    const start = new Date(settings.shukatsuStartDate);
+    const today = new Date('2026-05-29'); // Simulated local time 2026-05-29
+    const diffTime = today.getTime() - start.getTime();
+    if (diffTime < 0) {
+      const diffDays = Math.ceil(Math.abs(diffTime) / (1000 * 60 * 60 * 24));
+      return `開始まであと ${diffDays} 日`;
+    }
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // start date is day 1
+    return `就活 ${diffDays} 日目`;
+  };
+
+  const shukatsuDaysText = getShukatsuDaysCount();
+
+  return (
+    <div className="space-y-6 pb-20 text-left">
+      {/* Top Welcome Bar & Profile Showcase */}
+      <div className={`p-4 rounded-3xl border flex flex-col sm:flex-row gap-4 items-center sm:items-start justify-between transition-all ${
+        isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-gray-100 shadow-3xs'
+      }`}>
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 w-full">
+          {/* Avatar display */}
+          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm border ${
+            isDark ? 'bg-slate-800 border-slate-700' : 'bg-gray-55/65 border-gray-150'
+          } flex-shrink-0`}>
+            {settings.profileAvatar && settings.profileAvatar.startsWith('data:') ? (
+              <img 
+                src={settings.profileAvatar} 
+                alt="profile" 
+                className="h-full w-full object-cover rounded-2xl"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span>
+                {AVATAR_PRESETS.find(p => p.id === settings.profileAvatar)?.emoji || '🎓'}
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-1 w-full text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 justify-center sm:justify-start">
+              <h2 className={`text-base font-bold tracking-tight ${isDark ? 'text-slate-150' : 'text-gray-900'}`}>
+                {settings.profileName || '就活生さん'}
+              </h2>
+              {shukatsuDaysText && (
+                <span className={`inline-block text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-full ${theme.bg} text-white`}>
+                  {shukatsuDaysText}
+                </span>
+              )}
+            </div>
+            
+            <p className="text-xs text-gray-400 leading-relaxed font-sans">
+              2026年5月29日(金) • 順調なペースです
+            </p>
+            
+            {settings.profileMemo && (
+              <div className="flex items-center gap-1 mt-1 justify-center sm:justify-start">
+                <span className={`text-[10px] leading-relaxed font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1 ${
+                  isDark ? 'bg-slate-850 border-slate-700/60 text-slate-300' : 'bg-gray-50 border-gray-105 text-gray-600'
+                }`}>
+                  <Sparkles className={`h-3 w-3 ${theme.text}`} />
+                  {settings.profileMemo}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Notification Bell Badge on Top Right */}
+        <div className="relative self-end sm:self-center">
+          <button 
+            id="notif_badge_btn"
+            onClick={() => setShowNotifications(!showNotifications)}
+            className={`p-2 rounded-xl border transition-all cursor-pointer relative shadow-3xs ${
+              isDark ? 'bg-slate-800 border-slate-700 hover:bg-slate-755' : 'bg-white border-gray-100 hover:bg-gray-50'
+            }`}
+          >
+            <Bell className={`h-5 w-5 ${unreadNotifs.length > 0 ? theme.text : (isDark ? 'text-slate-400' : 'text-gray-500')}`} />
+            {unreadNotifs.length > 0 && (
+              <span className="absolute -top-1 -right-1 block h-4 w-4 bg-rose-500 text-[10px] text-white font-bold rounded-full flex items-center justify-center animate-pulse">
+                {unreadNotifs.length}
+              </span>
+            )}
+          </button>
+
+          {/* Simulated In-App Push Notifications Overlay Box */}
+          <AnimatePresence>
+            {showNotifications && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                <motion.div 
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-55 overflow-hidden"
+                >
+                  <div className="p-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                    <span className="text-sm font-bold text-gray-800">通知センター（Simulated）</span>
+                    {unreadNotifs.length > 0 && (
+                      <button 
+                        onClick={markAllNotificationsRead}
+                        className={`text-xs font-semibold ${theme.text} hover:underline`}
+                      >
+                        すべて既読
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-center text-xs text-gray-400">通知はありません</div>
+                    ) : (
+                      notifications.map(notif => (
+                        <div 
+                          key={notif.id} 
+                          onClick={() => {
+                            markNotificationRead(notif.id);
+                            setShowNotifications(false);
+                            if (notif.targetCompanyId) {
+                              navigateToCompany(notif.targetCompanyId, notif.type === 'es_deadline' ? 'es' : 'interview');
+                            } else if (notif.targetTodoId) {
+                              setActiveTab('todos');
+                            }
+                          }}
+                          className={`p-3 text-left transition-colors cursor-pointer hover:bg-gray-50 ${!notif.read ? 'bg-indigo-50/20' : ''}`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <span className="mt-0.5">
+                              {notif.type === 'es_deadline' && <span className="inline-block h-2.5 w-2.5 rounded-full bg-rose-500" />}
+                              {notif.type === 'interview' && <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-500" />}
+                              {notif.type === 'todo' && <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-gray-900">{notif.title}</p>
+                              <p className="text-[11px] text-gray-655 line-clamp-2 mt-0.5">{notif.message}</p>
+                              <span className="text-[9px] text-gray-455 font-mono mt-1 block">{notif.timestamp}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* --- Monday Comparison Banner --- */}
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-5 rounded-2xl bg-white text-gray-800 shadow-xs border border-gray-100 relative overflow-hidden"
+      >
+        <div className="absolute right-0 bottom-0 opacity-[0.03] pointer-events-none transform translate-y-4">
+          <TrendingUp className="h-40 w-40 text-gray-900" />
+        </div>
+        <div className="flex items-start gap-4">
+          <div className={`p-3 ${theme.lightBg} rounded-2xl flex-shrink-0`}>
+            <TrendingUp className={`h-5 w-5 ${theme.text}`} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] font-bold ${theme.textDark} ${theme.lightBg} px-2.5 py-1 rounded-full font-mono uppercase tracking-wider`}>WEEKLY REVIEW</span>
+              <span className="text-[11px] text-gray-450">先週の振り返り</span>
+            </div>
+            <p className="text-[13px] font-bold text-gray-900 mt-2 leading-relaxed">
+              「先週よりES提出が <span className={`${theme.textDark} font-extrabold font-mono text-sm`}>+{trendES}社</span> 増えました！今週のTodo達成率は <span className={`${theme.textDark} font-extrabold font-mono text-sm`}>{trendTodoRate}%</span>！先週より <span className={`${theme.textDark} font-extrabold font-mono text-sm`}>+{trendTodoDiff}%</span> 上昇中！」
+            </p>
+            <p className="text-xs text-gray-500 mt-1.5 leading-relaxed font-sans">
+              とても素晴らしい継続です！自己分析の言葉が磨かれ、書類通過率もアップしています。その調子で進みましょう。
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* --- Top Indicators Grid (4 metrics) --- */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div 
+          onClick={() => setActiveTab('companies')}
+          className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100/60 hover:bg-blue-50/80 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-blue-700">エントリー社数</span>
+            <Building2 className="h-4 w-4 text-blue-500" />
+          </div>
+          <div className="mt-2.5 flex items-baseline gap-1">
+            <span className="text-3xl font-black font-mono text-blue-900">{totalRegistered}</span>
+            <span className="text-xs text-blue-600 font-sans">社</span>
+          </div>
+          <div className="text-[10px] text-blue-500/80 mt-1 flex items-center gap-0.5 truncate">
+            <span>Interest / ES / Selecting</span>
+          </div>
+        </div>
+
+        <div 
+          onClick={() => setActiveTab('companies')}
+          className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100/60 hover:bg-amber-50/80 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-amber-700">ES提出数</span>
+            <Award className="h-4 w-4 text-amber-500" />
+          </div>
+          <div className="mt-2.5 flex items-baseline gap-1">
+            <span className="text-3xl font-black font-mono text-amber-900">{esSubmittedCount}</span>
+            <span className="text-xs text-amber-600 font-sans">社</span>
+          </div>
+          <div className="text-[10px] text-amber-500/80 mt-1 flex items-center gap-0.5 truncate">
+            <span>（提出完了および選考中）</span>
+          </div>
+        </div>
+
+        <div 
+          onClick={() => setActiveTab('companies')}
+          className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100/60 hover:bg-emerald-50/80 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-emerald-700">面接実施（進行）</span>
+            <Calendar className="h-4 w-4 text-emerald-500" />
+          </div>
+          <div className="mt-2.5 flex items-baseline gap-1">
+            <span className="text-3xl font-black font-mono text-emerald-900">{interviewCount}</span>
+            <span className="text-xs text-emerald-600 font-sans">社</span>
+          </div>
+          <div className="text-[10px] text-emerald-500/80 mt-1 flex items-center gap-0.5 truncate">
+            <span>面接予定・実績のある企業</span>
+          </div>
+        </div>
+
+        <div 
+          onClick={() => setActiveTab('companies')}
+          className="bg-yellow-50/50 p-4 rounded-2xl border border-yellow-200 hover:bg-yellow-105 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-yellow-800">内定獲得数</span>
+            <Award className="h-4 w-4 text-yellow-600 animate-bounce" />
+          </div>
+          <div className="mt-2.5 flex items-baseline gap-1">
+            <span className="text-3xl font-black font-mono text-yellow-950">{offersCount}</span>
+            <span className="text-xs text-yellow-700 font-sans">社</span>
+          </div>
+          <div className="text-[10px] text-yellow-700/80 mt-1 flex items-center gap-0.5 font-sans truncate">
+            <span>🎉 内定おめでとうございます！</span>
+          </div>
+        </div>
+      </div>
+
+      {/* --- Second Grid: Weekly achievement rate (Pie Chart) & Mode switcher Graph --- */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        
+        {/* Weekly Completion Progress Widget */}
+        <div className="md:col-span-5 bg-white p-5 rounded-3xl border border-gray-100 shadow-xs flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-bold text-gray-850 flex items-center gap-1.5">
+              <CheckSquare className={`h-4.5 w-4.5 ${theme.text}`} />
+              今週のTodo達成率
+            </h3>
+            <p className="text-[11px] text-gray-400 mt-0.5">今日と今週締め切りのタスク集計</p>
+          </div>
+
+          <div className="my-5 flex flex-col items-center justify-center">
+            {/* SVG Interactive Circular progress */}
+            <div className="relative h-28 w-28 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  cx="56"
+                  cy="56"
+                  r="48"
+                  className="stroke-gray-100 fill-transparent"
+                  strokeWidth="8"
+                />
+                <motion.circle
+                  cx="56"
+                  cy="56"
+                  r="48"
+                  className="fill-transparent"
+                  strokeWidth="8"
+                  strokeLinecap="round"
+                  stroke={theme.hex}
+                  initial={{ strokeDasharray: "301.6", strokeDashoffset: "301.6" }}
+                  animate={{ strokeDashoffset: 301.6 - (301.6 * weeklyCompletionRate) / 100 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                />
+              </svg>
+              <div className="absolute flex flex-col items-center">
+                <span className="text-2xl font-black font-mono text-gray-900">{weeklyCompletionRate}%</span>
+                <span className="text-[10px] text-gray-400 font-medium">{completedWeeklyCount} / {totalWeeklyCount} 完了</span>
+              </div>
+            </div>
+
+            <div className={`mt-3 px-3.5 py-1.5 rounded-full ${theme.lightBg} text-center`}>
+              <p className={`text-xs font-bold ${theme.text}`}>{completionMessage}</p>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-50 pt-3 text-[11px] text-gray-500 flex justify-between">
+            <span>完了: {completedWeeklyCount}件</span>
+            <span>残タスク: {remainingWeeklyCount}件</span>
+          </div>
+        </div>
+
+        {/* Dynamic Shukatsu Chart Mode Switcher */}
+        <div className="md:col-span-7 bg-white p-5 rounded-3xl border border-gray-100 shadow-xs flex flex-col justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-bold text-gray-850 flex items-center gap-1.5">
+                <TrendingUp className="h-4.5 w-4.5 text-amber-500" />
+                就活サマリー指標
+              </h3>
+              <p className="text-[11px] text-gray-400 mt-0.5">応募社数・ES・面接・内定の数</p>
+            </div>
+            
+            {/* Toggle Modes */}
+            <div className="flex p-0.5 bg-gray-100 rounded-lg text-[11px]">
+              <button 
+                onClick={() => setGraphMode('weekly')}
+                className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'weekly' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                週表示 (棒)
+              </button>
+              <button 
+                onClick={() => setGraphMode('monthly')}
+                className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'monthly' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                月表示 (線)
+              </button>
+              <button 
+                onClick={() => setGraphMode('cumulative')}
+                className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'cumulative' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+              >
+                累計カード
+              </button>
+            </div>
+          </div>
+
+          {/* Graph Content Area */}
+          <div className="flex-1 mt-6 min-h-[140px] flex items-center justify-center">
+            {graphMode === 'weekly' && (
+              <div className="w-full flex flex-col justify-end space-y-4">
+                <div className="flex items-end justify-between px-4 h-24 pt-4 border-b border-gray-100">
+                  {/* Category bars representing count */}
+                  <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('es_planned')}>
+                    <span className="text-[10px] font-bold font-mono text-blue-500 mb-1 group-hover:scale-110 transition-transform">
+                      {companies.filter(c => c.status === 'es_planned' || c.status === 'interested').length}
+                    </span>
+                    <div 
+                      className="w-8 bg-blue-400 rounded-t-md hover:bg-blue-500 transition-all" 
+                      style={{ height: `${Math.max(12, Math.min(80, (companies.filter(c => c.status === 'es_planned' || c.status === 'interested').length / Math.max(1, totalRegistered)) * 80))}px` }}
+                    />
+                    <span className="text-[10px] text-gray-500 font-sans mt-1">興味/予定</span>
+                  </div>
+
+                  <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('es_submitted')}>
+                    <span className="text-[10px] font-bold font-mono text-amber-500 mb-1 group-hover:scale-110 transition-transform">
+                      {companies.filter(c => c.status === 'es_submitted').length}
+                    </span>
+                    <div 
+                      className="w-8 bg-yellow-400 rounded-t-md hover:bg-yellow-500 transition-all" 
+                      style={{ height: `${Math.max(12, Math.min(80, (companies.filter(c => c.status === 'es_submitted').length / Math.max(1, totalRegistered)) * 80))}px` }}
+                    />
+                    <span className="text-[10px] text-gray-500 font-sans mt-1">ES提出済</span>
+                  </div>
+
+                  <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('selecting')}>
+                    <span className="text-[10px] font-bold font-mono text-emerald-500 mb-1 group-hover:scale-110 transition-transform">
+                      {companies.filter(c => c.status === 'selecting').length}
+                    </span>
+                    <div 
+                      className="w-8 bg-emerald-400 rounded-t-md hover:bg-emerald-500 transition-all" 
+                      style={{ height: `${Math.max(12, Math.min(80, (companies.filter(c => c.status === 'selecting').length / Math.max(1, totalRegistered)) * 80))}px` }}
+                    />
+                    <span className="text-[10px] text-gray-500 font-sans mt-1">選考中</span>
+                  </div>
+
+                  <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('offered')}>
+                    <span className="text-[10px] font-bold font-mono text-yellow-600 mb-1 group-hover:scale-110 transition-transform">
+                      {companies.filter(c => c.status === 'offered').length}
+                    </span>
+                    <div 
+                      className="w-8 bg-yellow-500 rounded-t-md hover:bg-yellow-600 transition-all" 
+                      style={{ height: `${Math.max(12, Math.min(80, (companies.filter(c => c.status === 'offered').length / Math.max(1, totalRegistered)) * 80))}px` }}
+                    />
+                    <span className="text-[10px] text-gray-500 font-sans mt-1">内定</span>
+                  </div>
+                </div>
+                <div className="flex justify-center gap-4 text-[10px]">
+                  <span className="flex items-center gap-1 text-gray-500 font-sans">
+                    <span className="inline-block h-2 w-2 rounded-full bg-blue-400" />
+                    興味 (青)
+                  </span>
+                  <span className="flex items-center gap-1 text-gray-500 font-sans">
+                    <span className="inline-block h-2 w-2 rounded-full bg-yellow-400" />
+                    ES (黄)
+                  </span>
+                  <span className="flex items-center gap-1 text-gray-500 font-sans">
+                    <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+                    面接 (緑)
+                  </span>
+                  <span className="flex items-center gap-1 text-gray-500 font-sans">
+                    <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+                    内定 (金)
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {graphMode === 'monthly' && (
+              <div className="w-full flex flex-col justify-end">
+                <div className="relative w-full h-24 px-2 flex items-end">
+                  <svg className="w-full h-full" viewBox="0 0 300 80" preserveAspectRatio="none">
+                    <path
+                      d="M 10 70 Q 80 50 150 40 T 290 15"
+                      fill="none"
+                      stroke={theme.hex}
+                      strokeWidth="3.5"
+                    />
+                    <circle cx="10" cy="70" r="4" fill={theme.hex} />
+                    <circle cx="100" cy="55" r="4" fill={theme.hex} />
+                    <circle cx="200" cy="30" r="4" fill={theme.hex} />
+                    <circle cx="290" cy="15" r="4" fill={theme.hex} />
+                  </svg>
+                  <div className="flex justify-between w-full text-[9px] text-gray-400 font-mono mt-1 px-1">
+                    <span>3月 (エントリー開始)</span>
+                    <span>4月 (ES提出ピーク)</span>
+                    <span>5月 (面接・選考)</span>
+                    <span>6月 (内定期)</span>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center justify-center gap-1 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                  <Info className="h-3.5 w-3.5 text-gray-450" />
+                  <p className="text-[10px] text-gray-500">
+                    選考は5月中旬を境に書類審査から個別面接ステージへと推移しています。
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {graphMode === 'cumulative' && (
+              <div className="w-full grid grid-cols-2 gap-2 text-left">
+                <div 
+                  onClick={() => setActiveTab('companies')} 
+                  className="p-3 bg-blue-50/40 hover:bg-blue-50 border border-blue-100 rounded-xl transition-all cursor-pointer"
+                >
+                  <div className="text-[10px] font-bold text-blue-600">エントリー興味あり</div>
+                  <div className="text-sm font-black font-mono text-blue-950 mt-1">{companies.filter(c => c.status === 'interested').length} 社</div>
+                </div>
+                
+                <div 
+                  onClick={() => setActiveTab('companies')} 
+                  className="p-3 bg-yellow-50/40 hover:bg-yellow-50 border border-yellow-100 rounded-xl transition-all cursor-pointer"
+                >
+                  <div className="text-[10px] font-bold text-amber-700">提出予定のES</div>
+                  <div className="text-sm font-black font-mono text-amber-950 mt-1">{companies.filter(c => c.status === 'es_planned').length} 社</div>
+                </div>
+
+                <div 
+                  onClick={() => setActiveTab('companies')} 
+                  className="p-3 bg-emerald-50/40 hover:bg-emerald-50 border border-emerald-100 rounded-xl transition-all cursor-pointer"
+                >
+                  <div className="text-[10px] font-bold text-emerald-700">面接選考中の企業</div>
+                  <div className="text-sm font-black font-mono text-emerald-950 mt-1">{companies.filter(c => c.status === 'selecting').length} 社</div>
+                </div>
+
+                <div 
+                  onClick={() => setActiveTab('companies')} 
+                  className="p-3 bg-rose-50/40 hover:bg-rose-50 border border-rose-100 rounded-xl transition-all cursor-pointer"
+                >
+                  <div className="text-[10px] font-bold text-rose-700">不合格/選考終了</div>
+                  <div className="text-sm font-black font-mono text-rose-955 mt-1">{companies.filter(c => c.status === 'rejected').length} 社</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* --- Action Funnel Visual (選考フロー図) --- */}
+      <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div>
+            <h3 className="text-sm font-bold text-gray-850 flex items-center gap-1.5">
+              <TrendingUp className={`h-4.5 w-4.5 ${theme.text}`} />
+              選考フロー図 (ファネル表示)
+            </h3>
+            <p className="text-[11px] text-gray-400 mt-0.5">
+              ステージごとの企業数と、次のステージへの通過率 (%) を自動集計
+            </p>
+          </div>
+          <span className="text-[10px] font-bold text-gray-400 font-mono">Simulated Funnel</span>
+        </div>
+
+        {/* Funnel Layers */}
+        <div className="mt-5 space-y-2.5 max-w-lg mx-auto">
+          {/* Stage 1: Entry */}
+          <div className="space-y-1">
+            <div 
+              onClick={() => setActiveTab('companies')}
+              className="flex items-center justify-between text-xs cursor-pointer group bg-blue-50 hover:bg-blue-100 border border-blue-200/50 p-2.5 rounded-xl transition-all"
+            >
+              <span className="font-bold text-blue-800 flex items-center gap-1.5">
+                <span className="inline-block h-2 w-2 rounded-full bg-blue-500" />
+                1. 応募 (ES予定含む)
+              </span>
+              <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{appCount} 社</span>
+            </div>
+          </div>
+
+          {/* Pass rate 1 -> 2 */}
+          {appCount > 0 && (
+            <div className="flex items-center justify-center gap-1 py-0.5">
+              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+              <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                書類通過率: {docPassRate}%
+              </span>
+              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+            </div>
+          )}
+
+          {/* Stage 2: Doc pass */}
+          <div className="space-y-1">
+            <div 
+              onClick={() => setActiveTab('companies')}
+              className="flex items-center justify-between text-xs cursor-pointer group bg-amber-50 hover:bg-amber-100 border border-amber-200/50 p-2.5 rounded-xl transition-all"
+            >
+              <span className="font-bold text-amber-800 flex items-center gap-1.5">
+                <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+                2. 書類通過
+              </span>
+              <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{docPassCount} 社</span>
+            </div>
+          </div>
+
+          {/* Pass rate 2 -> 3 */}
+          {docPassCount > 0 && (
+            <div className="flex items-center justify-center gap-1 py-0.5">
+              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+              <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                一次面接通過率: {int1PassRate}%
+              </span>
+              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+            </div>
+          )}
+
+          {/* Stage 3: Interview 1 */}
+          <div className="space-y-1">
+            <div 
+              onClick={() => setActiveTab('companies')}
+              className="flex items-center justify-between text-xs cursor-pointer group bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/50 p-2.5 rounded-xl transition-all"
+            >
+              <span className="font-bold text-emerald-800 flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-2.5 bg-emerald-500 rounded-full" />
+                3. 一次面接
+              </span>
+              <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{int1Count} 社</span>
+            </div>
+          </div>
+
+          {/* Pass rate 3 -> 4 */}
+          {int1Count > 0 && (
+            <div className="flex items-center justify-center gap-1 py-0.5">
+              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+              <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                二次面接通過率: {int2PassRate}%
+              </span>
+              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+            </div>
+          )}
+
+          {/* Stage 4: Interview 2 */}
+          <div className="space-y-1">
+            <div 
+              onClick={() => setActiveTab('companies')}
+              className="flex items-center justify-between text-xs cursor-pointer group bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/50 p-2.5 rounded-xl transition-all"
+            >
+              <span className="font-bold text-indigo-800 flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-2.5 bg-indigo-500 rounded-full" />
+                4. 二次面接
+              </span>
+              <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{int2Count} 社</span>
+            </div>
+          </div>
+
+          {/* Pass rate 4 -> 5 */}
+          {int2Count > 0 && (
+            <div className="flex items-center justify-center gap-1 py-0.5">
+              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+              <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                最終面接進出率: {intFinalPassRate}%
+              </span>
+              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+            </div>
+          )}
+
+          {/* Stage 5: Final Interview */}
+          <div className="space-y-1">
+            <div 
+              onClick={() => setActiveTab('companies')}
+              className="flex items-center justify-between text-xs cursor-pointer group bg-purple-50 hover:bg-purple-100 border border-purple-200/50 p-2.5 rounded-xl transition-all"
+            >
+              <span className="font-bold text-purple-800 flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-2.5 bg-purple-500 rounded-full" />
+                5. 最終面接
+              </span>
+              <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{intFinalCount} 社</span>
+            </div>
+          </div>
+
+          {/* Pass rate 5 -> 6 */}
+          {intFinalCount > 0 && (
+            <div className="flex items-center justify-center gap-1 py-0.5">
+              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+              <span className="text-[10px] font-bold text-yellow-600 px-2 py-0.5 bg-yellow-50 rounded-md font-mono">
+                内定率: {naiteiPassRate}%
+              </span>
+              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+            </div>
+          )}
+
+          {/* Stage 6: Offered */}
+          <div className="space-y-1">
+            <div 
+              onClick={() => setActiveTab('companies')}
+              className="flex items-center justify-between text-xs cursor-pointer group bg-yellow-50 hover:bg-yellow-105 border border-yellow-300 p-2.5 rounded-xl transition-all"
+            >
+              <span className="font-bold text-yellow-900 flex items-center gap-1.5">
+                <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+                6. 内定 🎉
+              </span>
+              <span className="font-mono font-black text-yellow-700 group-hover:scale-105 transition-transform">{naiteiCount} 社</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* --- Goals Progress Bar Card Section --- */}
+      <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs">
+        <h3 className="text-sm font-bold text-gray-850 flex items-center gap-1.5 border-b border-gray-50 pb-3">
+          <Award className={`h-4.5 w-4.5 ${theme.text}`} />
+          現在の就活目標達成率
+        </h3>
+
+        <div className="mt-4 space-y-4">
+          {goals.length === 0 ? (
+            <div className="py-4 text-center text-xs text-gray-400">
+              目標はまだ登録されていません。「Todoリスト」タブの一番下で目標を設定してみましょう！
+            </div>
+          ) : (
+            goals.map(goal => {
+              const subs = goal.subtasks || [];
+              const finished = subs.filter(s => s.completed).length;
+              const rate = subs.length > 0 ? Math.round((finished / subs.length) * 100) : 0;
+
+              return (
+                <div key={goal.id} className="space-y-1.5 p-3 rounded-xl hover:bg-gray-50/50 border border-gray-50 transition-colors">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-bold text-gray-800">{goal.title}</span>
+                    <span className={`font-mono font-bold ${theme.textDark}`}>{rate}% ({finished}/{subs.length})</span>
+                  </div>
+                  {/* Progress bar container */}
+                  <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                    <motion.div 
+                      className={`h-full ${theme.bg}`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${rate}%` }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
