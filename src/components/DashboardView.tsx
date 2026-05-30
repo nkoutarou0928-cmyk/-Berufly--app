@@ -43,12 +43,29 @@ export default function DashboardView() {
 
   const [graphMode, setGraphMode] = useState<'weekly' | 'monthly' | 'cumulative'>('cumulative');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [selectionTypeFilter, setSelectionTypeFilter] = useState<'main' | 'intern'>('main');
+
+  const filteredCompanies = companies.filter(c => {
+    const type = c.selectionType || 'main'; // fall back to main
+    return type === selectionTypeFilter;
+  });
+
+  const isIntern = selectionTypeFilter === 'intern';
 
   // --- 1. Compute Statistics ---
-  const totalRegistered = companies.length;
-  const esSubmittedCount = companies.filter(c => c.status === 'es_submitted' || c.status === 'selecting' || c.status === 'offered').length;
-  const interviewCount = companies.filter(c => c.status === 'selecting' || c.status === 'offered' || c.interviewMemos.length > 0).length;
-  const offersCount = companies.filter(c => c.status === 'offered').length;
+  const totalRegistered = filteredCompanies.length;
+
+  const esSubmittedCount = isIntern
+    ? filteredCompanies.filter(c => c.selectionStatusIntern === 'es_submitted' || c.selectionStatusIntern === 'selecting' || c.selectionStatusIntern === 'passed').length
+    : filteredCompanies.filter(c => c.status === 'es_submitted' || c.status === 'selecting' || c.status === 'offered').length;
+
+  const interviewCount = isIntern
+    ? filteredCompanies.filter(c => c.selectionStatusIntern === 'selecting' || c.selectionStatusIntern === 'passed' || c.interviewMemos.length > 0 || (c.internSteps && c.internSteps.length > 0)).length
+    : filteredCompanies.filter(c => c.status === 'selecting' || c.status === 'offered' || c.interviewMemos.length > 0).length;
+
+  const offersCount = isIntern
+    ? filteredCompanies.filter(c => c.selectionStatusIntern === 'passed').length
+    : filteredCompanies.filter(c => c.status === 'offered').length;
 
   // --- 2. Todo completion rate ---
   const weeklyTodos = todos.filter(t => t.scope === 'weekly' || t.scope === 'today');
@@ -69,10 +86,10 @@ export default function DashboardView() {
     completionMessage = '今日から巻き返そう！';
   }
 
-  // --- 3. Compute Funnel (選考フロー図) ---
-  const appCount = companies.filter(c => c.status !== 'interested').length;
+  // --- 3. Compute Funnel (本選考用) ---
+  const appCount = filteredCompanies.filter(c => c.status !== 'interested').length;
   
-  const docPassCount = companies.filter(c => 
+  const docPassCount = filteredCompanies.filter(c => 
     c.selectionStage === 'document_passed' || 
     c.selectionStage === 'interview_1' || 
     c.selectionStage === 'interview_2' || 
@@ -81,7 +98,7 @@ export default function DashboardView() {
     c.interviewMemos.length > 0
   ).length;
 
-  const int1Count = companies.filter(c => 
+  const int1Count = filteredCompanies.filter(c => 
     c.selectionStage === 'interview_1' || 
     c.selectionStage === 'interview_2' || 
     c.selectionStage === 'interview_final' || 
@@ -89,20 +106,20 @@ export default function DashboardView() {
     c.interviewMemos.some(m => m.stageName.includes('一次') || m.stageName.includes('1') || m.stageName.includes('書類通過'))
   ).length;
 
-  const int2Count = companies.filter(c => 
+  const int2Count = filteredCompanies.filter(c => 
     c.selectionStage === 'interview_2' || 
     c.selectionStage === 'interview_final' || 
     c.selectionStage === 'offered' ||
     c.interviewMemos.some(m => m.stageName.includes('二次') || m.stageName.includes('2'))
   ).length;
 
-  const intFinalCount = companies.filter(c => 
+  const intFinalCount = filteredCompanies.filter(c => 
     c.selectionStage === 'interview_final' || 
     c.selectionStage === 'offered' ||
     c.interviewMemos.some(m => m.stageName.includes('最終') || m.stageName.includes('役員') || m.stageName.includes('3'))
   ).length;
 
-  const naiteiCount = companies.filter(c => c.status === 'offered' || c.selectionStage === 'offered').length;
+  const naiteiCount = filteredCompanies.filter(c => c.status === 'offered' || c.selectionStage === 'offered').length;
 
   // Pass rates calculations
   const docPassRate = appCount > 0 ? Math.round((docPassCount / appCount) * 100) : 0;
@@ -110,6 +127,28 @@ export default function DashboardView() {
   const int2PassRate = int1Count > 0 ? Math.round((int2Count / int1Count) * 100) : 0;
   const intFinalPassRate = int2Count > 0 ? Math.round((intFinalCount / int2Count) * 100) : 0;
   const naiteiPassRate = intFinalCount > 0 ? Math.round((naiteiCount / intFinalCount) * 100) : 0;
+
+  // --- 3b. Compute Funnel (インターン選考用) ---
+  const appCountIntern = filteredCompanies.length;
+
+  const esSubmittedCountIntern = filteredCompanies.filter(c => 
+    c.selectionStatusIntern === 'es_submitted' || 
+    c.selectionStatusIntern === 'selecting' || 
+    c.selectionStatusIntern === 'passed'
+  ).length;
+
+  const selectingCountIntern = filteredCompanies.filter(c => 
+    c.selectionStatusIntern === 'selecting' || 
+    c.selectionStatusIntern === 'passed'
+  ).length;
+
+  const passedCountIntern = filteredCompanies.filter(c => 
+    c.selectionStatusIntern === 'passed'
+  ).length;
+
+  const internEsSubmittedRate = appCountIntern > 0 ? Math.round((esSubmittedCountIntern / appCountIntern) * 100) : 0;
+  const internSelectingRate = esSubmittedCountIntern > 0 ? Math.round((selectingCountIntern / esSubmittedCountIntern) * 100) : 0;
+  const internPassedRate = selectingCountIntern > 0 ? Math.round((passedCountIntern / selectingCountIntern) * 100) : 0;
 
   // --- 4. Goal Tracker ---
   const goals = todos.filter(t => t.scope === 'goal');
@@ -123,7 +162,7 @@ export default function DashboardView() {
   const unreadNotifs = notifications.filter(n => !n.read);
 
   // Handler for custom graphics tapping to filter companies
-  const handleGraphBarClick = (status: CompanyStatus) => {
+  const handleGraphBarClick = (status: CompanyStatus | string) => {
     setActiveTab('companies');
   };
 
@@ -182,11 +221,11 @@ export default function DashboardView() {
           <h2 className={`text-base font-bold tracking-tight ${isDark ? 'text-slate-150' : 'text-gray-900'} font-sans`}>
             2026年5月29日(金)
           </h2>
-          {companies.length > 0 && (
+          {filteredCompanies.length > 0 && (
             <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
               isDark ? 'bg-slate-800 border-slate-700 text-indigo-400' : 'bg-indigo-50 text-indigo-700 border border-indigo-100/50'
             } font-sans`}>
-              <TrendingUp className="h-3.5 w-3.5 text-indigo-500" />
+              <TrendingUp className="h-3.5 w-3.5 text-indigo-505" />
               <span>先週の振り返り: ES提出+{trendES}社 | Todo達成率{trendTodoRate}% (+{trendTodoDiff}%)</span>
             </div>
           )}
@@ -221,7 +260,7 @@ export default function DashboardView() {
                   className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-55 overflow-hidden"
                 >
                   <div className="p-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                    <span className="text-sm font-bold text-gray-800">通知センター（Simulated）</span>
+                    <span className="text-sm font-bold text-gray-805">通知センター（Simulated）</span>
                     {unreadNotifs.length > 0 && (
                       <button 
                         onClick={markAllNotificationsRead}
@@ -269,6 +308,44 @@ export default function DashboardView() {
               </>
             )}
           </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Selection Type Switcher (本選考 vs インターン選考) */}
+      <div className={`p-1.5 rounded-2xl border flex items-center justify-between gap-4 transition-all ${
+        isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-gray-100 shadow-3xs'
+      }`}>
+        <div className="pl-2 flex items-center gap-1.5">
+          <Sparkles className={`h-4.5 w-4.5 ${theme.text}`} />
+          <span className={`text-xs font-bold font-sans ${isDark ? 'text-slate-205' : 'text-gray-805'}`}>
+            {selectionTypeFilter === 'intern' ? 'インターン選考のサマリーを表示中' : '本選考のサマリーを表示中'}
+          </span>
+        </div>
+        <div className={`flex p-0.5 rounded-xl border text-xs font-sans ${
+          isDark ? 'bg-slate-950 border-slate-800' : 'bg-gray-100 border-gray-200'
+        }`}>
+          <button
+            type="button"
+            onClick={() => setSelectionTypeFilter('main')}
+            className={`py-1.5 px-3.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              selectionTypeFilter === 'main'
+                ? (isDark ? 'bg-slate-800 text-indigo-400 shadow-sm' : 'bg-white text-indigo-700 shadow-xs')
+                : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-900')
+            }`}
+          >
+            本選考
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectionTypeFilter('intern')}
+            className={`py-1.5 px-3.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              selectionTypeFilter === 'intern'
+                ? (isDark ? 'bg-slate-800 text-indigo-400 shadow-sm' : 'bg-white text-indigo-700 shadow-xs')
+                : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-900')
+            }`}
+          >
+            インターン選考
+          </button>
         </div>
       </div>
 
@@ -397,336 +474,499 @@ export default function DashboardView() {
           </div>
         </div>
 
-        {/* Dynamic Shukatsu Chart Mode Switcher */}
-        <div className="md:col-span-7 bg-white p-5 rounded-3xl border border-gray-100 shadow-xs flex flex-col justify-between">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        {/* --- Action Funnel Visual (選考フロー図) --- */}
+        <div className="md:col-span-7 bg-white p-5 rounded-2xl md:rounded-3xl border border-gray-100 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
             <div>
               <h3 className="text-sm font-bold text-gray-850 flex items-center gap-1.5">
-                <TrendingUp className="h-4.5 w-4.5 text-amber-500" />
-                就活サマリー指標
+                <TrendingUp className={`h-4.5 w-4.5 ${theme.text}`} />
+                選考フロー図 (ファネル表示)
               </h3>
-              <p className="text-[11px] text-gray-400 mt-0.5">応募社数・ES・面接・内定の数</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">
+                ステージごとの企業数と、次のステージへの通過率 (%) を自動集計
+              </p>
             </div>
-            
-            {/* Toggle Modes */}
-            <div className="flex p-0.5 bg-gray-100 rounded-lg text-[11px]">
-              <button 
-                onClick={() => setGraphMode('weekly')}
-                className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'weekly' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                週表示 (棒)
-              </button>
-              <button 
-                onClick={() => setGraphMode('monthly')}
-                className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'monthly' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                月表示 (線)
-              </button>
-              <button 
-                onClick={() => setGraphMode('cumulative')}
-                className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'cumulative' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
-              >
-                累計カード
-              </button>
-            </div>
+            <span className="text-[10px] font-bold text-gray-400 font-mono">Simulated Funnel</span>
           </div>
 
-          {/* Graph Content Area */}
-          <div className="flex-1 mt-6 min-h-[140px] flex items-center justify-center">
-            {graphMode === 'weekly' && (
-              <div className="w-full flex flex-col justify-end space-y-4">
-                <div className="flex items-end justify-between px-4 h-24 pt-4 border-b border-gray-100">
-                  {/* Category bars representing count */}
-                  <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('es_planned')}>
-                    <span className="text-[10px] font-bold font-mono text-blue-500 mb-1 group-hover:scale-110 transition-transform">
-                      {companies.filter(c => c.status === 'es_planned' || c.status === 'interested').length}
+          {/* Funnel Layers */}
+          <div className="mt-5 space-y-2.5 max-w-lg mx-auto w-full flex-1 flex flex-col justify-center">
+            {isIntern ? (
+              <>
+                {/* Stage 1: Intern Entry */}
+                <div className="space-y-1">
+                  <div 
+                    onClick={() => setActiveTab('companies')}
+                    className="flex items-center justify-between text-xs cursor-pointer group bg-blue-50 hover:bg-blue-100 border border-blue-200/50 p-2.5 rounded-xl transition-all"
+                  >
+                    <span className="font-bold text-blue-800 flex items-center gap-1.5">
+                      <span className="inline-block h-2 w-2 rounded-full bg-blue-500" />
+                      1. エントリー
                     </span>
-                    <div 
-                      className="w-8 bg-blue-400 rounded-t-md hover:bg-blue-500 transition-all" 
-                      style={{ height: `${Math.max(12, Math.min(80, (companies.filter(c => c.status === 'es_planned' || c.status === 'interested').length / Math.max(1, totalRegistered)) * 80))}px` }}
-                    />
-                    <span className="text-[10px] text-gray-500 font-sans mt-1">興味/予定</span>
+                    <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{appCountIntern} 社</span>
                   </div>
+                </div>
 
-                  <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('es_submitted')}>
-                    <span className="text-[10px] font-bold font-mono text-amber-500 mb-1 group-hover:scale-110 transition-transform">
-                      {companies.filter(c => c.status === 'es_submitted').length}
+                {/* Pass rate 1 -> 2 */}
+                {appCountIntern > 0 && (
+                  <div className="flex items-center justify-center gap-1 py-0.5">
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                      ES提出率: {internEsSubmittedRate}%
                     </span>
-                    <div 
-                      className="w-8 bg-yellow-400 rounded-t-md hover:bg-yellow-500 transition-all" 
-                      style={{ height: `${Math.max(12, Math.min(80, (companies.filter(c => c.status === 'es_submitted').length / Math.max(1, totalRegistered)) * 80))}px` }}
-                    />
-                    <span className="text-[10px] text-gray-500 font-sans mt-1">ES提出済</span>
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
                   </div>
+                )}
 
-                  <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('selecting')}>
-                    <span className="text-[10px] font-bold font-mono text-emerald-500 mb-1 group-hover:scale-110 transition-transform">
-                      {companies.filter(c => c.status === 'selecting').length}
+                {/* Stage 2: Intern ES submitted */}
+                <div className="space-y-1">
+                  <div 
+                    onClick={() => setActiveTab('companies')}
+                    className="flex items-center justify-between text-xs cursor-pointer group bg-amber-50 hover:bg-amber-100 border border-amber-200/50 p-2.5 rounded-xl transition-all"
+                  >
+                    <span className="font-bold text-amber-800 flex items-center gap-1.5">
+                      <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+                      2. ES・書類提出済
                     </span>
-                    <div 
-                      className="w-8 bg-emerald-400 rounded-t-md hover:bg-emerald-500 transition-all" 
-                      style={{ height: `${Math.max(12, Math.min(80, (companies.filter(c => c.status === 'selecting').length / Math.max(1, totalRegistered)) * 80))}px` }}
-                    />
-                    <span className="text-[10px] text-gray-500 font-sans mt-1">選考中</span>
+                    <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{esSubmittedCountIntern} 社</span>
                   </div>
+                </div>
 
-                  <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('offered')}>
-                    <span className="text-[10px] font-bold font-mono text-yellow-600 mb-1 group-hover:scale-110 transition-transform">
-                      {companies.filter(c => c.status === 'offered').length}
+                {/* Pass rate 2 -> 3 */}
+                {esSubmittedCountIntern > 0 && (
+                  <div className="flex items-center justify-center gap-1 py-0.5">
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                      選考進出率: {internSelectingRate}%
                     </span>
-                    <div 
-                      className="w-8 bg-yellow-500 rounded-t-md hover:bg-yellow-600 transition-all" 
-                      style={{ height: `${Math.max(12, Math.min(80, (companies.filter(c => c.status === 'offered').length / Math.max(1, totalRegistered)) * 80))}px` }}
-                    />
-                    <span className="text-[10px] text-gray-500 font-sans mt-1">内定</span>
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                  </div>
+                )}
+
+                {/* Stage 3: Intern Selecting */}
+                <div className="space-y-1">
+                  <div 
+                    onClick={() => setActiveTab('companies')}
+                    className="flex items-center justify-between text-xs cursor-pointer group bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/50 p-2.5 rounded-xl transition-all"
+                  >
+                    <span className="font-bold text-emerald-800 flex items-center gap-1.5">
+                      <span className="inline-block h-2.5 w-2.5 bg-emerald-500 rounded-full" />
+                      3. 面接・選考中
+                    </span>
+                    <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{selectingCountIntern} 社</span>
                   </div>
                 </div>
-                <div className="flex justify-center gap-4 text-[10px]">
-                  <span className="flex items-center gap-1 text-gray-500 font-sans">
-                    <span className="inline-block h-2 w-2 rounded-full bg-blue-400" />
-                    興味 (青)
-                  </span>
-                  <span className="flex items-center gap-1 text-gray-500 font-sans">
-                    <span className="inline-block h-2 w-2 rounded-full bg-yellow-400" />
-                    ES (黄)
-                  </span>
-                  <span className="flex items-center gap-1 text-gray-500 font-sans">
-                    <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
-                    面接 (緑)
-                  </span>
-                  <span className="flex items-center gap-1 text-gray-500 font-sans">
-                    <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
-                    内定 (金)
-                  </span>
-                </div>
-              </div>
-            )}
 
-            {graphMode === 'monthly' && (
-              <div className="w-full flex flex-col justify-end">
-                <div className="relative w-full h-24 px-2 flex items-end">
-                  <svg className="w-full h-full" viewBox="0 0 300 80" preserveAspectRatio="none">
-                    <path
-                      d="M 10 70 Q 80 50 150 40 T 290 15"
-                      fill="none"
-                      stroke={theme.hex}
-                      strokeWidth="3.5"
-                    />
-                    <circle cx="10" cy="70" r="4" fill={theme.hex} />
-                    <circle cx="100" cy="55" r="4" fill={theme.hex} />
-                    <circle cx="200" cy="30" r="4" fill={theme.hex} />
-                    <circle cx="290" cy="15" r="4" fill={theme.hex} />
-                  </svg>
-                  <div className="flex justify-between w-full text-[9px] text-gray-400 font-mono mt-1 px-1">
-                    <span>3月 (エントリー開始)</span>
-                    <span>4月 (ES提出ピーク)</span>
-                    <span>5月 (面接・選考)</span>
-                    <span>6月 (内定期)</span>
+                {/* Pass rate 3 -> 4 */}
+                {selectingCountIntern > 0 && (
+                  <div className="flex items-center justify-center gap-1 py-0.5">
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                    <span className={`text-[10px] font-bold text-yellow-600 px-2 py-0.5 bg-yellow-50 rounded-md font-mono`}>
+                      合格率: {internPassedRate}%
+                    </span>
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                  </div>
+                )}
+
+                {/* Stage 4: Intern Passed */}
+                <div className="space-y-1">
+                  <div 
+                    onClick={() => setActiveTab('companies')}
+                    className="flex items-center justify-between text-xs cursor-pointer group bg-yellow-50 hover:bg-yellow-105 border border-yellow-300 p-2.5 rounded-xl transition-all"
+                  >
+                    <span className="font-bold text-yellow-900 flex items-center gap-1.5">
+                      <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+                      4. 合格・参加決定 🎉
+                    </span>
+                    <span className="font-mono font-black text-yellow-700 group-hover:scale-105 transition-transform">{passedCountIntern} 社</span>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center justify-center gap-1 bg-gray-50 p-2 rounded-xl border border-gray-100">
-                  <Info className="h-3.5 w-3.5 text-gray-450" />
-                  <p className="text-[10px] text-gray-500">
-                    選考は5月中旬を境に書類審査から個別面接ステージへと推移しています。
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {graphMode === 'cumulative' && (
-              <div className="w-full grid grid-cols-2 gap-2 text-left">
-                <div 
-                  onClick={() => setActiveTab('companies')} 
-                  className="p-3 bg-blue-50/40 hover:bg-blue-50 border border-blue-100 rounded-xl transition-all cursor-pointer"
-                >
-                  <div className="text-[10px] font-bold text-blue-600">エントリー興味あり</div>
-                  <div className="text-sm font-black font-mono text-blue-950 mt-1">{companies.filter(c => c.status === 'interested').length} 社</div>
-                </div>
-                
-                <div 
-                  onClick={() => setActiveTab('companies')} 
-                  className="p-3 bg-yellow-50/40 hover:bg-yellow-50 border border-yellow-100 rounded-xl transition-all cursor-pointer"
-                >
-                  <div className="text-[10px] font-bold text-amber-700">提出予定のES</div>
-                  <div className="text-sm font-black font-mono text-amber-950 mt-1">{companies.filter(c => c.status === 'es_planned').length} 社</div>
+              </>
+            ) : (
+              <>
+                {/* Stage 1: Entry */}
+                <div className="space-y-1">
+                  <div 
+                    onClick={() => setActiveTab('companies')}
+                    className="flex items-center justify-between text-xs cursor-pointer group bg-blue-50 hover:bg-blue-100 border border-blue-200/50 p-2.5 rounded-xl transition-all"
+                  >
+                    <span className="font-bold text-blue-800 flex items-center gap-1.5">
+                      <span className="inline-block h-2 w-2 rounded-full bg-blue-500" />
+                      1. 応募 (ES予定含む)
+                    </span>
+                    <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{appCount} 社</span>
+                  </div>
                 </div>
 
-                <div 
-                  onClick={() => setActiveTab('companies')} 
-                  className="p-3 bg-emerald-50/40 hover:bg-emerald-50 border border-emerald-100 rounded-xl transition-all cursor-pointer"
-                >
-                  <div className="text-[10px] font-bold text-emerald-700">面接選考中の企業</div>
-                  <div className="text-sm font-black font-mono text-emerald-950 mt-1">{companies.filter(c => c.status === 'selecting').length} 社</div>
+                {/* Pass rate 1 -> 2 */}
+                {appCount > 0 && (
+                  <div className="flex items-center justify-center gap-1 py-0.5">
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                      書類通過率: {docPassRate}%
+                    </span>
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                  </div>
+                )}
+
+                {/* Stage 2: Doc pass */}
+                <div className="space-y-1">
+                  <div 
+                    onClick={() => setActiveTab('companies')}
+                    className="flex items-center justify-between text-xs cursor-pointer group bg-amber-50 hover:bg-amber-100 border border-amber-200/50 p-2.5 rounded-xl transition-all"
+                  >
+                    <span className="font-bold text-amber-800 flex items-center gap-1.5">
+                      <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+                      2. 書類通過
+                    </span>
+                    <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{docPassCount} 社</span>
+                  </div>
                 </div>
 
-                <div 
-                  onClick={() => setActiveTab('companies')} 
-                  className="p-3 bg-rose-50/40 hover:bg-rose-50 border border-rose-100 rounded-xl transition-all cursor-pointer"
-                >
-                  <div className="text-[10px] font-bold text-rose-700">不合格/選考終了</div>
-                  <div className="text-sm font-black font-mono text-rose-955 mt-1">{companies.filter(c => c.status === 'rejected').length} 社</div>
+                {/* Pass rate 2 -> 3 */}
+                {docPassCount > 0 && (
+                  <div className="flex items-center justify-center gap-1 py-0.5">
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                      一次面接通過率: {int1PassRate}%
+                    </span>
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                  </div>
+                )}
+
+                {/* Stage 3: Interview 1 */}
+                <div className="space-y-1">
+                  <div 
+                    onClick={() => setActiveTab('companies')}
+                    className="flex items-center justify-between text-xs cursor-pointer group bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/50 p-2.5 rounded-xl transition-all"
+                  >
+                    <span className="font-bold text-emerald-800 flex items-center gap-1.5">
+                      <span className="inline-block h-2.5 w-2.5 bg-emerald-500 rounded-full" />
+                      3. 一次面接
+                    </span>
+                    <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{int1Count} 社</span>
+                  </div>
                 </div>
-              </div>
+
+                {/* Pass rate 3 -> 4 */}
+                {int1Count > 0 && (
+                  <div className="flex items-center justify-center gap-1 py-0.5">
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                      二次面接通過率: {int2PassRate}%
+                    </span>
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                  </div>
+                )}
+
+                {/* Stage 4: Interview 2 */}
+                <div className="space-y-1">
+                  <div 
+                    onClick={() => setActiveTab('companies')}
+                    className="flex items-center justify-between text-xs cursor-pointer group bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/50 p-2.5 rounded-xl transition-all"
+                  >
+                    <span className="font-bold text-indigo-800 flex items-center gap-1.5">
+                      <span className="inline-block h-2.5 w-2.5 bg-indigo-500 rounded-full" />
+                      4. 二次面接
+                    </span>
+                    <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{int2Count} 社</span>
+                  </div>
+                </div>
+
+                {/* Pass rate 4 -> 5 */}
+                {int2Count > 0 && (
+                  <div className="flex items-center justify-center gap-1 py-0.5">
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                      最終面接進出率: {intFinalPassRate}%
+                    </span>
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                  </div>
+                )}
+
+                {/* Stage 5: Final Interview */}
+                <div className="space-y-1">
+                  <div 
+                    onClick={() => setActiveTab('companies')}
+                    className="flex items-center justify-between text-xs cursor-pointer group bg-purple-50 hover:bg-purple-100 border border-purple-200/50 p-2.5 rounded-xl transition-all"
+                  >
+                    <span className="font-bold text-purple-800 flex items-center gap-1.5">
+                      <span className="inline-block h-2.5 w-2.5 bg-purple-500 rounded-full" />
+                      5. 最終面接
+                    </span>
+                    <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{intFinalCount} 社</span>
+                  </div>
+                </div>
+
+                {/* Pass rate 5 -> 6 */}
+                {intFinalCount > 0 && (
+                  <div className="flex items-center justify-center gap-1 py-0.5">
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                    <span className="text-[10px] font-bold text-yellow-600 px-2 py-0.5 bg-yellow-50 rounded-md font-mono">
+                      内定率: {naiteiPassRate}%
+                    </span>
+                    <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                  </div>
+                )}
+
+                {/* Stage 6: Offered */}
+                <div className="space-y-1">
+                  <div 
+                    onClick={() => setActiveTab('companies')}
+                    className="flex items-center justify-between text-xs cursor-pointer group bg-yellow-50 hover:bg-yellow-105 border border-yellow-300 p-2.5 rounded-xl transition-all"
+                  >
+                    <span className="font-bold text-yellow-900 flex items-center gap-1.5">
+                      <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+                      6. 内定 🎉
+                    </span>
+                    <span className="font-mono font-black text-yellow-700 group-hover:scale-105 transition-transform">{naiteiCount} 社</span>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
       </div>
 
-      {/* --- Action Funnel Visual (選考フロー図) --- */}
+      {/* --- Dynamic Shukatsu Chart Mode Switcher (就活サマリー指標) --- */}
       <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-3">
           <div>
             <h3 className="text-sm font-bold text-gray-850 flex items-center gap-1.5">
-              <TrendingUp className={`h-4.5 w-4.5 ${theme.text}`} />
-              選考フロー図 (ファネル表示)
+              <TrendingUp className="h-4.5 w-4.5 text-amber-500" />
+              就活サマリー指標
             </h3>
-            <p className="text-[11px] text-gray-400 mt-0.5">
-              ステージごとの企業数と、次のステージへの通過率 (%) を自動集計
-            </p>
+            <p className="text-[11px] text-gray-400 mt-0.5">応募社数・ES・面接・内定の数</p>
           </div>
-          <span className="text-[10px] font-bold text-gray-400 font-mono">Simulated Funnel</span>
+          
+          {/* Toggle Modes */}
+          <div className="flex p-0.5 bg-gray-100 rounded-lg text-[11px]">
+            <button 
+              onClick={() => setGraphMode('weekly')}
+              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'weekly' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+            >
+              週表示 (棒)
+            </button>
+            <button 
+              onClick={() => setGraphMode('monthly')}
+              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'monthly' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+            >
+              月表示 (線)
+            </button>
+            <button 
+              onClick={() => setGraphMode('cumulative')}
+              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'cumulative' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+            >
+              累計カード
+            </button>
+          </div>
         </div>
 
-        {/* Funnel Layers */}
-        <div className="mt-5 space-y-2.5 max-w-lg mx-auto">
-          {/* Stage 1: Entry */}
-          <div className="space-y-1">
-            <div 
-              onClick={() => setActiveTab('companies')}
-              className="flex items-center justify-between text-xs cursor-pointer group bg-blue-50 hover:bg-blue-100 border border-blue-200/50 p-2.5 rounded-xl transition-all"
-            >
-              <span className="font-bold text-blue-800 flex items-center gap-1.5">
-                <span className="inline-block h-2 w-2 rounded-full bg-blue-500" />
-                1. 応募 (ES予定含む)
-              </span>
-              <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{appCount} 社</span>
-            </div>
-          </div>
+        {/* Graph Content Area */}
+        <div className="flex-1 mt-6 min-h-[140px] flex items-center justify-center">
+          {graphMode === 'weekly' && (
+            <div className="w-full flex flex-col justify-end space-y-4">
+              <div className="flex items-end justify-between px-4 h-24 pt-4 border-b border-gray-100">
+                {/* Category bars representing count */}
+                <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick(isIntern ? 'entry_done' : 'es_planned')}>
+                  <span className="text-[10px] font-bold font-mono text-blue-500 mb-1 group-hover:scale-110 transition-transform">
+                    {isIntern 
+                      ? filteredCompanies.filter(c => c.selectionStatusIntern === 'entry_done').length
+                      : filteredCompanies.filter(c => c.status === 'es_planned' || c.status === 'interested').length
+                    }
+                  </span>
+                  <div 
+                    className="w-8 bg-blue-400 rounded-t-md hover:bg-blue-500 transition-all font-sans" 
+                    style={{ 
+                      height: `${Math.max(12, Math.min(80, (
+                        (isIntern 
+                          ? filteredCompanies.filter(c => c.selectionStatusIntern === 'entry_done').length
+                          : filteredCompanies.filter(c => c.status === 'es_planned' || c.status === 'interested').length
+                        ) / Math.max(1, totalRegistered)) * 80))}px` 
+                    }}
+                  />
+                  <span className="text-[10px] text-gray-500 font-sans mt-1">
+                    {isIntern ? 'エントリー済' : '興味/予定'}
+                  </span>
+                </div>
 
-          {/* Pass rate 1 -> 2 */}
-          {appCount > 0 && (
-            <div className="flex items-center justify-center gap-1 py-0.5">
-              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-              <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
-                書類通過率: {docPassRate}%
-              </span>
-              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+                <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('es_submitted')}>
+                  <span className="text-[10px] font-bold font-mono text-amber-500 mb-1 group-hover:scale-110 transition-transform">
+                    {isIntern 
+                      ? filteredCompanies.filter(c => c.selectionStatusIntern === 'es_submitted').length
+                      : filteredCompanies.filter(c => c.status === 'es_submitted').length
+                    }
+                  </span>
+                  <div 
+                    className="w-8 bg-yellow-400 rounded-t-md hover:bg-yellow-500 transition-all font-sans" 
+                    style={{ 
+                      height: `${Math.max(12, Math.min(80, (
+                        (isIntern 
+                          ? filteredCompanies.filter(c => c.selectionStatusIntern === 'es_submitted').length
+                          : filteredCompanies.filter(c => c.status === 'es_submitted').length
+                        ) / Math.max(1, totalRegistered)) * 80))}px` 
+                    }}
+                  />
+                  <span className="text-[10px] text-gray-500 font-sans mt-1">ES提出済</span>
+                </div>
+
+                <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('selecting')}>
+                  <span className="text-[10px] font-bold font-mono text-emerald-500 mb-1 group-hover:scale-110 transition-transform">
+                    {isIntern 
+                      ? filteredCompanies.filter(c => c.selectionStatusIntern === 'selecting').length
+                      : filteredCompanies.filter(c => c.status === 'selecting').length
+                    }
+                  </span>
+                  <div 
+                    className="w-8 bg-emerald-400 rounded-t-md hover:bg-emerald-500 transition-all font-sans" 
+                    style={{ 
+                      height: `${Math.max(12, Math.min(80, (
+                        (isIntern 
+                          ? filteredCompanies.filter(c => c.selectionStatusIntern === 'selecting').length
+                          : filteredCompanies.filter(c => c.status === 'selecting').length
+                        ) / Math.max(1, totalRegistered)) * 80))}px` 
+                    }}
+                  />
+                  <span className="text-[10px] text-gray-500 font-sans mt-1 font-sans">選考中</span>
+                </div>
+
+                <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick(isIntern ? 'passed' : 'offered')}>
+                  <span className="text-[10px] font-bold font-mono text-yellow-600 mb-1 group-hover:scale-110 transition-transform">
+                    {isIntern 
+                      ? filteredCompanies.filter(c => c.selectionStatusIntern === 'passed').length
+                      : filteredCompanies.filter(c => c.status === 'offered').length
+                    }
+                  </span>
+                  <div 
+                    className="w-8 bg-yellow-500 rounded-t-md hover:bg-yellow-600 transition-all font-sans" 
+                    style={{ 
+                      height: `${Math.max(12, Math.min(80, (
+                        (isIntern 
+                          ? filteredCompanies.filter(c => c.selectionStatusIntern === 'passed').length
+                          : filteredCompanies.filter(c => c.status === 'offered').length
+                        ) / Math.max(1, totalRegistered)) * 80))}px` 
+                    }}
+                  />
+                  <span className="text-[10px] text-gray-500 font-sans mt-1">
+                    {isIntern ? '合格' : '内定'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex justify-center gap-4 text-[10px]">
+                <span className="flex items-center gap-1 text-gray-500 font-sans">
+                  <span className="inline-block h-2 w-2 rounded-full bg-blue-400" />
+                  {isIntern ? 'エントリー (青)' : '興味 (青)'}
+                </span>
+                <span className="flex items-center gap-1 text-gray-500 font-sans">
+                  <span className="inline-block h-2 w-2 rounded-full bg-yellow-400" />
+                  ES (黄)
+                </span>
+                <span className="flex items-center gap-1 text-gray-500 font-sans">
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+                  面接 (緑)
+                </span>
+                <span className="flex items-center gap-1 text-gray-500 font-sans">
+                  <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+                  {isIntern ? '合格 (金)' : '内定 (金)'}
+                </span>
+              </div>
             </div>
           )}
 
-          {/* Stage 2: Doc pass */}
-          <div className="space-y-1">
-            <div 
-              onClick={() => setActiveTab('companies')}
-              className="flex items-center justify-between text-xs cursor-pointer group bg-amber-50 hover:bg-amber-100 border border-amber-200/50 p-2.5 rounded-xl transition-all"
-            >
-              <span className="font-bold text-amber-800 flex items-center gap-1.5">
-                <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
-                2. 書類通過
-              </span>
-              <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{docPassCount} 社</span>
-            </div>
-          </div>
-
-          {/* Pass rate 2 -> 3 */}
-          {docPassCount > 0 && (
-            <div className="flex items-center justify-center gap-1 py-0.5">
-              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-              <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
-                一次面接通過率: {int1PassRate}%
-              </span>
-              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-            </div>
-          )}
-
-          {/* Stage 3: Interview 1 */}
-          <div className="space-y-1">
-            <div 
-              onClick={() => setActiveTab('companies')}
-              className="flex items-center justify-between text-xs cursor-pointer group bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/50 p-2.5 rounded-xl transition-all"
-            >
-              <span className="font-bold text-emerald-800 flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 bg-emerald-500 rounded-full" />
-                3. 一次面接
-              </span>
-              <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{int1Count} 社</span>
-            </div>
-          </div>
-
-          {/* Pass rate 3 -> 4 */}
-          {int1Count > 0 && (
-            <div className="flex items-center justify-center gap-1 py-0.5">
-              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-              <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
-                二次面接通過率: {int2PassRate}%
-              </span>
-              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+          {graphMode === 'monthly' && (
+            <div className="w-full flex flex-col justify-end">
+              <div className="relative w-full h-24 px-2 flex items-end">
+                <svg className="w-full h-full" viewBox="0 0 300 80" preserveAspectRatio="none">
+                  <path
+                    d="M 10 70 Q 80 50 150 40 T 290 15"
+                    fill="none"
+                    stroke={theme.hex}
+                    strokeWidth="3.5"
+                  />
+                  <circle cx="10" cy="70" r="4" fill={theme.hex} />
+                  <circle cx="100" cy="55" r="4" fill={theme.hex} />
+                  <circle cx="200" cy="30" r="4" fill={theme.hex} />
+                  <circle cx="290" cy="15" r="4" fill={theme.hex} />
+                </svg>
+                <div className="flex justify-between w-full text-[9px] text-gray-400 font-mono mt-1 px-1">
+                  <span>3月 (エントリー開始)</span>
+                  <span>4月 (ES提出ピーク)</span>
+                  <span>5月 (面接・選考)</span>
+                  <span>6月 (内定期)</span>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-center gap-1 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                <Info className="h-3.5 w-3.5 text-gray-450" />
+                <p className="text-[10px] text-gray-500">
+                  選考は5月中旬を境に書類審査から個別面接ステージへと推移しています。
+                </p>
+              </div>
             </div>
           )}
 
-          {/* Stage 4: Interview 2 */}
-          <div className="space-y-1">
-            <div 
-              onClick={() => setActiveTab('companies')}
-              className="flex items-center justify-between text-xs cursor-pointer group bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/50 p-2.5 rounded-xl transition-all"
-            >
-              <span className="font-bold text-indigo-800 flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 bg-indigo-500 rounded-full" />
-                4. 二次面接
-              </span>
-              <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{int2Count} 社</span>
-            </div>
-          </div>
+          {graphMode === 'cumulative' && (
+            <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 text-left">
+              <div 
+                onClick={() => setActiveTab('companies')} 
+                className="p-3 bg-blue-50/40 hover:bg-blue-50 border border-blue-100 rounded-xl transition-all cursor-pointer"
+              >
+                <div className="text-[10px] font-bold text-blue-600">
+                  {isIntern ? 'エントリー済み' : 'エントリー興味あり'}
+                </div>
+                <div className="text-sm font-black font-mono text-blue-950 mt-1">
+                  {isIntern
+                    ? filteredCompanies.filter(c => c.selectionStatusIntern === 'entry_done').length
+                    : filteredCompanies.filter(c => c.status === 'interested').length
+                  } 社
+                </div>
+              </div>
+              
+              <div 
+                onClick={() => setActiveTab('companies')} 
+                className="p-3 bg-yellow-50/40 hover:bg-yellow-50 border border-yellow-100 rounded-xl transition-all cursor-pointer"
+              >
+                <div className="text-[10px] font-bold text-amber-700">
+                  {isIntern ? 'ES提出済' : '提出予定のES'}
+                </div>
+                <div className="text-sm font-black font-mono text-amber-955 mt-1">
+                  {isIntern
+                    ? filteredCompanies.filter(c => c.selectionStatusIntern === 'es_submitted').length
+                    : filteredCompanies.filter(c => c.status === 'es_planned').length
+                  } 社
+                </div>
+              </div>
 
-          {/* Pass rate 4 -> 5 */}
-          {int2Count > 0 && (
-            <div className="flex items-center justify-center gap-1 py-0.5">
-              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-              <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
-                最終面接進出率: {intFinalPassRate}%
-              </span>
-              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
+              <div 
+                onClick={() => setActiveTab('companies')} 
+                className="p-3 bg-emerald-50/40 hover:bg-emerald-50 border border-emerald-100 rounded-xl transition-all cursor-pointer"
+              >
+                <div className="text-[10px] font-bold text-emerald-700">
+                  {isIntern ? '選考中の企業' : '面接選考中の企業'}
+                </div>
+                <div className="text-sm font-black font-mono text-emerald-950 mt-1">
+                  {isIntern
+                    ? filteredCompanies.filter(c => c.selectionStatusIntern === 'selecting').length
+                    : filteredCompanies.filter(c => c.status === 'selecting').length
+                  } 社
+                </div>
+              </div>
+
+              <div 
+                onClick={() => setActiveTab('companies')} 
+                className="p-3 bg-rose-50/40 hover:bg-rose-50 border border-rose-100 rounded-xl transition-all cursor-pointer"
+              >
+                <div className="text-[10px] font-bold text-rose-700">
+                  {isIntern ? '不合格・落選' : '不合格/選考終了'}
+                </div>
+                <div className="text-sm font-black font-mono text-rose-955 mt-1">
+                  {isIntern
+                    ? filteredCompanies.filter(c => c.selectionStatusIntern === 'rejected').length
+                    : filteredCompanies.filter(c => c.status === 'rejected').length
+                  } 社
+                </div>
+              </div>
             </div>
           )}
-
-          {/* Stage 5: Final Interview */}
-          <div className="space-y-1">
-            <div 
-              onClick={() => setActiveTab('companies')}
-              className="flex items-center justify-between text-xs cursor-pointer group bg-purple-50 hover:bg-purple-100 border border-purple-200/50 p-2.5 rounded-xl transition-all"
-            >
-              <span className="font-bold text-purple-800 flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-2.5 bg-purple-500 rounded-full" />
-                5. 最終面接
-              </span>
-              <span className="font-mono font-black text-gray-900 group-hover:scale-105 transition-transform">{intFinalCount} 社</span>
-            </div>
-          </div>
-
-          {/* Pass rate 5 -> 6 */}
-          {intFinalCount > 0 && (
-            <div className="flex items-center justify-center gap-1 py-0.5">
-              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-              <span className="text-[10px] font-bold text-yellow-600 px-2 py-0.5 bg-yellow-50 rounded-md font-mono">
-                内定率: {naiteiPassRate}%
-              </span>
-              <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-            </div>
-          )}
-
-          {/* Stage 6: Offered */}
-          <div className="space-y-1">
-            <div 
-              onClick={() => setActiveTab('companies')}
-              className="flex items-center justify-between text-xs cursor-pointer group bg-yellow-50 hover:bg-yellow-105 border border-yellow-300 p-2.5 rounded-xl transition-all"
-            >
-              <span className="font-bold text-yellow-900 flex items-center gap-1.5">
-                <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
-                6. 内定 🎉
-              </span>
-              <span className="font-mono font-black text-yellow-700 group-hover:scale-105 transition-transform">{naiteiCount} 社</span>
-            </div>
-          </div>
         </div>
       </div>
 

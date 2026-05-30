@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type CompanyStatus =
+export type CompanyStatus = 
   | 'interested'     // 興味あり
   | 'es_planned'     // ES提出予定
   | 'es_submitted'   // ES提出済み
@@ -80,7 +80,7 @@ export interface Company {
   website?: string;
   establishedYear?: string;
   employeeCount?: string;
-
+  
   // Selection Type split fields
   selectionType?: 'main' | 'intern'; // 'main' = 本選考, 'intern' = インターン選考
   internType?: InternType; // 1day, 複数日, 長期

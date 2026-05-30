@@ -101,6 +101,58 @@ export default function CompaniesView() {
   const [suggestions, setSuggestions] = useState<{ name: string; industry: string; headquarters: string; scale: string; website: string; establishedYear?: string; employeeCount?: string }[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
 
+  // Recently searched companies
+  const [recentlySearched, setRecentlySearched] = useState<{
+    name: string;
+    industry: string;
+    headquarters: string;
+    scale: string;
+    website: string;
+    establishedYear?: string;
+    employeeCount?: string;
+  }[]>(() => {
+    try {
+      const saved = localStorage.getItem('shunavi_recent_searches');
+      return saved ? JSON.parse(saved) : [];
+    } catch (_) {
+      return [];
+    }
+  });
+
+  const addToRecentlySearched = (company: {
+    name: string;
+    industry: string;
+    headquarters: string;
+    scale: string;
+    website: string;
+    establishedYear?: string;
+    employeeCount?: string;
+  }) => {
+    if (!company.name || !company.name.trim()) return;
+    setRecentlySearched(prev => {
+      // Deduplicate by name
+      const filtered = prev.filter(item => item.name.toLowerCase() !== company.name.toLowerCase());
+      const updated = [company, ...filtered].slice(0, 5);
+      localStorage.setItem('shunavi_recent_searches', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeFromRecentlySearched = (companyName: string) => {
+    setRecentlySearched(prev => {
+      const updated = prev.filter(item => item.name.toLowerCase() !== companyName.toLowerCase());
+      localStorage.setItem('shunavi_recent_searches', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const clearRecentlySearched = () => {
+    setRecentlySearched([]);
+    localStorage.removeItem('shunavi_recent_searches');
+  };
+
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
   React.useEffect(() => {
     if (!newName.trim()) {
       setSuggestions([]);
@@ -286,6 +338,32 @@ export default function CompaniesView() {
       establishedYear: newEstablishedYear,
       employeeCount: newEmployeeCount
     });
+
+    // Save item into recently searched company history
+    addToRecentlySearched({
+      name: newName,
+      industry: newIndustry,
+      headquarters: newHeadquarters,
+      scale: newScale,
+      website: newWebsite,
+      establishedYear: newEstablishedYear,
+      employeeCount: newEmployeeCount
+    });
+
+    // POST details to server database index to make it searchable globally next time
+    fetch('/api/company/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: newName,
+        industry: newIndustry,
+        headquarters: newHeadquarters,
+        scale: newScale,
+        website: newWebsite,
+        establishedYear: newEstablishedYear,
+        employeeCount: newEmployeeCount
+      })
+    }).catch(() => {});
 
     // Reset fields
     setNewName('');
@@ -982,31 +1060,151 @@ export default function CompaniesView() {
                           required
                           value={newName}
                           onChange={e => setNewName(e.target.value)}
+                          onFocus={() => setIsInputFocused(true)}
+                          onBlur={() => {
+                            // Delay dismissal slightly to permit clicks to register before autocomplete collapses
+                            setTimeout(() => setIsInputFocused(false), 200);
+                          }}
                           placeholder="（例）株式会社未来テクノロジー"
                           className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800"
                         />
-                        {suggestions.length > 0 && (
-                          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-150 rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto divide-y divide-gray-50">
-                            {suggestions.map((s, index) => (
-                              <button
-                                key={index}
-                                type="button"
-                                onClick={() => {
-                                  setNewName(s.name);
-                                  setNewIndustry(s.industry);
-                                  setNewHeadquarters(s.headquarters);
-                                  setNewScale(s.scale);
-                                  setNewWebsite(s.website);
-                                  setNewEstablishedYear(s.establishedYear || '');
-                                  setNewEmployeeCount(s.employeeCount || '');
-                                  setSuggestions([]);
-                                }}
-                                className="w-full text-left p-2 hover:bg-sky-50 text-[11px] block text-gray-800 focus:outline-hidden transition-colors"
-                              >
-                                <span className="font-bold block text-gray-900">{s.name}</span>
-                                <span className="text-[9px] text-gray-400 block -mt-0.5">{s.industry} | {s.headquarters}</span>
-                              </button>
-                            ))}
+                        {(suggestions.length > 0 || (isInputFocused && recentlySearched.length > 0)) && (
+                          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto divide-y divide-gray-100">
+                            {/* Recently Searched History Section */}
+                            {recentlySearched.length > 0 && (
+                              <div>
+                                <div className="bg-gray-50/80 px-2.5 py-1.5 text-[10px] font-bold text-gray-500 flex items-center justify-between">
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3 text-indigo-500" />
+                                    最近検索した企業
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      // Prevent blur from closing dropdown before action completes
+                                      e.preventDefault();
+                                    }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      clearRecentlySearched();
+                                    }}
+                                    className="text-[9px] text-red-500 hover:text-red-700 hover:underline cursor-pointer bg-transparent border-0 font-bold"
+                                  >
+                                    すべてクリア
+                                  </button>
+                                </div>
+                                <div className="divide-y divide-gray-50">
+                                  {recentlySearched.map((s, index) => (
+                                    <div
+                                      key={`recent-${index}`}
+                                      className="w-full flex items-center justify-between p-2 hover:bg-indigo-50/40 text-[11px] text-gray-800 transition-colors group cursor-pointer"
+                                      onMouseDown={(e) => {
+                                        // Bulletproof click registration by preventing input blur event
+                                        e.preventDefault();
+                                      }}
+                                      onClick={() => {
+                                        setNewName(s.name);
+                                        setNewIndustry(s.industry);
+                                        setNewHeadquarters(s.headquarters);
+                                        setNewScale(s.scale);
+                                        setNewWebsite(s.website);
+                                        setNewEstablishedYear(s.establishedYear || '');
+                                        setNewEmployeeCount(s.employeeCount || '');
+                                        setSuggestions([]);
+                                        addToRecentlySearched(s); // Bump current item to top
+                                      }}
+                                    >
+                                      <div className="flex-1 min-w-0 pr-2">
+                                        <span className="font-bold block text-gray-900 truncate">
+                                          {s.name}
+                                        </span>
+                                        <span className="text-[9px] text-gray-400 block truncate leading-none mt-0.5">
+                                          {s.industry} | {s.headquarters || "所在地未設定"}
+                                        </span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                        }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                          removeFromRecentlySearched(s.name);
+                                        }}
+                                        className="p-1 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-lg transition-colors focus:outline-hidden cursor-pointer"
+                                        title="履歴から削除"
+                                      >
+                                        <X className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Suggestions matched results section */}
+                            {suggestions.filter(s => !recentlySearched.some(r => r.name.toLowerCase() === s.name.toLowerCase())).length > 0 && (
+                              <div>
+                                <div className="bg-gray-50/50 px-2.5 py-1.5 text-[10px] font-bold text-gray-500 flex items-center gap-1 border-t border-gray-100">
+                                  <Sparkles className="h-3 w-3 text-amber-500" />
+                                  サジェスト候補
+                                </div>
+                                <div className="divide-y divide-gray-50">
+                                  {suggestions
+                                    .filter(s => !recentlySearched.some(r => r.name.toLowerCase() === s.name.toLowerCase()))
+                                    .map((s, index) => (
+                                      <button
+                                        key={`suggest-${index}`}
+                                        type="button"
+                                        onMouseDown={(e) => {
+                                          // Prevent input blur event
+                                          e.preventDefault();
+                                        }}
+                                        onClick={() => {
+                                          setNewName(s.name);
+                                          setNewIndustry(s.industry);
+                                          setNewHeadquarters(s.headquarters);
+                                          setNewScale(s.scale);
+                                          setNewWebsite(s.website);
+                                          setNewEstablishedYear(s.establishedYear || '');
+                                          setNewEmployeeCount(s.employeeCount || '');
+                                          setSuggestions([]);
+                                          addToRecentlySearched(s);
+                                        }}
+                                        className="w-full text-left p-2 hover:bg-sky-50 text-[11px] block text-gray-800 focus:outline-hidden transition-colors border-0"
+                                      >
+                                        <span className="font-bold block text-gray-900">{s.name}</span>
+                                        <span className="text-[9px] text-gray-400 block mt-0.5">{s.industry} | {s.headquarters}</span>
+                                      </button>
+                                    ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Help guide / custom manually added helper */}
+                            {newName.trim().length > 0 && (
+                              <div className="p-2.5 bg-gray-50/50 border-t border-gray-150 flex flex-col gap-2">
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => {
+                                    setNewIndustry("IT・情報サービス");
+                                    setNewHeadquarters("東京都港区");
+                                    setNewScale("ベンチャー企業");
+                                    setSuggestions([]);
+                                    setIsInputFocused(false);
+                                  }}
+                                  className={`w-full py-2 px-3 rounded-xl text-center text-xs font-black text-white shadow-xs transition active:scale-98 cursor-pointer ${theme.bg} ${theme.hover} flex items-center justify-center gap-1.5`}
+                                >
+                                  ➕ この企業（"{newName}"）を新規登録する
+                                </button>
+                                <div className="text-[10px] leading-relaxed text-gray-500 font-sans p-2 bg-indigo-50/30 rounded-xl border border-indigo-100/50">
+                                  💡 企業情報が見つからない場合は、上の<span className="font-extrabold text-indigo-700">「AI求人URL自動入力」</span>にIndeedやマイナビ、リクナビ等の求人ページや企業ホームページのURLをコピー＆ペーストして<span className="font-extrabold text-indigo-700">「AI抽出」</span>を押すと、設立年や従業員数を含めて瞬時に一括自動取得できます！
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

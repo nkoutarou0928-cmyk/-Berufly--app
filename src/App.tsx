@@ -13,6 +13,7 @@ import CompaniesView from './components/CompaniesView';
 import SettingsView from './components/SettingsView';
 import SelfAnalysisView from './components/SelfAnalysisView';
 import { OnboardingModal } from './components/OnboardingModal';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { 
   Home, 
   CheckSquare, 
@@ -453,6 +454,9 @@ function AppContent() {
 
       {/* Onboarding Overlay Modal */}
       <OnboardingModal />
+
+      {/* PWA Install Invitation Banner */}
+      <PWAInstallPrompt />
     </div>
   );
 }
