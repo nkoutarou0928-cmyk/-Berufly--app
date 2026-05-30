@@ -61,10 +61,10 @@ export function PWAInstallPrompt() {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-    
+
     // Android/Chromeのインストールダイアログを表示
     await deferredPrompt.prompt();
-    
+
     const choiceResult = await deferredPrompt.userChoice;
     if (choiceResult.outcome === 'accepted') {
       console.log('ユーザーがPWAインストールを承諾しました');
@@ -90,17 +90,16 @@ export function PWAInstallPrompt() {
           initial={{ opacity: 0, y: 50, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
-          className={`fixed bottom-20 left-1/2 transform -translate-x-1/2 w-[calc(100%-24px)] max-w-md z-50 p-4 border rounded-2xl shadow-xl transition-all ${
-            isDark
-              ? 'bg-slate-900/95 border-slate-800 text-slate-100'
-              : 'bg-white/95 border-gray-200 text-gray-900'
-          } backdrop-blur-md`}
+          className={`fixed bottom-20 left-1/2 transform -translate-x-1/2 w-[calc(100%-24px)] max-w-md z-50 p-4 border rounded-2xl shadow-xl transition-all ${isDark
+            ? 'bg-slate-900/95 border-slate-800 text-slate-100'
+            : 'bg-white/95 border-gray-200 text-gray-900'
+            } backdrop-blur-md`}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-black text-lg shadow-sm shrink-0">
               C
             </div>
-            
+
             <div className="flex-1 text-left">
               <h4 className="text-xs font-bold font-sans">CareerNavi+ をホーム画面に追加</h4>
               <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1 leading-relaxed">
