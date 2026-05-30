@@ -17,11 +17,7 @@ const SelfAnalysisView = lazy(() => import('./components/SelfAnalysisView'));
 
 import { OnboardingModal } from './components/OnboardingModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
-import { 
-  AdSenseBanner, 
-  AdSenseInterstitial, 
-  getAdSenseSettings 
-} from './components/AdSenseManager';
+
 import { 
   Home, 
   CheckSquare, 
@@ -333,22 +329,7 @@ function AppContent() {
   
   const theme = getTheme(settings.themeColor);
 
-  // Google AdSense Interstitial frequency tracking (5-to-1 selector)
-  const [showInterstitial, setShowInterstitial] = useState(false);
-  const [transitionCount, setTransitionCount] = useState(0);
 
-  useEffect(() => {
-    const adsConfig = getAdSenseSettings();
-    if (!adsConfig.enabled) return;
-
-    setTransitionCount(prev => {
-      const nextCount = prev + 1;
-      if (prev > 0 && nextCount % 5 === 0) {
-        setShowInterstitial(true);
-      }
-      return nextCount;
-    });
-  }, [activeTab]);
 
   // PWA Add to Home Screen (A2HS) states
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -599,15 +580,7 @@ function AppContent() {
         </div>
       </nav>
 
-      {/* Google AdSense Bottom Banner */}
-      <AdSenseBanner />
 
-      {/* Google AdSense Full-screen Interstitial */}
-      <AnimatePresence>
-        {showInterstitial && (
-          <AdSenseInterstitial onClose={() => setShowInterstitial(false)} />
-        )}
-      </AnimatePresence>
 
       {/* Onboarding Overlay Modal */}
       <OnboardingModal />

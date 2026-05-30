@@ -6,7 +6,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { THEME_PRESETS, getTheme } from '../utils/theme';
-import { AdSensePreferencesToggle, AdSensePrivacyPolicy } from './AdSenseManager';
 import { 
   Settings, 
   Bell, 
@@ -236,11 +235,6 @@ export default function SettingsView() {
         </div>
       </div>
 
-      {/* --- Google AdSense & Compliance Control Section --- */}
-      <div className="space-y-4">
-        <AdSensePreferencesToggle />
-        <AdSensePrivacyPolicy />
-      </div>
 
       {/* --- Home Screen / PWA Setup Panel --- */}
       <div className={`p-5 rounded-3xl border shadow-xs space-y-4 ${

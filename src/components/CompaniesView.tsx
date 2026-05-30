@@ -38,7 +38,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Company, CompanyStatus, SelectionStage, ESQuestionMemo, InterviewMemo, ESCategory, ESStatus, InternStatus, InternType, InternStep } from '../types';
-import { AdSenseNative } from './AdSenseManager';
 import { MASTER_COMPANIES } from '../constants/companies';
 
 export default function CompaniesView() {
@@ -1897,8 +1896,6 @@ export default function CompaniesView() {
                       const design = selectionTab === 'main' 
                         ? STATUS_COLORS[co.status]
                         : INTERN_STATUS_COLORS[co.selectionStatusIntern || 'entry_done'];
-                      const showAdAfter = (index + 1) % 5 === 0;
-
                       return (
                         <React.Fragment key={co.id}>
                           <div
@@ -1973,12 +1970,6 @@ export default function CompaniesView() {
                             </div>
                             <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" />
                           </div>
-
-                          {showAdAfter && (
-                            <div className="md:col-span-2 py-1 select-none">
-                              <AdSenseNative index={index} />
-                            </div>
-                          )}
                         </React.Fragment>
                       );
                     })}
