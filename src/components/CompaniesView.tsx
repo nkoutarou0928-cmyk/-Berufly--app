@@ -39,6 +39,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Company, CompanyStatus, SelectionStage, ESQuestionMemo, InterviewMemo, ESCategory, ESStatus, InternStatus, InternType, InternStep } from '../types';
 import { AdSenseNative } from './AdSenseManager';
+import { MASTER_COMPANIES } from '../constants/companies';
 
 export default function CompaniesView() {
   const { 
@@ -424,22 +425,76 @@ export default function CompaniesView() {
   const [isInputFocused, setIsInputFocused] = useState(false);
 
   React.useEffect(() => {
-    if (!newName.trim()) {
+    const q = newName.trim();
+    if (!q) {
       setSuggestions([]);
       return;
     }
-    const delayDebounce = setTimeout(() => {
-      fetch(`/api/company/suggest?q=${encodeURIComponent(newName)}&filter=all`)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            setSuggestions(data);
-          }
-        })
-        .catch(() => {});
-    }, 200);
 
-    return () => clearTimeout(delayDebounce);
+    const normalize = (str: string): string => {
+      if (!str) return "";
+      let val = str.trim().toLowerCase();
+      // Zenkaku alphanumeric to Hankaku
+      val = val.replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => {
+        return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+      });
+      // Convert Katakana to Hiragana
+      val = val.replace(/[\u30a1-\u30f6]/g, (match) => {
+        return String.fromCharCode(match.charCodeAt(0) - 0x60);
+      });
+      // Strip hyphens, spaces, brackets, long vowel markers
+      val = val.replace(/[ー々・ヶ\-\s\(\)（）]/g, "");
+      return val;
+    };
+
+    const normQ = normalize(q);
+    if (!normQ) {
+      setSuggestions([]);
+      return;
+    }
+
+    // Direct local search against MASTER_COMPANIES
+    const scored = MASTER_COMPANIES.map(comp => {
+      let score = 0;
+      const compNameNorm = normalize(comp.name);
+      
+      // Exact match
+      if (compNameNorm === normQ) {
+        score += 100;
+      }
+      // Starts with
+      else if (compNameNorm.startsWith(normQ)) {
+        score += 50;
+      }
+      // Contains
+      else if (compNameNorm.includes(normQ)) {
+        score += 30;
+      }
+
+      // Check website
+      const websiteLower = (comp.website || "").toLowerCase();
+      if (websiteLower.includes(q.toLowerCase())) {
+        score += 20;
+      }
+
+      // Check industry & category
+      const indNorm = normalize(comp.industry);
+      const catNorm = normalize(comp.category || "");
+      if (indNorm.includes(normQ) || catNorm.includes(normQ)) {
+        score += 10;
+      }
+
+      return { comp, score };
+    });
+
+    // Filter out zero-score matches, sort by score descending, then take top 10
+    const matches = scored
+      .filter(item => item.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.comp)
+      .slice(0, 10);
+
+    setSuggestions(matches);
   }, [newName]);
 
   // ES copy tool helper states
