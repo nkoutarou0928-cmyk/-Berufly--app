@@ -35,8 +35,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Company, CompanyStatus, SelectionStage, ESQuestionMemo, InterviewMemo, ESCategory, ESStatus, InternStatus, InternType, InternStep } from '../types';
-import { GoogleGenAI, Type } from '@google/genai';
-import { suggestCompaniesLocal } from '../utils/companySuggest';
 
 export default function CompaniesView() {
   const { 
@@ -112,13 +110,9 @@ export default function CompaniesView() {
         .then(data => {
           if (Array.isArray(data)) {
             setSuggestions(data);
-          } else {
-            setSuggestions(suggestCompaniesLocal(newName));
           }
         })
-        .catch(() => {
-          setSuggestions(suggestCompaniesLocal(newName));
-        });
+        .catch(() => {});
     }, 200);
 
     return () => clearTimeout(delayDebounce);
@@ -706,21 +700,38 @@ export default function CompaniesView() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div className="relative">
-                    <select
-                      value={filterStatus}
-                      onChange={e => setFilterStatus(e.target.value as any)}
-                      className={`w-full px-2.5 py-2 text-[10px] line-clamp-1 bg-white rounded-xl border border-gray-200 ${
-                        isDark ? 'bg-slate-900 text-white border-slate-800' : 'text-gray-700'
-                      }`}
-                    >
-                      <option value="all">選考：すべて</option>
-                      <option value="interested">検討中</option>
-                      <option value="es_planned">ES作成予定</option>
-                      <option value="es_submitted">ES提出済</option>
-                      <option value="selecting">選考中</option>
-                      <option value="offered">内定</option>
-                      <option value="rejected">選考終了</option>
-                    </select>
+                    {selectionTab === 'main' ? (
+                      <select
+                        value={filterStatus}
+                        onChange={e => setFilterStatus(e.target.value as any)}
+                        className={`w-full px-2.5 py-2 text-[10px] line-clamp-1 bg-white rounded-xl border border-gray-200 ${
+                          isDark ? 'bg-slate-900 text-white border-slate-800' : 'text-gray-700'
+                        }`}
+                      >
+                        <option value="all">選考：すべて</option>
+                        <option value="interested">検討中</option>
+                        <option value="es_planned">ES作成予定</option>
+                        <option value="es_submitted">ES提出済</option>
+                        <option value="selecting">選考中</option>
+                        <option value="offered">内定</option>
+                        <option value="rejected">選考終了</option>
+                      </select>
+                    ) : (
+                      <select
+                        value={filterStatusIntern}
+                        onChange={e => setFilterStatusIntern(e.target.value as any)}
+                        className={`w-full px-2.5 py-2 text-[10px] line-clamp-1 bg-white rounded-xl border border-gray-200 ${
+                          isDark ? 'bg-slate-900 text-white border-slate-800' : 'text-gray-700'
+                        }`}
+                      >
+                        <option value="all">選考：すべて</option>
+                        <option value="entry_done">エントリー済み</option>
+                        <option value="es_submitted">ES提出済み</option>
+                        <option value="selecting">選考中</option>
+                        <option value="passed">合格</option>
+                        <option value="rejected">不合格</option>
+                      </select>
+                    )}
                   </div>
 
                   <div className="relative">
@@ -773,6 +784,102 @@ export default function CompaniesView() {
               </div>
             </div>
 
+            {/* Convert Intern to Main Application Modal (visible when showConvertToMainModal is true) */}
+            {showConvertToMainModal && (
+              <div className="fixed inset-0 bg-transparent flex items-center justify-center p-4 z-50">
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setShowConvertToMainModal(false)} />
+                <motion.div 
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  className="bg-white text-gray-900 rounded-3xl p-6 w-full max-w-md shadow-2xl relative border border-gray-100 z-10 space-y-4"
+                >
+                  <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                    <h3 className="text-sm font-black text-gray-900 flex items-center gap-1.5 font-sans">
+                      <Network className="h-4 w-4 text-indigo-600" />
+                      <span>本選考データへの追加・引き継ぎ</span>
+                    </h3>
+                    <button 
+                      onClick={() => setShowConvertToMainModal(false)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full cursor-pointer hover:bg-gray-150"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4 text-xs text-left font-sans">
+                    <p className="text-gray-600 leading-relaxed font-sans">
+                      インターンエントリー企業 <strong>{company?.name}</strong> の選考データを本選考管理画面へと移行・追加します。
+                      引き継ぎたい項目を選択して「本選考データを新規作成する」を押してください。
+                    </p>
+
+                    <div className="p-3.5 bg-gray-50 border border-gray-150 rounded-2xl space-y-3">
+                      <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                        <input 
+                          type="checkbox"
+                          checked={carryOverES}
+                          onChange={e => setCarryOverES(e.target.checked)}
+                          className="h-4 w-4 rounded-sm text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                        />
+                        <div>
+                          <span className="font-bold text-gray-800">エントリーシート回答データの引き継ぎ</span>
+                          <span className="block text-[10px] text-gray-500">登録済みの設問メモ（{company?.esMemos?.length || 0}件）を引き継ぎます</span>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-2.5 cursor-pointer select-none border-t border-gray-100 pt-3">
+                        <input 
+                          type="checkbox"
+                          checked={carryOverInterviews}
+                          onChange={e => setCarryOverInterviews(e.target.checked)}
+                          className="h-4 w-4 rounded-sm text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                        />
+                        <div>
+                          <span className="font-bold text-gray-800">面接記録メモデータの引き継ぎ</span>
+                          <span className="block text-[10px] text-gray-500">登録済みの面接詳細メモ（{company?.interviewMemos?.length || 0}件）を引き継ぎます</span>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-2.5 cursor-pointer select-none border-t border-gray-100 pt-3">
+                        <input 
+                          type="checkbox"
+                          checked={carryOverNotes}
+                          onChange={e => setCarryOverNotes(e.target.checked)}
+                          className="h-4 w-4 rounded-sm text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                        />
+                        <div>
+                          <span className="font-bold text-gray-800">OB訪問・基本備考メモの引き継ぎ</span>
+                          <span className="block text-[10px] text-gray-500">自由形式メモや登録済みのOB訪問詳細データを引き継ぎます</span>
+                        </div>
+                      </label>
+                    </div>
+
+                    <p className="text-[10px] text-amber-600 leading-normal flex items-start gap-1 font-sans">
+                      <span>※</span>
+                      <span>本操作を行うと、本選考管理画面に新しく「検討中（興味あり）」として企業レコードが追加されます。現在のインターン用データもそのまま残ります。</span>
+                    </p>
+
+                    <div className="flex gap-2.5 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowConvertToMainModal(false)}
+                        className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-750 text-xs font-bold rounded-xl transition cursor-pointer"
+                      >
+                        キャンセル
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleConvertToMain}
+                        className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer"
+                      >
+                        本選考データを新規作成する
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
             {/* Add Company Modal Form (visible when showAddCompanyModal is true) */}
             {showAddCompanyModal && (
               <div className="fixed inset-0 bg-transparent flex items-center justify-center p-4 z-50">
@@ -781,7 +888,7 @@ export default function CompaniesView() {
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.9, opacity: 0 }}
-                  className="bg-white text-gray-900 rounded-3xl p-6 w-full max-w-md shadow-2xl relative border border-gray-100 z-10 space-y-4 max-h-[90vh] overflow-y-auto"
+                  className="bg-white text-gray-900 rounded-3xl p-6 w-full max-w-md shadow-2xl relative border border-gray-100 z-10 space-y-4"
                 >
                   <div className="flex justify-between items-center sm:pb-2">
                     <h3 className="text-sm font-black text-gray-900">🏢 新しい企業を登録</h3>
@@ -795,7 +902,7 @@ export default function CompaniesView() {
 
                   <form onSubmit={handleCreateCompany} className="space-y-3.5 text-xs text-left">
                     {/* URL Automatic extraction widget */}
-                    <div className="p-3 bg-gradient-to-tr from-sky-50 to-indigo-50 border border-sky-100 rounded-2xl space-y-1.5 dark:from-slate-900 dark:to-slate-950 dark:border-slate-800">
+                    <div className="p-3 bg-gradient-to-tr from-sky-50 to-indigo-55 border border-sky-100 rounded-2xl space-y-1.5 dark:from-slate-900 dark:to-slate-950 dark:border-slate-800">
                       <div className="flex justify-between items-center">
                         <span className="text-[10px] font-black text-sky-800 dark:text-sky-400 flex items-center gap-1">
                           <Sparkles className="h-3 w-3 text-sky-500 animate-pulse" />
@@ -821,61 +928,6 @@ export default function CompaniesView() {
                               return;
                             }
                             setIsExtracting(true);
-                            
-                            // Tier 1: Browser-side Gemini API if key is present
-                            if (settings.geminiApiKey) {
-                              try {
-                                const ai = new GoogleGenAI({ apiKey: settings.geminiApiKey });
-                                const prompt = `以下の求人サイトやホームページのURLから、企業の基本情報を調べて抽出してください。
-URL: ${urlVal}
-
-以下のプロパティを含むJSONオブジェクトのみを取得してください:
-- name: 企業の正式名称（例: トヨタ自動車株式会社, 株式会社タイミー 等）
-- industry: 企業の業界カテゴリ（例: IT・通信, 電機, 不動産, コンサルティング, サービス 等、簡潔に）
-- headquarters: 本社所在地（都道府県および市区町村、例: 東京都港区）
-- scale: 企業規模（大手企業, 中堅企業, 中小企業, ベンチャー のいずれか）
-- website: 企業の主たるホームページURL（入力されたURLそのものか、企業の代表ホームページURL）
-
-完全にJSON形式を厳守して返してください。マークダウンブロックでラップせずに、生のJSONのみを出力してください。`;
-
-                                const response = await ai.models.generateContent({
-                                  model: 'gemini-3.5-flash',
-                                  contents: prompt,
-                                  config: {
-                                    tools: [{ googleSearch: {} }],
-                                    responseMimeType: 'application/json',
-                                    responseSchema: {
-                                      type: Type.OBJECT,
-                                      properties: {
-                                        name: { type: Type.STRING, description: "Official company name in Japanese" },
-                                        industry: { type: Type.STRING, description: "Standard company industry in Japanese" },
-                                        headquarters: { type: Type.STRING, description: "Headquarters city/pref address in Japanese" },
-                                        scale: { type: Type.STRING, description: "Scale classifier: 大手企業, 中堅企業, 中小企業, ベンチャー" },
-                                        website: { type: Type.STRING, description: "Main homepage web URL" }
-                                      },
-                                      required: ["name", "industry"]
-                                    }
-                                  }
-                                });
-
-                                const text = response.text || '{}';
-                                const data = JSON.parse(text.trim());
-                                
-                                if (data.name) setNewName(data.name);
-                                if (data.industry) setNewIndustry(data.industry);
-                                if (data.headquarters) setNewHeadquarters(data.headquarters);
-                                if (data.scale) setNewScale(data.scale);
-                                if (data.website) setNewWebsite(data.website);
-
-                                alert('✨ [ローカルAI抽出] 企業の基本情報を高精度に自動補完しました！');
-                                setIsExtracting(false);
-                                return;
-                              } catch (e) {
-                                console.error("Local Gemini extraction failed, trying backend server...", e);
-                              }
-                            }
-
-                            // Tier 2: Backend server-side Gemini API
                             try {
                               const res = await fetch('/api/company/parse-url', {
                                 method: 'POST',
@@ -891,16 +943,15 @@ URL: ${urlVal}
                               if (data.scale) setNewScale(data.scale);
                               if (data.website) setNewWebsite(data.website);
 
-                              alert('✨ [サーバーAI抽出] 求人URLの解析に成功しました！');
+                              alert('✨ AI自動抽出が完了しました！業界、所在地、企業規模、URLを自動入力しました。');
                             } catch (e) {
-                              // Tier 3: Fallback domain parsing
                               try {
                                 const domain = new URL(urlVal).hostname.replace('www.', '');
                                 const guessed = domain.split('.')[0];
                                 setNewName(guessed.charAt(0).toUpperCase() + guessed.slice(1) + '（仮）');
                                 setNewIndustry('IT・通信');
                                 setNewWebsite(urlVal);
-                                alert('⚠️ クラウド混雑またはオフラインのため、ドメイン簡易解析(Alternative Fallback)でホームページURLと仮名を自動入力しました。Settings画面からご自身のGemini APIキーを設定すると、オフラインやサーバーなしでも高精度な自動入力が可能です。');
+                                alert('⚠️ クラウドが混雑中、またはオフラインのため、ドメイン解析(Alternative Fallback)でホームページURLと仮名を自動入力しました。');
                               } catch (_) {
                                 alert('URLの形式が正しくありません。');
                               }
@@ -1158,7 +1209,9 @@ URL: ${urlVal}
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                     {sortedCompanies.map(co => {
-                      const design = STATUS_COLORS[co.status];
+                      const design = selectionTab === 'main' 
+                        ? STATUS_COLORS[co.status]
+                        : INTERN_STATUS_COLORS[co.selectionStatusIntern || 'entry_done'];
                       return (
                         <div
                           key={co.id}
@@ -1179,9 +1232,20 @@ URL: ${urlVal}
                               }`}>
                                 {co.name}
                               </h4>
-                              <span className={`inline-block px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
-                                {STATUS_LABELS[co.status]}
-                              </span>
+                              {selectionTab === 'main' ? (
+                                <span className={`inline-block px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
+                                  {STATUS_LABELS[co.status]}
+                                </span>
+                              ) : (
+                                <span className={`inline-block px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
+                                  {INTERN_STATUS_LABELS[co.selectionStatusIntern || 'entry_done']}
+                                </span>
+                              )}
+                              {selectionTab === 'intern' && co.internType && (
+                                <span className="px-1.5 py-0.5 bg-gray-150 text-gray-750 text-[8.5px] font-bold rounded-sm">
+                                  {INTERN_TYPE_LABELS[co.internType]}
+                                </span>
+                              )}
                             </div>
                             <p className="text-[10px] text-gray-400 font-sans flex items-center gap-1.5 truncate">
                               <span>{co.industry}</span>
@@ -1211,7 +1275,6 @@ URL: ${urlVal}
                               )}
                             </div>
                           </div>
-
                           <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" />
                         </div>
                       );
@@ -1224,11 +1287,11 @@ URL: ${urlVal}
               <div className="space-y-6">
                 {selectionTab === 'main' ? (
                   (['interested', 'es_planned', 'es_submitted', 'selecting', 'offered', 'rejected'] as CompanyStatus[]).map(status => {
-                  const groupCompanies = companyGroups[status];
-                  const design = STATUS_COLORS[status];
+                    const groupCompanies = companyGroups[status];
+                    const design = STATUS_COLORS[status];
 
-                  return (
-                    <div key={status} className="space-y-2.5 text-left">
+                    return (
+                      <div key={status} className="space-y-2.5 text-left">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-gray-750 flex items-center gap-1.5">
                             <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-center border mr-1 ${design.bg} ${design.text} ${design.border}`}>

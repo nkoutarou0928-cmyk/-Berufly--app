@@ -146,60 +146,26 @@ export default function DashboardView() {
 
   return (
     <div className="space-y-6 pb-20 text-left">
-      {/* Top Welcome Bar & Profile Showcase */}
-      <div className={`p-4 rounded-3xl border flex flex-col sm:flex-row gap-4 items-center sm:items-start justify-between transition-all ${
+      {/* Top Welcome Bar */}
+      <div className={`p-4 rounded-3xl border flex items-center justify-between transition-all ${
         isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-gray-100 shadow-3xs'
       }`}>
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3.5 w-full">
-          {/* Avatar display */}
-          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm border ${
-            isDark ? 'bg-slate-800 border-slate-700' : 'bg-gray-55/65 border-gray-150'
-          } flex-shrink-0`}>
-            {settings.profileAvatar && settings.profileAvatar.startsWith('data:') ? (
-              <img 
-                src={settings.profileAvatar} 
-                alt="profile" 
-                className="h-full w-full object-cover rounded-2xl"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <span>
-                {AVATAR_PRESETS.find(p => p.id === settings.profileAvatar)?.emoji || '🎓'}
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-1 w-full text-center sm:text-left">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 justify-center sm:justify-start">
-              <h2 className={`text-base font-bold tracking-tight ${isDark ? 'text-slate-150' : 'text-gray-900'}`}>
-                {settings.profileName || '就活生さん'}
-              </h2>
-              {shukatsuDaysText && (
-                <span className={`inline-block text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-full ${theme.bg} text-white`}>
-                  {shukatsuDaysText}
-                </span>
-              )}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-left">
+          <h2 className={`text-base font-bold tracking-tight ${isDark ? 'text-slate-150' : 'text-gray-900'} font-sans`}>
+            2026年5月29日(金)
+          </h2>
+          {companies.length > 0 && (
+            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
+              isDark ? 'bg-slate-800 border-slate-700 text-indigo-400' : 'bg-indigo-50 text-indigo-700 border border-indigo-100/50'
+            } font-sans`}>
+              <TrendingUp className="h-3.5 w-3.5 text-indigo-500" />
+              <span>先週の振り返り: ES提出+{trendES}社 | Todo達成率{trendTodoRate}% (+{trendTodoDiff}%)</span>
             </div>
-            
-            <p className="text-xs text-gray-400 leading-relaxed font-sans">
-              2026年5月29日(金) • 順調なペースです
-            </p>
-            
-            {settings.profileMemo && (
-              <div className="flex items-center gap-1 mt-1 justify-center sm:justify-start">
-                <span className={`text-[10px] leading-relaxed font-bold px-2 py-0.5 rounded-lg border flex items-center gap-1 ${
-                  isDark ? 'bg-slate-850 border-slate-700/60 text-slate-300' : 'bg-gray-50 border-gray-105 text-gray-600'
-                }`}>
-                  <Sparkles className={`h-3 w-3 ${theme.text}`} />
-                  {settings.profileMemo}
-                </span>
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Notification Bell Badge on Top Right */}
-        <div className="relative self-end sm:self-center">
+        <div className="relative">
           <button 
             id="notif_badge_btn"
             onClick={() => setShowNotifications(!showNotifications)}
@@ -277,34 +243,6 @@ export default function DashboardView() {
           </AnimatePresence>
         </div>
       </div>
-
-      {/* --- Monday Comparison Banner --- */}
-      <motion.div 
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="p-5 rounded-2xl bg-white text-gray-800 shadow-xs border border-gray-100 relative overflow-hidden"
-      >
-        <div className="absolute right-0 bottom-0 opacity-[0.03] pointer-events-none transform translate-y-4">
-          <TrendingUp className="h-40 w-40 text-gray-900" />
-        </div>
-        <div className="flex items-start gap-4">
-          <div className={`p-3 ${theme.lightBg} rounded-2xl flex-shrink-0`}>
-            <TrendingUp className={`h-5 w-5 ${theme.text}`} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className={`text-[10px] font-bold ${theme.textDark} ${theme.lightBg} px-2.5 py-1 rounded-full font-mono uppercase tracking-wider`}>WEEKLY REVIEW</span>
-              <span className="text-[11px] text-gray-450">先週の振り返り</span>
-            </div>
-            <p className="text-[13px] font-bold text-gray-900 mt-2 leading-relaxed">
-              「先週よりES提出が <span className={`${theme.textDark} font-extrabold font-mono text-sm`}>+{trendES}社</span> 増えました！今週のTodo達成率は <span className={`${theme.textDark} font-extrabold font-mono text-sm`}>{trendTodoRate}%</span>！先週より <span className={`${theme.textDark} font-extrabold font-mono text-sm`}>+{trendTodoDiff}%</span> 上昇中！」
-            </p>
-            <p className="text-xs text-gray-500 mt-1.5 leading-relaxed font-sans">
-              とても素晴らしい継続です！自己分析の言葉が磨かれ、書類通過率もアップしています。その調子で進みましょう。
-            </p>
-          </div>
-        </div>
-      </motion.div>
 
       {/* --- Top Indicators Grid (4 metrics) --- */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

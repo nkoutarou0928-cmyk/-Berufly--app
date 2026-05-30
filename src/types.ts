@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type CompanyStatus = 
+export type CompanyStatus =
   | 'interested'     // 興味あり
   | 'es_planned'     // ES提出予定
   | 'es_submitted'   // ES提出済み
@@ -78,7 +78,7 @@ export interface Company {
   headquarters?: string;
   scale?: string;
   website?: string;
-  
+
   // Selection Type split fields
   selectionType?: 'main' | 'intern'; // 'main' = 本選考, 'intern' = インターン選考
   internType?: InternType; // 1day, 複数日, 長期
@@ -132,7 +132,6 @@ export interface AppSettings {
   profileAvatar: string; // Base64 dataURL or avatar preset ID (e.g., 'preset-1')
   profileMemo: string; // 一言メモ (自分への励ましや就活の目標)
   shukatsuStartDate: string; // 就活開始日 (YYYY-MM-DD)
-  geminiApiKey?: string;
 }
 
 export interface NotificationItem {

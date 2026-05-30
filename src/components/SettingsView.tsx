@@ -21,10 +21,7 @@ import {
   Camera,
   Sun,
   Moon,
-  Monitor,
-  Key,
-  Eye,
-  EyeOff
+  Monitor
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -58,7 +55,6 @@ export default function SettingsView() {
 
   // States
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
 
   const handleResetData = () => {
     localStorage.clear();
@@ -372,63 +368,6 @@ export default function SettingsView() {
               <p className="font-bold">シミュレート通知システム内蔵</p>
               <p className="mt-0.5 opacity-90 leading-relaxed font-sans">
                 当アプリはブラウザ上でも簡単に通知テストができるよう、画面右上の「🔔」アイコンにリアルタイムの擬似通知バナーを表示し、タップすることでいつでも対象企業のESや面接詳細ページへダイレクトアクセスできるインペリアルUIを搭載しています。
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* --- Gemini AI API Key Settings Card --- */}
-      <div className={`p-5 rounded-3xl border shadow-xs space-y-4 ${
-        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
-      }`}>
-        <h3 className={`text-xs font-bold flex items-center gap-1.5 border-b pb-2.5 ${
-          isDark ? 'text-slate-200 border-slate-800' : 'text-gray-800 border-gray-50'
-        }`}>
-          <Key className={`h-4.5 w-4.5 ${theme.text}`} />
-          Gemini AI APIキー設定
-        </h3>
-        
-        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-          求人URLから企業情報を自動抽出するAI機能を利用するには、ご自身のGemini APIキーを設定してください。キーはお使いのブラウザのローカルストレージ（localStorage）に安全に保存され、外部サーバーに送信されることはありません。
-        </p>
-
-        <div className="space-y-3 pt-1">
-          <div className="relative">
-            <input 
-              type={showApiKey ? 'text' : 'password'}
-              value={settings.geminiApiKey || ''}
-              onChange={e => updateSettings({ geminiApiKey: e.target.value })}
-              placeholder="AI StudioのAPIキーを入力 (AIzaSy...)"
-              className={`w-full p-2.5 pr-10 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 font-mono ${
-                isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-gray-50 border-gray-250 text-gray-800'
-              }`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowApiKey(!showApiKey)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-650 transition-colors"
-            >
-              {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-
-          <div className={`p-3.5 ${theme.lightBg} rounded-2xl text-[11px] border flex items-start gap-2 ${
-            isDark ? 'text-slate-200 border-slate-800' : `${theme.textDark} ${theme.border}`
-          }`}>
-            <Sparkles className={`h-4 w-4 mt-0.5 flex-shrink-0 ${theme.text}`} />
-            <div>
-              <p className="font-bold">Gemini APIキーを無料で取得する</p>
-              <p className="mt-0.5 opacity-90 leading-relaxed font-sans">
-                APIキーをお持ちでない場合は、Google AI Studioから無料で取得できます。
-                <a 
-                  href="https://aistudio.google.com/" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className={`underline font-bold ml-1 hover:opacity-80 transition-opacity ${theme.text}`}
-                >
-                  APIキーを取得する ↗
-                </a>
               </p>
             </div>
           </div>
