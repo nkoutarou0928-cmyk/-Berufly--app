@@ -465,12 +465,12 @@ const app = express();
 app.use(express.json());
 
 // API: Health Check
-app.get("/api/health", (req, res) => {
+app.get(["/api/health", "/health"], (req, res) => {
   res.json({ status: "ok", environment: "vercel-serverless" });
 });
 
 // API: Dynamic User Registration
-app.post("/api/company/add", (req, res) => {
+app.post(["/api/company/add", "/company/add"], (req, res) => {
   const { name, industry, headquarters, scale, website, establishedYear, employeeCount, isForeign, category } = req.body;
   if (!name || !industry) {
     return res.status(400).json({ error: "Name and industry are required" });
@@ -509,7 +509,7 @@ app.post("/api/company/add", (req, res) => {
 });
 
 // API: Autocomplete corporate search suggest
-app.get("/api/company/suggest", (req, res) => {
+app.get(["/api/company/suggest", "/company/suggest"], (req, res) => {
   const q = (req.query.q as string || "").trim();
   
   const dynamicMocks = generateDynamicMockCompanies(q);
@@ -607,7 +607,7 @@ app.get("/api/company/suggest", (req, res) => {
 });
 
 // API: Parse URL using Gemini Search Grounding API
-app.post("/api/company/parse-url", async (req, res) => {
+app.post(["/api/company/parse-url", "/company/parse-url"], async (req, res) => {
   const { url } = req.body;
   if (!url) {
     return res.status(400).json({ error: "URL is required" });

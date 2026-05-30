@@ -1613,7 +1613,7 @@ async function startServer() {
   });
 
   // Client non-blocking endpoint to register custom typed additions inside backend DB
-  app.post("/api/company/add", async (req, res) => {
+  app.post(["/api/company/add", "/company/add"], async (req, res) => {
     try {
       const { name, industry, headquarters, scale, website, establishedYear, employeeCount } = req.body;
       if (!name || !name.trim()) {
@@ -1989,7 +1989,7 @@ async function startServer() {
   }
 
   // Suggest Endpoint for corporate name autocomplete
-  app.get("/api/company/suggest", (req, res) => {
+  app.get(["/api/company/suggest", "/company/suggest"], (req, res) => {
     const q = (req.query.q as string || "").trim();
     const filter = (req.query.filter as string || "all").trim().toLowerCase(); // "all", "domestic", "foreign"
     
@@ -2119,7 +2119,7 @@ async function startServer() {
 
 
   // Parse URL Endpoint using Gemini with Search Grounding
-  app.post("/api/company/parse-url", async (req, res) => {
+  app.post(["/api/company/parse-url", "/company/parse-url"], async (req, res) => {
     const { url } = req.body;
     if (!url) {
       return res.status(400).json({ error: "URL is required" });
