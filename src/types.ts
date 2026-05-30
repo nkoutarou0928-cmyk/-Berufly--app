@@ -80,6 +80,9 @@ export interface Company {
   website?: string;
   establishedYear?: string;
   employeeCount?: string;
+  isForeign?: boolean;
+  lastUpdated?: string;
+  category?: string;
   
   // Selection Type split fields
   selectionType?: 'main' | 'intern'; // 'main' = 本選考, 'intern' = インターン選考

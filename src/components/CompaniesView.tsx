@@ -8,10 +8,13 @@ import { useApp } from '../context/AppContext';
 import { getTheme } from '../utils/theme';
 import { 
   Building2, 
+  PlusCircle,
   Plus, 
   Trash2, 
+  RotateCcw,
   Star, 
   ChevronRight, 
+  Shield,
   Clock, 
   ArrowLeft,
   BookOpen,
@@ -35,6 +38,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Company, CompanyStatus, SelectionStage, ESQuestionMemo, InterviewMemo, ESCategory, ESStatus, InternStatus, InternType, InternStep } from '../types';
+import { AdSenseNative } from './AdSenseManager';
 
 export default function CompaniesView() {
   const { 
@@ -45,6 +49,9 @@ export default function CompaniesView() {
     addCompany, 
     updateCompany, 
     deleteCompany,
+    trashCompanies,
+    restoreCompany,
+    permanentlyDeleteCompany,
     addESMemo, 
     updateESMemo, 
     deleteESMemo,
@@ -66,12 +73,253 @@ export default function CompaniesView() {
 
   // Layout navigation states
   const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
+  const [showTrashModal, setShowTrashModal] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [activeTab, setActiveTabState] = useState<'basic' | 'es' | 'interview' | 'notes' | 'ob_visits' | 'comparisons'>(detailTab as any || 'basic');
   const [viewMode, setViewMode] = useState<'grouped' | 'list'>('grouped');
 
   // New selection view tabs & intern status-specific filters
   const [selectionTab, setSelectionTab] = useState<'main' | 'intern'>('main');
   const [filterStatusIntern, setFilterStatusIntern] = useState<InternStatus | 'all'>('all');
+
+  // 新しい「日系のみ」「外資系のみ」「両方（すべて）」フィルター
+  const [filterOrigin, setFilterOrigin] = useState<'all' | 'domestic' | 'foreign'>('all');
+
+  // 管理者モード用の State 郡
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [adminCompanies, setAdminCompanies] = useState<any[]>([]);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [showAddMasterModal, setShowAddMasterModal] = useState(false);
+  const [editingMasterCompany, setEditingMasterCompany] = useState<any | null>(null);
+
+  // 新マスター企業のフォーム状態
+  const [mName, setMName] = useState('');
+  const [mEnglishName, setMEnglishName] = useState('');
+  const [mIndustry, setMIndustry] = useState('');
+  const [mHeadquarters, setMHeadquarters] = useState('');
+  const [mScale, setMScale] = useState('大手企業');
+  const [mWebsite, setMWebsite] = useState('');
+  const [mRecruitmentUrl, setMRecruitmentUrl] = useState('');
+  const [mEstablishedYear, setMEstablishedYear] = useState('');
+  const [mEmployeeCount, setMEmployeeCount] = useState('');
+  const [mIsForeign, setMIsForeign] = useState(false);
+  const [mCategory, setMCategory] = useState('日系大手');
+
+  // フィードバックモーダル状態
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [fbType, setFbType] = useState('incorrect_info');
+  const [fbComment, setFbComment] = useState('');
+  const [fbEmail, setFbEmail] = useState('');
+
+  // ----------------------------------------------------
+  // 🛡️ 管理者ダッシュボード・フィードバックデータのフェッチ関数郡
+  // ----------------------------------------------------
+  const loadAdminData = async () => {
+    try {
+      const res1 = await fetch('/api/admin/companies');
+      if (res1.ok) {
+        const data = await res1.json();
+        setAdminCompanies(data);
+      }
+      const res2 = await fetch('/api/admin/feedbacks');
+      if (res2.ok) {
+        const data = await res2.json();
+        setFeedbacks(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch administrative records:", err);
+    }
+  };
+
+  const handleAddMasterCompany = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mName.trim()) {
+      alert('企業名は必須項目です。');
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/companies/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: mName,
+          englishName: mEnglishName,
+          industry: mIndustry,
+          headquarters: mHeadquarters,
+          scale: mScale,
+          website: mWebsite,
+          recruitmentUrl: mRecruitmentUrl,
+          establishedYear: mEstablishedYear,
+          employeeCount: mEmployeeCount,
+          isForeign: mIsForeign,
+          category: mCategory
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || '新規登録に失敗しました。');
+        return;
+      }
+      alert('✨ 企業マスターデータへ新しい企業を追加登録しました！');
+      setShowAddMasterModal(false);
+      resetMasterForm();
+      loadAdminData();
+    } catch (err) {
+      alert('サーバーエラーが発生しました。');
+    }
+  };
+
+  const handleUpdateMasterCompany = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMasterCompany || !mName.trim()) {
+      alert('会社名がありません。');
+      return;
+    }
+    try {
+      const res = await fetch('/api/admin/companies/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingMasterCompany.id || editingMasterCompany.corporateNumber,
+          name: mName,
+          englishName: mEnglishName,
+          industry: mIndustry,
+          headquarters: mHeadquarters,
+          scale: mScale,
+          website: mWebsite,
+          recruitmentUrl: mRecruitmentUrl,
+          establishedYear: mEstablishedYear,
+          employeeCount: mEmployeeCount,
+          isForeign: mIsForeign,
+          category: mCategory
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'マスター編集に失敗しました。');
+        return;
+      }
+      alert('📝 企業マスター情報を修正更新しました。');
+      setEditingMasterCompany(null);
+      resetMasterForm();
+      loadAdminData();
+    } catch (err) {
+      alert('サーバーエラーが発生しました。');
+    }
+  };
+
+  const handleDeleteMasterCompany = async (id: string, name: string) => {
+    if (!window.confirm(`「${name}」のマスターデータを削除してもよろしいですか？\n※削除すると検索サジェストに表示されなくなります。`)) return;
+    try {
+      const res = await fetch('/api/admin/companies/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (res.ok) {
+        alert('🗑️ 企業マスターから削除しました。');
+        loadAdminData();
+      } else {
+        const data = await res.json();
+        alert(data.error || '削除失敗。');
+      }
+    } catch (err) {
+      alert('サーバーエラーが発生しました。');
+    }
+  };
+
+  const handleAutoUpdateMaster = async () => {
+    try {
+      const res = await fetch('/api/admin/companies/auto-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert(`✨ 定期自動更新が完了しました！\n以下の ${data.updatedCompanies.length} 社のマスターデータを最新情報に更新、最終更新日（タイムスタンプ）をセットしました:\n・${data.updatedCompanies.join('\n・')}`);
+        loadAdminData();
+      } else {
+        alert('自動同期更新失敗。');
+      }
+    } catch (err) {
+      alert('サーバーエラーが発生しました。');
+    }
+  };
+
+  const handleResolveFeedback = async (id: string, remove: boolean = false) => {
+    try {
+      const res = await fetch('/api/admin/feedbacks/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, resolved: true, remove })
+      });
+      if (res.ok) {
+        alert(remove ? '🚮 不正確の指摘報告を破棄削除しました。' : '✅ 報告に対処チェック（解決済マーク）を入れました。');
+        loadAdminData();
+      } else {
+        alert('解決済みへの更新に失敗しました。');
+      }
+    } catch (err) {
+      alert('サーバー連携でエラー。');
+    }
+  };
+
+  const handleSendFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!company) return;
+    try {
+      const res = await fetch('/api/company/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: company.id,
+          companyName: company.name,
+          feedbackType: fbType,
+          comment: fbComment,
+          email: fbEmail
+        })
+      });
+      if (res.ok) {
+        alert('🙌 こまやかな情報報告ありがとうございます！管理者アカウントに、不正確・古い情報のフィードバックがしっかりと送信されました。内容を確認のうえマスターDBへ修正反映を行います。');
+        setShowFeedbackModal(false);
+        setFbComment('');
+        setFbEmail('');
+      } else {
+        alert('フィードバックの送信に失敗しました。');
+      }
+    } catch (err) {
+      alert('ネットワークエラー。');
+    }
+  };
+
+  const resetMasterForm = () => {
+    setMName('');
+    setMEnglishName('');
+    setMIndustry('');
+    setMHeadquarters('');
+    setMScale('大手企業');
+    setMWebsite('');
+    setMRecruitmentUrl('');
+    setMEstablishedYear('');
+    setMEmployeeCount('');
+    setMIsForeign(false);
+    setMCategory('日系大手');
+  };
+
+  const startEditMaster = (comp: any) => {
+    setEditingMasterCompany(comp);
+    setMName(comp.name || '');
+    setMEnglishName(comp.englishName || '');
+    setMIndustry(comp.industry || '');
+    setMHeadquarters(comp.headquarters || '');
+    setMScale(comp.scale || '大手企業');
+    setMWebsite(comp.website || '');
+    setMRecruitmentUrl(comp.recruitmentUrl || '');
+    setMEstablishedYear(comp.establishedYear || '');
+    setMEmployeeCount(comp.employeeCount || '');
+    setMIsForeign(!!comp.isForeign);
+    setMCategory(comp.category || (comp.isForeign ? '外資系コンサル' : '日系大手'));
+  };
 
   // Search, filter, and sort states
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,6 +339,9 @@ export default function CompaniesView() {
   const [newEsDeadline, setNewEsDeadline] = useState('');
   const [newInterviewDate, setNewInterviewDate] = useState('');
   const [newSelectionStage, setNewSelectionStage] = useState<SelectionStage>('none');
+  const [newIsForeign, setNewIsForeign] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
+  const [newLastUpdated, setNewLastUpdated] = useState('');
 
   // New simplified autocomplete and AI extraction states
   const [newHeadquarters, setNewHeadquarters] = useState('');
@@ -98,7 +349,20 @@ export default function CompaniesView() {
   const [newWebsite, setNewWebsite] = useState('');
   const [newEstablishedYear, setNewEstablishedYear] = useState('');
   const [newEmployeeCount, setNewEmployeeCount] = useState('');
-  const [suggestions, setSuggestions] = useState<{ name: string; industry: string; headquarters: string; scale: string; website: string; establishedYear?: string; employeeCount?: string }[]>([]);
+  const [suggestions, setSuggestions] = useState<{
+    name: string;
+    industry: string;
+    headquarters: string;
+    scale: string;
+    website: string;
+    establishedYear?: string;
+    employeeCount?: string;
+    corporateNumber?: string;
+    source?: string;
+    isForeign?: boolean;
+    lastUpdated?: string;
+    category?: string;
+  }[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
 
   // Recently searched companies
@@ -110,6 +374,9 @@ export default function CompaniesView() {
     website: string;
     establishedYear?: string;
     employeeCount?: string;
+    isForeign?: boolean;
+    lastUpdated?: string;
+    category?: string;
   }[]>(() => {
     try {
       const saved = localStorage.getItem('shunavi_recent_searches');
@@ -127,6 +394,9 @@ export default function CompaniesView() {
     website: string;
     establishedYear?: string;
     employeeCount?: string;
+    isForeign?: boolean;
+    lastUpdated?: string;
+    category?: string;
   }) => {
     if (!company.name || !company.name.trim()) return;
     setRecentlySearched(prev => {
@@ -159,7 +429,7 @@ export default function CompaniesView() {
       return;
     }
     const delayDebounce = setTimeout(() => {
-      fetch(`/api/company/suggest?q=${encodeURIComponent(newName)}`)
+      fetch(`/api/company/suggest?q=${encodeURIComponent(newName)}&filter=all`)
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {
@@ -336,22 +606,14 @@ export default function CompaniesView() {
       internType: newSelectionType === 'intern' ? newInternType : undefined,
       internSteps: [],
       establishedYear: newEstablishedYear,
-      employeeCount: newEmployeeCount
+      employeeCount: newEmployeeCount,
+      isForeign: newIsForeign,
+      category: newCategory,
+      lastUpdated: newLastUpdated || new Date().toISOString().split('T')[0]
     });
 
-    // Save item into recently searched company history
-    addToRecentlySearched({
-      name: newName,
-      industry: newIndustry,
-      headquarters: newHeadquarters,
-      scale: newScale,
-      website: newWebsite,
-      establishedYear: newEstablishedYear,
-      employeeCount: newEmployeeCount
-    });
-
-    // POST details to server database index to make it searchable globally next time
-    fetch('/api/company/register', {
+    // Dynamically post search registration to server shared corpus for auto-incremental database lookup
+    fetch('/api/company/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -361,9 +623,25 @@ export default function CompaniesView() {
         scale: newScale,
         website: newWebsite,
         establishedYear: newEstablishedYear,
-        employeeCount: newEmployeeCount
+        employeeCount: newEmployeeCount,
+        isForeign: newIsForeign,
+        category: newCategory
       })
-    }).catch(() => {});
+    }).catch(err => console.warn("Failed to synchronize corporate addition to shared database:", err));
+
+    // Save item into recently searched company history
+    addToRecentlySearched({
+      name: newName,
+      industry: newIndustry,
+      headquarters: newHeadquarters,
+      scale: newScale,
+      website: newWebsite,
+      establishedYear: newEstablishedYear,
+      employeeCount: newEmployeeCount,
+      isForeign: newIsForeign,
+      lastUpdated: newLastUpdated || new Date().toISOString().split('T')[0],
+      category: newCategory
+    });
 
     // Reset fields
     setNewName('');
@@ -380,6 +658,9 @@ export default function CompaniesView() {
     setNewWebsite('');
     setNewEstablishedYear('');
     setNewEmployeeCount('');
+    setNewIsForeign(false);
+    setNewCategory('');
+    setNewLastUpdated('');
     
     setShowAddCompanyModal(false);
     setSelectedCompanyId(newId);
@@ -603,6 +884,13 @@ export default function CompaniesView() {
       return false;
     }
 
+    // 5. Origin Match (日系 vs 外資系)
+    if (filterOrigin !== 'all') {
+      const isCoForeign = !!co.isForeign;
+      if (filterOrigin === 'foreign' && !isCoForeign) return false;
+      if (filterOrigin === 'domestic' && isCoForeign) return false;
+    }
+
     return true;
   });
 
@@ -753,11 +1041,39 @@ export default function CompaniesView() {
                 </div>
 
                 <button
+                  onClick={() => {
+                    setIsAdminMode(!isAdminMode);
+                    if (!isAdminMode) {
+                      loadAdminData();
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 text-[10px] font-black py-1.5 px-3 rounded-lg border cursor-pointer transition-all ${
+                    isAdminMode
+                      ? 'bg-rose-55 border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-350'
+                      : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 dark:bg-slate-900 dark:border-slate-800 dark:text-indigo-400'
+                  } shadow-xs mr-1.5 md:mr-2`}
+                >
+                  {isAdminMode ? '🛡️ 管理者閉じる' : '🛡️ 管理者メニュー'}
+                </button>
+
+                <button
                   onClick={() => setShowAddCompanyModal(true)}
-                  className={`flex items-center gap-1 text-[10px] font-black py-1.5 px-3 rounded-lg text-white cursor-pointer transition-all ${theme.bg} ${theme.hover} shadow-xs`}
+                  className={`flex items-center gap-1 text-[10px] font-black py-1.5 px-3 rounded-lg text-white cursor-pointer transition-all ${theme.bg} ${theme.hover} shadow-xs mr-1.5 md:mr-2`}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   企業を追加
+                </button>
+
+                <button
+                  onClick={() => setShowTrashModal(true)}
+                  className={`flex items-center gap-1 text-[10px] font-black py-1.5 px-3 rounded-lg border cursor-pointer transition-all ${
+                    isDark 
+                      ? 'bg-slate-900 border-slate-800 text-slate-350 hover:bg-slate-800 hover:text-slate-100' 
+                      : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-950'
+                  } shadow-xs`}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  ゴミ箱 ({trashCompanies.length})
                 </button>
               </div>
             </div>
@@ -782,7 +1098,21 @@ export default function CompaniesView() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+                  <div className="relative">
+                    <select
+                      value={filterOrigin}
+                      onChange={e => setFilterOrigin(e.target.value as any)}
+                      className={`w-full px-2.5 py-2 text-[10px] bg-white rounded-xl border border-gray-200 ${
+                        isDark ? 'bg-slate-900 text-white border-slate-800' : 'text-gray-700'
+                      }`}
+                    >
+                      <option value="all">企業出自：すべて</option>
+                      <option value="domestic">日系企業のみ</option>
+                      <option value="foreign">外資系企業のみ</option>
+                    </select>
+                  </div>
+
                   <div className="relative">
                     {selectionTab === 'main' ? (
                       <select
@@ -1068,8 +1398,8 @@ export default function CompaniesView() {
                           placeholder="（例）株式会社未来テクノロジー"
                           className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800"
                         />
-                        {(suggestions.length > 0 || (isInputFocused && recentlySearched.length > 0)) && (
-                          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto divide-y divide-gray-100">
+                        {(isInputFocused && (suggestions.length > 0 || recentlySearched.length > 0 || newName.trim().length > 0)) && (
+                          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-[340px] overflow-y-auto divide-y divide-gray-100">
                             {/* Recently Searched History Section */}
                             {recentlySearched.length > 0 && (
                               <div>
@@ -1110,6 +1440,9 @@ export default function CompaniesView() {
                                         setNewWebsite(s.website);
                                         setNewEstablishedYear(s.establishedYear || '');
                                         setNewEmployeeCount(s.employeeCount || '');
+                                        setNewIsForeign(!!s.isForeign);
+                                        setNewCategory(s.category || '');
+                                        setNewLastUpdated(s.lastUpdated || '');
                                         setSuggestions([]);
                                         addToRecentlySearched(s); // Bump current item to top
                                       }}
@@ -1147,11 +1480,11 @@ export default function CompaniesView() {
                             {/* Suggestions matched results section */}
                             {suggestions.filter(s => !recentlySearched.some(r => r.name.toLowerCase() === s.name.toLowerCase())).length > 0 && (
                               <div>
-                                <div className="bg-gray-50/50 px-2.5 py-1.5 text-[10px] font-bold text-gray-500 flex items-center gap-1 border-t border-gray-100">
-                                  <Sparkles className="h-3 w-3 text-amber-500" />
-                                  サジェスト候補
+                                <div className="bg-gray-100/70 text-slate-700 px-2.5 py-1.5 text-[10px] font-bold flex items-center gap-1 border-t border-gray-100">
+                                  <Sparkles className="h-3 w-3 text-amber-500 animate-pulse" />
+                                  統合リアルタイム企業検索（最優先マッチ表示中）
                                 </div>
-                                <div className="divide-y divide-gray-50">
+                                <div className="divide-y divide-gray-50 max-h-60 overflow-y-auto">
                                   {suggestions
                                     .filter(s => !recentlySearched.some(r => r.name.toLowerCase() === s.name.toLowerCase()))
                                     .map((s, index) => (
@@ -1170,39 +1503,104 @@ export default function CompaniesView() {
                                           setNewWebsite(s.website);
                                           setNewEstablishedYear(s.establishedYear || '');
                                           setNewEmployeeCount(s.employeeCount || '');
+                                          setNewIsForeign(!!s.isForeign);
+                                          setNewCategory(s.category || '');
+                                          setNewLastUpdated(s.lastUpdated || '');
                                           setSuggestions([]);
                                           addToRecentlySearched(s);
                                         }}
-                                        className="w-full text-left p-2 hover:bg-sky-50 text-[11px] block text-gray-800 focus:outline-hidden transition-colors border-0"
+                                        className="w-full text-left p-2.5 hover:bg-sky-50 text-[11px] block text-gray-800 focus:outline-hidden transition-colors border-0 border-b border-gray-100"
                                       >
-                                        <span className="font-bold block text-gray-900">{s.name}</span>
-                                        <span className="text-[9px] text-gray-400 block mt-0.5">{s.industry} | {s.headquarters}</span>
+                                        <div className="flex justify-between items-start">
+                                          <span className="font-bold block text-gray-900 text-[12px]">{s.name}</span>
+                                          {s.corporateNumber && (
+                                            <span className="text-[9px] text-gray-400 font-mono scale-95 origin-right">
+                                              {s.corporateNumber.startsWith("T") ? s.corporateNumber : `法人番号: ${s.corporateNumber}`}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                          <span className="text-[10px] text-gray-500">{s.industry} | {s.headquarters}</span>
+                                          {s.isForeign ? (
+                                            <span className="text-[9px] text-amber-700 bg-amber-55 border border-amber-200 rounded px-1 scale-90 font-bold">
+                                              外資系
+                                            </span>
+                                          ) : (
+                                            <span className="text-[9px] text-sky-700 bg-sky-55 border border-sky-200 rounded px-1 scale-90 font-bold">
+                                              日系
+                                            </span>
+                                          )}
+                                          {s.category && (
+                                            <span className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded px-1 scale-90 font-medium">
+                                              {s.category}
+                                            </span>
+                                          )}
+                                          {s.lastUpdated && (
+                                            <span className="text-[9px] text-gray-400 font-mono scale-90">
+                                              🔄 {s.lastUpdated}
+                                            </span>
+                                          )}
+                                          {s.source && (
+                                            <span className="text-[9px] text-indigo-700 bg-indigo-50 rounded px-1 scale-90 font-medium">
+                                              検索元: {s.source}
+                                            </span>
+                                          )}
+                                          {s.source && (s.source.includes("国税庁") || s.source.includes("NTA")) && (
+                                            <span className="text-[9px] text-red-600 bg-red-50 border border-red-100 rounded px-1 scale-90 font-bold">
+                                              ※情報が正確でない場合があります (国税庁)
+                                            </span>
+                                          )}
+                                        </div>
                                       </button>
                                     ))}
                                 </div>
                               </div>
                             )}
 
-                            {/* Help guide / custom manually added helper */}
+                            {/* 手動登録誘導（8位へのフォールバック） */}
                             {newName.trim().length > 0 && (
-                              <div className="p-2.5 bg-gray-50/50 border-t border-gray-150 flex flex-col gap-2">
-                                <button
-                                  type="button"
-                                  onMouseDown={(e) => e.preventDefault()}
-                                  onClick={() => {
-                                    setNewIndustry("IT・情報サービス");
-                                    setNewHeadquarters("東京都港区");
-                                    setNewScale("ベンチャー企業");
-                                    setSuggestions([]);
-                                    setIsInputFocused(false);
-                                  }}
-                                  className={`w-full py-2 px-3 rounded-xl text-center text-xs font-black text-white shadow-xs transition active:scale-98 cursor-pointer ${theme.bg} ${theme.hover} flex items-center justify-center gap-1.5`}
-                                >
-                                  ➕ この企業（"{newName}"）を新規登録する
-                                </button>
-                                <div className="text-[10px] leading-relaxed text-gray-500 font-sans p-2 bg-indigo-50/30 rounded-xl border border-indigo-100/50">
-                                  💡 企業情報が見つからない場合は、上の<span className="font-extrabold text-indigo-700">「AI求人URL自動入力」</span>にIndeedやマイナビ、リクナビ等の求人ページや企業ホームページのURLをコピー＆ペーストして<span className="font-extrabold text-indigo-700">「AI抽出」</span>を押すと、設立年や従業員数を含めて瞬時に一括自動取得できます！
-                                </div>
+                              <div className="p-3 text-center bg-indigo-50/50 border-t border-indigo-100 flex flex-col items-center justify-center gap-2">
+                                {suggestions.length === 0 ? (
+                                  <>
+                                    <p className="text-xs text-slate-500 font-medium">お探しの企業データが見つかりませんでした。</p>
+                                    <button
+                                      type="button"
+                                      onMouseDown={(e) => {
+                                        // Prevents input blur
+                                        e.preventDefault();
+                                      }}
+                                      onClick={() => {
+                                        setSuggestions([]);
+                                        if (!newIndustry) setNewIndustry("IT・サービス");
+                                        if (!newHeadquarters) setNewHeadquarters("東京都");
+                                        if (!newScale) setNewScale("ベンチャー・中小企業");
+                                      }}
+                                      className="w-full inline-flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-colors shadow-md cursor-pointer animate-pulse"
+                                    >
+                                      <PlusCircle className="h-4 w-4" />
+                                      この企業を手動で登録する
+                                    </button>
+                                  </>
+                                ) : (
+                                  <div className="w-full flex items-center justify-between gap-2">
+                                    <span className="text-[10px] text-slate-500">お探しの企業がありませんか？</span>
+                                    <button
+                                      type="button"
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                      }}
+                                      onClick={() => {
+                                        setSuggestions([]);
+                                        if (!newIndustry) setNewIndustry("IT・サービス");
+                                        if (!newHeadquarters) setNewHeadquarters("東京都");
+                                        if (!newScale) setNewScale("ベンチャー・中小企業");
+                                      }}
+                                      className="inline-flex items-center gap-1 bg-gray-200 hover:bg-indigo-600 hover:text-white text-gray-700 font-bold py-1 px-2.5 rounded-lg text-[10px] transition-colors cursor-pointer"
+                                    >
+                                      この企業を手動で登録する
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1440,75 +1838,93 @@ export default function CompaniesView() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                    {sortedCompanies.map(co => {
+                    {sortedCompanies.map((co, index) => {
                       const design = selectionTab === 'main' 
                         ? STATUS_COLORS[co.status]
                         : INTERN_STATUS_COLORS[co.selectionStatusIntern || 'entry_done'];
+                      const showAdAfter = (index + 1) % 5 === 0;
+
                       return (
-                        <div
-                          key={co.id}
-                          onClick={() => {
-                            setSelectedCompanyId(co.id);
-                            setActiveTabState('basic');
-                          }}
-                          className={`p-4 rounded-3xl border shadow-3xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between group text-left ${
-                            isDark 
-                              ? `bg-slate-900 border-slate-800/80 hover:border-${settings.themeColor}-400` 
-                              : `bg-white border-gray-100 hover:border-${settings.themeColor}-200`
-                          }`}
-                        >
-                          <div className="space-y-1.5 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h4 className={`text-xs font-bold truncate transition-colors ${
-                                isDark ? 'text-slate-100 group-hover:text-white' : 'text-gray-950 group-hover:text-black'
-                              }`}>
-                                {co.name}
-                              </h4>
-                              {selectionTab === 'main' ? (
-                                <span className={`inline-block px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
-                                  {STATUS_LABELS[co.status]}
-                                </span>
-                              ) : (
-                                <span className={`inline-block px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
-                                  {INTERN_STATUS_LABELS[co.selectionStatusIntern || 'entry_done']}
-                                </span>
-                              )}
-                              {selectionTab === 'intern' && co.internType && (
-                                <span className="px-1.5 py-0.5 bg-gray-150 text-gray-750 text-[8.5px] font-bold rounded-sm">
-                                  {INTERN_TYPE_LABELS[co.internType]}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-[10px] text-gray-400 font-sans flex items-center gap-1.5 truncate">
-                              <span>{co.industry}</span>
-                              <span>•</span>
-                              <span className="flex items-center gap-0.5 font-sans">
-                                {[...Array(co.preference)].map((_, i) => (
-                                  <Star key={i} className="h-2.5 w-2.5 fill-amber-300 text-amber-300" />
-                                ))}
-                              </span>
-                            </p>
-                            <div className="flex flex-wrap gap-1.5 pt-0.5 font-sans">
-                              {co.esDeadline && (
-                                <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-sm font-mono ${
-                                  isDark ? 'bg-rose-950/45 text-rose-300 border border-rose-900' : 'bg-rose-50 text-rose-600 border border-rose-100'
+                        <React.Fragment key={co.id}>
+                          <div
+                            onClick={() => {
+                              setSelectedCompanyId(co.id);
+                              setActiveTabState('basic');
+                            }}
+                            className={`p-4 rounded-3xl border shadow-3xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between group text-left ${
+                              isDark 
+                                ? `bg-slate-900 border-slate-800/80 hover:border-${settings.themeColor}-400` 
+                                : `bg-white border-gray-100 hover:border-${settings.themeColor}-200`
+                            }`}
+                          >
+                            <div className="space-y-1.5 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h4 className={`text-xs font-bold truncate transition-colors ${
+                                  isDark ? 'text-slate-100 group-hover:text-white' : 'text-gray-950 group-hover:text-black'
                                 }`}>
-                                  <Clock className="h-2.5 w-2.5" />
-                                  締切: {co.esDeadline}
+                                  {co.name}
+                                </h4>
+                                {co.isForeign ? (
+                                  <span className="px-1 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-[8px] font-black leading-none">
+                                    外資系
+                                  </span>
+                                ) : (
+                                  <span className="px-1 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-[8px] font-black leading-none">
+                                    日系
+                                  </span>
+                                )}
+                                {selectionTab === 'main' ? (
+                                  <span className={`inline-block px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
+                                    {STATUS_LABELS[co.status]}
+                                  </span>
+                                ) : (
+                                  <span className={`inline-block px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
+                                    {INTERN_STATUS_LABELS[co.selectionStatusIntern || 'entry_done']}
+                                  </span>
+                                )}
+                                {selectionTab === 'intern' && co.internType && (
+                                  <span className="px-1.5 py-0.5 bg-gray-150 text-gray-750 text-[8.5px] font-bold rounded-sm">
+                                    {INTERN_TYPE_LABELS[co.internType]}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-gray-400 font-sans flex items-center gap-1.5 truncate">
+                                <span>{co.industry}</span>
+                                <span>•</span>
+                                <span className="flex items-center gap-0.5 font-sans">
+                                  {[...Array(co.preference)].map((_, i) => (
+                                    <Star key={i} className="h-2.5 w-2.5 fill-amber-300 text-amber-300" />
+                                  ))}
                                 </span>
-                              )}
-                              {co.interviewDate && (
-                                <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-sm font-mono ${
-                                  isDark ? 'bg-blue-950/45 text-blue-300 border border-blue-900' : 'bg-blue-50 text-blue-600 border border-blue-100'
-                                }`}>
-                                  <Calendar className="h-2.5 w-2.5" />
-                                  面接: {co.interviewDate}
-                                </span>
-                              )}
+                              </p>
+                              <div className="flex flex-wrap gap-1.5 pt-0.5 font-sans">
+                                {co.esDeadline && (
+                                  <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-sm font-mono ${
+                                    isDark ? 'bg-rose-950/45 text-rose-300 border border-rose-900' : 'bg-rose-50 text-rose-600 border border-rose-100'
+                                  }`}>
+                                    <Clock className="h-2.5 w-2.5" />
+                                    締切: {co.esDeadline}
+                                  </span>
+                                )}
+                                {co.interviewDate && (
+                                  <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-sm font-mono ${
+                                    isDark ? 'bg-blue-950/45 text-blue-300 border border-blue-900' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                                  }`}>
+                                    <Calendar className="h-2.5 w-2.5" />
+                                    面接: {co.interviewDate}
+                                  </span>
+                                )}
+                              </div>
                             </div>
+                            <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" />
                           </div>
-                          <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" />
-                        </div>
+
+                          {showAdAfter && (
+                            <div className="md:col-span-2 py-1 select-none">
+                              <AdSenseNative index={index} />
+                            </div>
+                          )}
+                        </React.Fragment>
                       );
                     })}
                   </div>
@@ -1560,6 +1976,15 @@ export default function CompaniesView() {
                                   }`}>
                                     {co.name}
                                   </h4>
+                                  {co.isForeign ? (
+                                    <span className="px-1 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-[8px] font-black leading-none">
+                                      外資系
+                                    </span>
+                                  ) : (
+                                    <span className="px-1 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-[8px] font-black leading-none">
+                                      日系
+                                    </span>
+                                  )}
                                   <p className="text-[10px] text-gray-400 font-sans flex items-center gap-1.5 truncate">
                                     <span>{co.industry}</span>
                                     <span>•</span>
@@ -1641,6 +2066,15 @@ export default function CompaniesView() {
                                     }`}>
                                       {co.name}
                                     </h4>
+                                    {co.isForeign ? (
+                                      <span className="px-1 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-[8px] font-black leading-none">
+                                        外資系
+                                      </span>
+                                    ) : (
+                                      <span className="px-1 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-[8px] font-black leading-none">
+                                        日系
+                                      </span>
+                                    )}
                                     <span className="px-1.5 py-0.5 bg-gray-150 text-gray-700 text-[8px] font-bold rounded-sm">
                                       {co.internType ? INTERN_TYPE_LABELS[co.internType] : '1day'}
                                     </span>
@@ -1709,6 +2143,15 @@ export default function CompaniesView() {
                     <h2 className="text-lg font-black text-gray-900 truncate">
                       {company?.name}
                     </h2>
+                    {company?.isForeign ? (
+                      <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200/50 rounded text-[9px] font-black">
+                        外資系
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 bg-sky-50 text-sky-700 border border-sky-100/50 rounded text-[9px] font-black">
+                        日系
+                      </span>
+                    )}
                     <span className={`inline-block text-[9px] font-black px-2 py-0.5 rounded-full border ${STATUS_COLORS[company!.status].bg} ${STATUS_COLORS[company!.status].text} ${STATUS_COLORS[company!.status].border}`}>
                       {STATUS_LABELS[company!.status]}
                     </span>
@@ -1729,18 +2172,29 @@ export default function CompaniesView() {
                 </div>
               </div>
 
-              {/* Delete Triggers */}
-              <button
-                onClick={() => {
-                  if (confirm('この企業を完全に削除してもよろしいですか？（ESや面接、OB訪問などの関連データもすべて消去されます）')) {
-                    deleteCompany(company!.id);
-                  }
-                }}
-                className="p-2 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-bold"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                企業削除
-              </button>
+              {/* Action Triggers */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFbType('incorrect_info');
+                    setFbComment('');
+                    setFbEmail('');
+                    setShowFeedbackModal(true);
+                  }}
+                  className="p-2 bg-amber-50 text-amber-700 border border-amber-200/50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1.5 text-[11px] font-bold"
+                >
+                  ⚠️ 情報の間違いを報告
+                </button>
+
+                <button
+                  onClick={() => setCompanyToDelete(company!)}
+                  className="p-2 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  企業削除
+                </button>
+              </div>
             </div>
 
             {/* Sub-tab Selectors in Detail */}
@@ -2849,6 +3303,197 @@ export default function CompaniesView() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* --- DAYS REMAINING CALCULATION ACCORDING TO USER REQUIREMENTS --- */}
+      {(() => {
+        const getDaysRemaining = (deletedAt: string) => {
+          try {
+            const deletedDate = new Date(deletedAt).getTime();
+            const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+            const expiryDate = deletedDate + thirtyDaysMs;
+            const remainingMs = expiryDate - Date.now();
+            const days = Math.ceil(remainingMs / (24 * 60 * 60 * 1000));
+            return days > 0 ? days : 0;
+          } catch (_) {
+            return 30;
+          }
+        };
+
+        return (
+          <>
+            {/* Custom Confirm Modal for Soft Deletion */}
+            {companyToDelete && (
+              <div className="fixed inset-0 bg-transparent flex items-center justify-center p-4 z-50">
+                <div className="absolute inset-0 bg-black/45 backdrop-blur-xs" onClick={() => setCompanyToDelete(null)} />
+                <motion.div 
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className={`rounded-3xl p-6 w-full max-w-sm shadow-2xl relative border z-50 space-y-4 text-left ${
+                    isDark ? 'bg-slate-900 text-slate-100 border-slate-800' : 'bg-white text-gray-900 border-gray-100'
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-black text-rose-600 flex items-center gap-1.5 font-sans">
+                      <Trash2 className="h-4 w-4" />
+                      本当に削除しますか？
+                    </h3>
+                    <button 
+                      onClick={() => setCompanyToDelete(null)}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors p-1 rounded-full cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <p className="font-bold leading-relaxed">
+                      「{companyToDelete.name}」を一時削除してゴミ箱に移動します。
+                    </p>
+                    <p className="text-gray-500 font-sans leading-relaxed">
+                      ゴミ箱に移動したデータは30日間保存され、その間はいつでも完全に復元できます。30日を過ぎると自動的に完全消去されます。
+                    </p>
+                    <p className="text-[10px] text-gray-400 font-sans leading-normal">
+                      ※ 企業に紐づくエントリーシート（ES）回答メモ、面接質問メモ、OB訪問履歴、条件比較データなども一時的に非表示になり、ゴミ箱から戻した際は一緒に復元されます。
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2.5 pt-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setCompanyToDelete(null)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold font-sans cursor-pointer transition border text-center ${
+                        isDark ? 'bg-slate-850 hover:bg-slate-800 text-slate-300 border-slate-750' : 'bg-gray-100 hover:bg-gray-150 text-gray-700 border-transparent'
+                      }`}
+                    >
+                      キャンセル
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteCompany(companyToDelete.id);
+                        setCompanyToDelete(null);
+                      }}
+                      className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold font-sans cursor-pointer transition text-center"
+                    >
+                      削除（ゴミ箱へ）
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
+            {/* Trash Bin Modal Form */}
+            {showTrashModal && (
+              <div className="fixed inset-0 bg-transparent flex items-center justify-center p-4 z-50">
+                <div className="absolute inset-0 bg-black/45 backdrop-blur-xs" onClick={() => setShowTrashModal(false)} />
+                <motion.div 
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className={`rounded-3xl p-6 w-full max-w-lg shadow-2xl relative border z-50 space-y-4 text-left flex flex-col max-h-[80vh] ${
+                    isDark ? 'bg-slate-900 text-slate-100 border-slate-800' : 'bg-white text-gray-900 border-gray-100'
+                  }`}
+                >
+                  <div className="flex justify-between items-start border-b border-gray-100/60 dark:border-slate-850 pb-3 flex-shrink-0">
+                    <div>
+                      <h3 className="text-xs font-black text-gray-900 dark:text-gray-100 flex items-center gap-1.5 font-sans">
+                        <Trash2 className="h-4 w-4 text-gray-500" />
+                        ゴミ箱（削除済み企業一覧）
+                      </h3>
+                      <p className="text-[10px] text-gray-400 font-sans mt-0.5 animate-fade-in">
+                        削除された企業データは、30日後の保管期間内であれば、いつでも元の状態に復元可能です。
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setShowTrashModal(false)}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors p-1 rounded-full cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="overflow-y-auto space-y-2.5 py-1 flex-1 pr-1 font-sans">
+                    {trashCompanies.length === 0 ? (
+                      <div className="py-12 text-center text-xs space-y-1.5 text-gray-450 border border-dashed border-gray-250 dark:border-slate-800 rounded-2xl">
+                        <p className="font-bold">ゴミ箱は空です</p>
+                        <p className="text-[10px] text-gray-400">削除された企業はありません</p>
+                      </div>
+                    ) : (
+                      trashCompanies.map(co => {
+                        const daysLeft = getDaysRemaining(co.deletedAt);
+                        return (
+                          <div 
+                            key={co.id} 
+                            className={`p-3 rounded-2xl border flex items-center justify-between gap-3 text-left ${
+                              isDark ? 'bg-slate-950/45 border-slate-850' : 'bg-gray-50/50 border-gray-150'
+                            }`}
+                          >
+                            <div className="space-y-1 min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <h4 className="text-xs font-bold text-gray-850 dark:text-gray-155 truncate">{co.name}</h4>
+                                <span className={`px-1.5 py-0.5 rounded-sm text-[8px] font-bold ${
+                                  daysLeft <= 7 
+                                    ? 'bg-rose-50 text-rose-600 dark:bg-rose-955/20 dark:text-rose-400 border border-rose-150' 
+                                    : 'bg-amber-50 text-amber-700 dark:bg-amber-955/20 dark:text-amber-450 border border-amber-200'
+                                }`}>
+                                  自動消去まで あと {daysLeft} 日
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-gray-400 flex items-center gap-1.5 truncate">
+                                <span>{co.industry}</span>
+                                <span>•</span>
+                                <span>削除: {new Date(co.deletedAt).toLocaleDateString()}</span>
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-1 flex-shrink-0 font-sans">
+                              <button
+                                onClick={() => restoreCompany(co.id)}
+                                className={`py-1 px-2 rounded-lg text-[9.5px] font-bold flex items-center gap-0.5 cursor-pointer transition-all border ${
+                                  isDark 
+                                    ? 'bg-indigo-950/40 text-indigo-300 border-indigo-900/50 hover:bg-indigo-900/80 hover:text-indigo-100' 
+                                    : 'bg-indigo-50 border border-indigo-100 text-indigo-700 hover:bg-indigo-100'
+                                }`}
+                              >
+                                <RotateCcw className="h-3 w-3" />
+                                復元
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm('この企業データを完全に削除してもよろしいですか？この操作は取り消せません。')) {
+                                    permanentlyDeleteCompany(co.id);
+                                  }
+                                }}
+                                className="p-1 px-1.5 text-gray-400 hover:text-rose-600 dark:hover:bg-rose-955/20 hover:bg-rose-50 rounded-lg transition"
+                                title="永久に削除"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="flex justify-end pt-2 border-t border-gray-100/50 dark:border-slate-850 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowTrashModal(false)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold cursor-pointer transition ${
+                        isDark ? 'bg-slate-850 hover:bg-slate-800 text-slate-300' : 'bg-gray-100 hover:bg-gray-150 text-gray-700'
+                      }`}
+                    >
+                      閉じる
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }

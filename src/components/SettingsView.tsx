@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { THEME_PRESETS, getTheme } from '../utils/theme';
+import { AdSensePreferencesToggle, AdSensePrivacyPolicy } from './AdSenseManager';
 import { 
   Settings, 
   Bell, 
@@ -20,7 +21,10 @@ import {
   User,
   Sun,
   Moon,
-  Monitor
+  Monitor,
+  Smartphone,
+  Download,
+  Share
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -46,6 +50,59 @@ export default function SettingsView() {
 
   // States
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  // Home Screen installation setup states
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState<boolean>(false);
+  const [showIosGuide, setShowIosGuide] = useState<boolean>(false);
+  const [showPcGuide, setShowPcGuide] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+
+    // Initial standalone detection
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+    if (isStandalone) {
+      setIsInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
+  const handleHomeInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      try {
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          setIsInstalled(true);
+          setDeferredPrompt(null);
+        }
+      } catch (err) {
+        console.warn("Failed userChoice response", err);
+      }
+    } else {
+      const ua = navigator.userAgent.toLowerCase();
+      const isIosVal = /ipad|iphone|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isAndroidVal = /android/.test(ua);
+
+      if (isIosVal) {
+        setShowIosGuide(true);
+        setShowPcGuide(false);
+      } else if (isAndroidVal) {
+        alert('Android Chromeのメニュー（右上︙アイコン）から「アプリをインストール」または「ホーム画面に追加」をタップしてください。');
+      } else {
+        setShowPcGuide(true);
+        setShowIosGuide(false);
+      }
+    }
+  };
 
   const handleResetData = () => {
     localStorage.clear();
@@ -177,6 +234,99 @@ export default function SettingsView() {
             );
           })}
         </div>
+      </div>
+
+      {/* --- Google AdSense & Compliance Control Section --- */}
+      <div className="space-y-4">
+        <AdSensePreferencesToggle />
+        <AdSensePrivacyPolicy />
+      </div>
+
+      {/* --- Home Screen / PWA Setup Panel --- */}
+      <div className={`p-5 rounded-3xl border shadow-xs space-y-4 ${
+        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
+      }`}>
+        <h3 className={`text-xs font-bold flex items-center gap-1.5 border-b pb-2.5 ${
+          isDark ? 'text-slate-200 border-slate-800' : 'text-gray-800 border-gray-50'
+        }`}>
+          <Smartphone className={`h-4.5 w-4.5 ${theme.text}`} />
+          アプリのインストール / ホーム画面に追加
+        </h3>
+        
+        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          CareerNavi+ をスマートフォンのホーム画面やPCのデスクトップにインストールすることで、ブラウザのアドレスバー等を非表示にし、ネイティブアプリのようにスムーズに就活管理が可能です。
+        </p>
+
+        {isInstalled ? (
+          <div className="flex items-center gap-2.5 p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+            <Check className="h-4.5 w-4.5 text-emerald-500 flex-shrink-0" />
+            <div className="text-left">
+              <span className={`block text-xs font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
+                追加済み
+              </span>
+              <span className="text-[10px] text-gray-400 block mt-0.5">
+                すでにホーム画面に追加されているか、スタンドアロンモード（PWA）で快適に起動が完了しています。
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handleHomeInstall}
+              className={`w-full py-3.5 rounded-2xl text-xs font-bold transition-all shadow-xs active:scale-98 cursor-pointer flex items-center justify-center gap-2 ${
+                isInstalled 
+                  ? 'bg-gray-100 text-gray-400 border border-gray-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700' 
+                  : `${theme.bg} ${theme.hover} text-white`
+              }`}
+            >
+              <Download className="h-4.5 w-4.5 animate-bounce" />
+              <span>ホーム画面に追加する</span>
+            </button>
+
+            {/* Guides depending on active user agents */}
+            {showIosGuide && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-3.5 rounded-2xl border ${theme.lightBg} ${isDark ? 'border-indigo-900/30 text-indigo-200' : `${theme.textDark} ${theme.border}`}`}
+              >
+                <div className="flex items-start gap-2 text-[11px]">
+                  <Share className="h-4.5 w-4.5 text-indigo-500 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-extrabold text-xs">iOS (Safari) をお使いの方：</p>
+                    <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">「共有ボタンから『ホーム画面に追加』を選択してください」</p>
+                    <ol className="list-decimal pl-4 pt-1 space-y-1 text-[10px] leading-relaxed opacity-90">
+                      <li>Safariブラウザ下部にある <span className="font-bold">「共有（四角に上矢印）」ボタン</span> をタップします。</li>
+                      <li>開いた一覧メニューを下にスクロールします。</li>
+                      <li><span className="font-bold">「ホーム画面に追加」</span> を選択して、右上の「追加」をタップしてください。</li>
+                    </ol>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {showPcGuide && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3.5 rounded-2xl border bg-slate-50 border-gray-250 dark:bg-slate-950/20 dark:border-slate-800/80"
+              >
+                <div className="flex items-start gap-2 text-[11px]">
+                  <Monitor className="h-4.5 w-4.5 text-slate-500 flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-gray-800 dark:text-gray-200">PCブラウザ（Chrome / Edge 等）をお使いの方：</p>
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">「アドレスバーのインストールアイコンをクリックしてください」</p>
+                    <ol className="list-decimal pl-4 pt-1 space-y-1 text-[10px] leading-relaxed text-gray-500 dark:text-gray-400">
+                      <li>ブラウザ上部のアドレスバー（URLの入力エリア）の右側に表示される <span className="font-bold">「アプリのインストール」アイコン</span> またはプラスボタンをクリックします。</li>
+                      <li>またはブラウザのメニュー「︙」などから、<span className="font-bold">「アプリをインストール」</span> をお試しください。</li>
+                    </ol>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* --- Palette Settings (Visual Swatches Only - Color name hidden!) --- */}

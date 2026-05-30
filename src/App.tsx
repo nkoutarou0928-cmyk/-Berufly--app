@@ -3,17 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { getTheme } from './utils/theme';
-import DashboardView from './components/DashboardView';
-import TodosView from './components/TodosView';
-import CalendarView from './components/CalendarView';
-import CompaniesView from './components/CompaniesView';
-import SettingsView from './components/SettingsView';
-import SelfAnalysisView from './components/SelfAnalysisView';
+
+// Implement Code Splitting & Lazy Loading for faster initial bundle size and Lighthouse compliance
+const DashboardView = lazy(() => import('./components/DashboardView'));
+const TodosView = lazy(() => import('./components/TodosView'));
+const CalendarView = lazy(() => import('./components/CalendarView'));
+const CompaniesView = lazy(() => import('./components/CompaniesView'));
+const SettingsView = lazy(() => import('./components/SettingsView'));
+const SelfAnalysisView = lazy(() => import('./components/SelfAnalysisView'));
+
 import { OnboardingModal } from './components/OnboardingModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { 
+  AdSenseBanner, 
+  AdSenseInterstitial, 
+  getAdSenseSettings 
+} from './components/AdSenseManager';
 import { 
   Home, 
   CheckSquare, 
@@ -325,24 +333,115 @@ function AppContent() {
   
   const theme = getTheme(settings.themeColor);
 
-  // Router for tabs
-  const renderActiveView = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <DashboardView />;
-      case 'todos':
-        return <TodosView />;
-      case 'calendar':
-        return <AnimatePresence mode="wait"><CalendarView /></AnimatePresence>;
-      case 'companies':
-        return <CompaniesView />;
-      case 'analysis':
-        return <SelfAnalysisView />;
-      case 'settings':
-        return <SettingsView />;
-      default:
-        return <DashboardView />;
+  // Google AdSense Interstitial frequency tracking (5-to-1 selector)
+  const [showInterstitial, setShowInterstitial] = useState(false);
+  const [transitionCount, setTransitionCount] = useState(0);
+
+  useEffect(() => {
+    const adsConfig = getAdSenseSettings();
+    if (!adsConfig.enabled) return;
+
+    setTransitionCount(prev => {
+      const nextCount = prev + 1;
+      if (prev > 0 && nextCount % 5 === 0) {
+        setShowInterstitial(true);
+      }
+      return nextCount;
+    });
+  }, [activeTab]);
+
+  // PWA Add to Home Screen (A2HS) states
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showA2HSBanner, setShowA2HSBanner] = useState(false);
+
+  useEffect(() => {
+    const isDismissed = localStorage.getItem('careernavi_a2hs_dismissed') === 'true';
+
+    const handleBeforePrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      if (!isDismissed) {
+        setShowA2HSBanner(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforePrompt);
+
+    // If first time accessing and not dismissed, show the prompt as dynamic banner after short delay
+    const isFirstAccess = !localStorage.getItem('careernavi_has_visited');
+    if (isFirstAccess) {
+      localStorage.setItem('careernavi_has_visited', 'true');
+      if (!isDismissed) {
+        const timer = setTimeout(() => {
+          setShowA2HSBanner(true);
+        }, 3000);
+        return () => clearTimeout(timer);
+      }
     }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforePrompt);
+    };
+  }, []);
+
+  const handleA2HSInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`[PWA] A2HS Outcome: ${outcome}`);
+      setDeferredPrompt(null);
+    } else {
+      // Elegant step-by-step guidance for iOS Safari or Chrome on mobile
+      alert(
+        '【ホーム画面への追加方法】\n\n' +
+        '🟢 iOS (Safariの場合):\n' +
+        '1. 画面下部にある［共有］（上向きの矢印）アイコンをタップします。\n' +
+        '2. メニューをスクロールし、［ホーム画面に追加］を選択してください。\n\n' +
+        '🔵 Android (Chromeの場合):\n' +
+        '1. 画面右上にあるメニュー（3点リーダー）をタップします。\n' +
+        '2. ［ホーム画面に追加］または［アプリのインストール］を選択してください。'
+      );
+    }
+    setShowA2HSBanner(false);
+    localStorage.setItem('careernavi_a2hs_dismissed', 'true');
+  };
+
+  const handleA2HSDismiss = () => {
+    setShowA2HSBanner(false);
+    localStorage.setItem('careernavi_a2hs_dismissed', 'true');
+  };
+
+  // Router for tabs with Suspense fallback loader
+  const renderActiveView = () => {
+    return (
+      <Suspense fallback={
+        <div className="py-20 flex flex-col items-center justify-center space-y-3">
+          <RefreshCw className="h-7 w-7 text-indigo-500 animate-spin" />
+          <span className="text-xs text-gray-400 font-bold tracking-wider animate-pulse font-sans">
+            画面を高速ロード中...
+          </span>
+        </div>
+      }>
+        {(() => {
+          switch (activeTab) {
+            case 'dashboard':
+              return <DashboardView />;
+            case 'todos':
+              return <TodosView />;
+            case 'calendar':
+              return <AnimatePresence mode="wait"><CalendarView /></AnimatePresence>;
+            case 'companies':
+              return <CompaniesView />;
+            case 'analysis':
+              return <SelfAnalysisView />;
+            case 'settings':
+              return <SettingsView />;
+            default:
+              return <DashboardView />;
+          }
+        })()}
+      </Suspense>
+    );
   };
 
   const tabs = [
@@ -399,7 +498,7 @@ function AppContent() {
       </header>
 
       {/* Primary responsive view panel */}
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-5 pb-24">
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-5 pb-44">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -412,6 +511,54 @@ function AppContent() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* PWA Add to Home Screen Banner overlay */}
+      <AnimatePresence>
+        {showA2HSBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 250 }}
+            className={`fixed bottom-20 left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-sm p-4 rounded-2xl border z-40 transition-all ${
+              isDark 
+                ? 'bg-slate-900/98 border-slate-800 text-slate-100 shadow-2xl shadow-black/80' 
+                : 'bg-white/98 border-gray-200 text-gray-905 shadow-xl'
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-xl shadow-inner shrink-0">
+                <Smartphone className="h-4.5 w-4.5 animate-bounce" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-black tracking-tight flex items-center gap-1">
+                  アプリをホーム画面に追加
+                  <span className="bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[8px] font-black px-1.5 py-0.5 rounded-sm leading-none">
+                    推薦
+                  </span>
+                </h4>
+                <p className="text-[10px] text-gray-400 dark:text-slate-400 leading-normal mt-1">
+                  全画面・オフライン起動、プッシュお知らせが可能なネイティブアプリ級の快適さをお楽しみいただけます。
+                </p>
+                <div className="flex gap-2 mt-2.5">
+                  <button
+                    onClick={handleA2HSInstall}
+                    className="flex-1 py-1.5 text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xs transition active:scale-95 cursor-pointer text-center border-0"
+                  >
+                    追加する
+                  </button>
+                  <button
+                    onClick={handleA2HSDismiss}
+                    className="px-3.5 py-1.5 text-[10px] font-bold border border-gray-200 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-850 dark:text-slate-300 rounded-xl transition cursor-pointer text-center bg-transparent"
+                  >
+                    後で
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Bottom Navigational Bar */}
       <nav className={`fixed bottom-3 left-1/2 transform -translate-x-1/2 w-[calc(100%-24px)] max-w-md backdrop-blur-md border rounded-2xl p-1.5 z-40 transition-all ${
@@ -451,6 +598,16 @@ function AppContent() {
           })}
         </div>
       </nav>
+
+      {/* Google AdSense Bottom Banner */}
+      <AdSenseBanner />
+
+      {/* Google AdSense Full-screen Interstitial */}
+      <AnimatePresence>
+        {showInterstitial && (
+          <AdSenseInterstitial onClose={() => setShowInterstitial(false)} />
+        )}
+      </AnimatePresence>
 
       {/* Onboarding Overlay Modal */}
       <OnboardingModal />

@@ -9,6 +9,7 @@ import { INITIAL_COMPANIES, INITIAL_TODOS, INITIAL_SETTINGS, INITIAL_OB_VISITS, 
 
 interface AppContextType {
   companies: Company[];
+  trashCompanies: (Company & { deletedAt: string })[];
   todos: TodoItem[];
   settings: AppSettings;
   obVisits: ObVisit[];
@@ -57,6 +58,8 @@ interface AppContextType {
   addCompany: (company: Omit<Company, 'id' | 'esMemos' | 'interviewMemos'>) => string;
   updateCompany: (id: string, updated: Partial<Company>) => void;
   deleteCompany: (id: string) => void;
+  restoreCompany: (id: string) => void;
+  permanentlyDeleteCompany: (id: string) => void;
   addESMemo: (
     companyId: string,
     question: string,
@@ -119,6 +122,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Primary States
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [trashCompanies, setTrashCompanies] = useState<(Company & { deletedAt: string })[]>([]);
   const [todos, setTodos] = useState<TodoItem[]>([]);
   const [settings, setSettings] = useState<AppSettings>(INITIAL_SETTINGS);
   const [obVisits, setObVisits] = useState<ObVisit[]>([]);
@@ -211,6 +215,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setCompanies(initial);
         localStorage.setItem(`shukatsu_companies` + suffix, JSON.stringify(initial));
       }
+
+      const storedTrash = localStorage.getItem(`shukatsu_trash_companies` + suffix);
+      let loadedTrash: (Company & { deletedAt: string })[] = [];
+      if (storedTrash) {
+        try {
+          loadedTrash = JSON.parse(storedTrash);
+        } catch (_) {}
+      }
+      // Auto-purge items deleted more than 30 days ago
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const filteredTrash = loadedTrash.filter(item => {
+        try {
+          const dt = new Date(item.deletedAt).getTime();
+          return dt >= thirtyDaysAgo;
+        } catch (_) {
+          return true;
+        }
+      });
+      setTrashCompanies(filteredTrash);
+      localStorage.setItem(`shukatsu_trash_companies` + suffix, JSON.stringify(filteredTrash));
 
       const storedTodos = localStorage.getItem(`shukatsu_todos` + suffix);
       if (storedTodos) {
@@ -347,6 +371,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (authStatus === 'authenticated') triggerSync();
   };
 
+  const saveTrashCompanies = (newTrash: (Company & { deletedAt: string })[]) => {
+    setTrashCompanies(newTrash);
+    localStorage.setItem(`shukatsu_trash_companies` + getSuffix(), JSON.stringify(newTrash));
+    if (authStatus === 'authenticated') triggerSync();
+  };
+
   const saveTodos = (newTodos: TodoItem[]) => {
     setTodos(newTodos);
     localStorage.setItem(`shukatsu_todos` + getSuffix(), JSON.stringify(newTodos));
@@ -395,6 +425,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
     // Load standard templates
     setCompanies(INITIAL_COMPANIES);
+    setTrashCompanies([]);
     setTodos(INITIAL_TODOS);
     setSettings(INITIAL_SETTINGS);
     setObVisits(INITIAL_OB_VISITS);
@@ -414,6 +445,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const personalSettings = { ...INITIAL_SETTINGS, profileName: name };
     localStorage.setItem(`shukatsu_settings_${uid}`, JSON.stringify(personalSettings));
     localStorage.setItem(`shukatsu_companies_${uid}`, JSON.stringify([]));
+    localStorage.setItem(`shukatsu_trash_companies_${uid}`, JSON.stringify([]));
     localStorage.setItem(`shukatsu_todos_${uid}`, JSON.stringify([]));
     localStorage.setItem(`shukatsu_ob_visits_${uid}`, JSON.stringify([]));
     localStorage.setItem(`shukatsu_comparisons_${uid}`, JSON.stringify([]));
@@ -424,6 +456,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setAuthStatus('authenticated');
 
     setCompanies([]);
+    setTrashCompanies([]);
     setTodos([]);
     setSettings(personalSettings);
     setObVisits([]);
@@ -453,10 +486,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const storedSelf = localStorage.getItem(`shukatsu_self_analysis_${uid}`);
     const personalSelf = storedSelf ? JSON.parse(storedSelf) : INITIAL_SELF_ANALYSIS;
 
+    const storedTrash = localStorage.getItem(`shukatsu_trash_companies_${uid}`);
+    const personalTrash = storedTrash ? JSON.parse(storedTrash) : [];
+
     setCurrentUser({ uid, email, name, isAnonymous: false });
     setAuthStatus('authenticated');
 
     setCompanies(personalCo);
+    setTrashCompanies(personalTrash);
     setTodos(personalTodo);
     setSelfAnalysis(personalSelf);
 
@@ -505,11 +542,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const clonedNotif = localStorage.getItem('shukatsu_notifications') || JSON.stringify(notifications);
     localStorage.setItem(`shukatsu_notifications_${newUid}`, clonedNotif);
 
+    const clonedTrash = localStorage.getItem(`shukatsu_trash_companies` + getSuffix()) || JSON.stringify(trashCompanies);
+    localStorage.setItem(`shukatsu_trash_companies_${newUid}`, clonedTrash);
+
     setCurrentUser({ uid: newUid, email, name, isAnonymous: false });
     setAuthStatus('authenticated');
     
     // Sync current UI state with the cloned metrics
     setCompanies(JSON.parse(clonedCompanies));
+    setTrashCompanies(JSON.parse(clonedTrash));
     setTodos(JSON.parse(clonedTodos));
     setSettings(JSON.parse(clonedSettings));
     setObVisits(JSON.parse(clonedObVisits));
@@ -531,6 +572,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     // Load initial empty layouts
     setCompanies([]);
+    setTrashCompanies([]);
     setTodos([]);
     setObVisits([]);
     setOfferComparisons([]);
@@ -541,6 +583,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const uid = currentUser?.uid;
     if (uid) {
       localStorage.removeItem(`shukatsu_companies_${uid}`);
+      localStorage.removeItem(`shukatsu_trash_companies_${uid}`);
       localStorage.removeItem(`shukatsu_todos_${uid}`);
       localStorage.removeItem(`shukatsu_settings_${uid}`);
       localStorage.removeItem(`shukatsu_ob_visits_${uid}`);
@@ -769,11 +812,35 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const deleteCompany = (id: string) => {
+    const targetCo = companies.find(co => co.id === id);
+    if (targetCo) {
+      const deletedItem = {
+        ...targetCo,
+        deletedAt: new Date().toISOString()
+      };
+      saveTrashCompanies([deletedItem, ...trashCompanies]);
+    }
     const updated = companies.filter(co => co.id !== id);
     saveCompanies(updated);
     if (selectedCompanyId === id) {
       setSelectedCompanyId(null);
     }
+  };
+
+  const restoreCompany = (id: string) => {
+    const targetCo = trashCompanies.find(co => co.id === id);
+    if (targetCo) {
+      // Remove deletedAt field when restoring
+      const { deletedAt, ...restCompany } = targetCo;
+      saveCompanies([...companies, restCompany]);
+    }
+    const updatedTrash = trashCompanies.filter(co => co.id !== id);
+    saveTrashCompanies(updatedTrash);
+  };
+
+  const permanentlyDeleteCompany = (id: string) => {
+    const updatedTrash = trashCompanies.filter(co => co.id !== id);
+    saveTrashCompanies(updatedTrash);
   };
 
   const addESMemo = (
@@ -1075,6 +1142,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         addCompany,
         updateCompany,
         deleteCompany,
+        trashCompanies,
+        restoreCompany,
+        permanentlyDeleteCompany,
         addESMemo,
         updateESMemo,
         deleteESMemo,
