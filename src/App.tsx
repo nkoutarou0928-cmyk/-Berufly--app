@@ -14,6 +14,9 @@ const CalendarView = lazy(() => import('./components/CalendarView'));
 const CompaniesView = lazy(() => import('./components/CompaniesView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 const SelfAnalysisView = lazy(() => import('./components/SelfAnalysisView'));
+const PrivacyView = lazy(() => import('./components/PrivacyView'));
+const ContactView = lazy(() => import('./components/ContactView'));
+const AboutView = lazy(() => import('./components/AboutView'));
 
 import { OnboardingModal } from './components/OnboardingModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
@@ -417,6 +420,12 @@ function AppContent() {
               return <SelfAnalysisView />;
             case 'settings':
               return <SettingsView />;
+            case 'privacy':
+              return <PrivacyView />;
+            case 'contact':
+              return <ContactView />;
+            case 'about':
+              return <AboutView />;
             default:
               return <DashboardView />;
           }
@@ -479,18 +488,58 @@ function AppContent() {
       </header>
 
       {/* Primary responsive view panel */}
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-5 pb-44">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 3 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -3 }}
-            transition={{ duration: 0.15 }}
-          >
-            {renderActiveView()}
-          </motion.div>
-        </AnimatePresence>
+      <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-5 pb-44 flex flex-col justify-between">
+        <div className="flex-1">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 3 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -3 }}
+              transition={{ duration: 0.15 }}
+            >
+              {renderActiveView()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Global compliance Footer */}
+        <footer className={`mt-16 pt-6 pb-2 border-t text-center space-y-3.5 ${
+          isDark ? 'border-slate-800 text-slate-500' : 'border-gray-200/65 text-gray-405'
+        }`}>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-bold">
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('about')}
+              className={`hover:underline cursor-pointer bg-transparent border-0 transition-colors ${
+                activeTab === 'about' ? theme.text : 'hover:text-indigo-650 dark:hover:text-indigo-400'
+              }`}
+            >
+              About
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('privacy')}
+              className={`hover:underline cursor-pointer bg-transparent border-0 transition-colors ${
+                activeTab === 'privacy' ? theme.text : 'hover:text-indigo-650 dark:hover:text-indigo-400'
+              }`}
+            >
+              プライバシーポリシー
+            </button>
+            <button 
+              type="button" 
+              onClick={() => setActiveTab('contact')}
+              className={`hover:underline cursor-pointer bg-transparent border-0 transition-colors ${
+                activeTab === 'contact' ? theme.text : 'hover:text-indigo-650 dark:hover:text-indigo-400'
+              }`}
+            >
+              お問い合わせ
+            </button>
+          </div>
+          <p className="text-[9px] font-medium tracking-wide">
+            &copy; 2026 CareerNavi. All Rights Reserved.
+          </p>
+        </footer>
       </main>
 
       {/* PWA Add to Home Screen Banner overlay */}

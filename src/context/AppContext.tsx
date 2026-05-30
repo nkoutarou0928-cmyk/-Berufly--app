@@ -15,7 +15,7 @@ interface AppContextType {
   obVisits: ObVisit[];
   offerComparisons: OfferComparison[];
   notifications: NotificationItem[];
-  activeTab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings';
+  activeTab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about';
   selectedCompanyId: string | null;
   selectedTodoId: string | null;
   detailTab: 'basic' | 'es' | 'interview' | 'notes' | 'ob_visits' | 'comparisons'; // Allow detail navigation
@@ -40,7 +40,7 @@ interface AppContextType {
   setBiometrics: (enabled: boolean) => void;
   
   // Navigation actions
-  setActiveTab: (tab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings') => void;
+  setActiveTab: (tab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about') => void;
   navigateToCompany: (id: string, subTab?: 'basic' | 'es' | 'interview' | 'notes' | 'ob_visits' | 'comparisons') => void;
   setSelectedCompanyId: (id: string | null) => void;
   
@@ -132,7 +132,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [selfAnalysis, setSelfAnalysis] = useState<SelfAnalysis>(INITIAL_SELF_ANALYSIS);
   
   // Navigation UI States
-  const [activeTab, setActiveTabState] = useState<'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings'>('dashboard');
+  const [activeTab, setActiveTabState] = useState<'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about'>('dashboard');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<'basic' | 'es' | 'interview' | 'notes' | 'ob_visits' | 'comparisons'>('basic');
@@ -720,7 +720,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [companies]);
 
   // Tab switcher wrapper that resets detail view if needed
-  const setActiveTab = (tab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings') => {
+  const setActiveTab = (tab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about') => {
     setActiveTabState(tab);
   };
 
