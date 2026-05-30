@@ -12,6 +12,7 @@ import CalendarView from './components/CalendarView';
 import CompaniesView from './components/CompaniesView';
 import SettingsView from './components/SettingsView';
 import SelfAnalysisView from './components/SelfAnalysisView';
+import { OnboardingModal } from './components/OnboardingModal';
 import { 
   Home, 
   CheckSquare, 
@@ -449,6 +450,9 @@ function AppContent() {
           })}
         </div>
       </nav>
+
+      {/* Onboarding Overlay Modal */}
+      <OnboardingModal />
     </div>
   );
 }

@@ -102,6 +102,10 @@ interface AppContextType {
   updateOfferComparison: (id: string, updated: Partial<OfferComparison>) => void;
   deleteOfferComparison: (id: string) => void;
 
+  // Onboarding
+  showOnboarding: boolean;
+  setShowOnboarding: (show: boolean) => void;
+
   // Settings & Notifications actions
   updateSettings: (settings: Partial<AppSettings>) => void;
   addNotificationAlarm: (title: string, message: string, type: NotificationItem['type'], targetCompanyId?: string, targetTodoId?: string) => void;
@@ -128,6 +132,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<'basic' | 'es' | 'interview' | 'notes' | 'ob_visits' | 'comparisons'>('basic');
+
+  // Onboarding UI State
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 
   // Account & Sync States
   const [currentUser, setCurrentUser] = useState<AppContextType['currentUser']>(null);
@@ -283,6 +290,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       const isBio = localStorage.getItem('shukatsu_biometric_enabled');
       setIsBiometricEnabled(isBio === 'true');
+
+      const onboarded = localStorage.getItem('shukatsu_onboarded');
+      if (onboarded !== 'true') {
+        setShowOnboarding(true);
+      }
 
     } catch (e) {
       console.error('Error loading localStorage', e);
@@ -1029,6 +1041,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         offerComparisons,
         notifications,
         activeTab,
+        showOnboarding,
+        setShowOnboarding,
         selectedCompanyId,
         selectedTodoId,
         detailTab,

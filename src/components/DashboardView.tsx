@@ -24,7 +24,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Company, CompanyStatus, SelectionStage } from '../types';
-import { AVATAR_PRESETS } from './SettingsView';
 
 export default function DashboardView() {
   const { 
@@ -146,6 +145,35 @@ export default function DashboardView() {
 
   return (
     <div className="space-y-6 pb-20 text-left">
+      {/* Compact Welcome Ribbon */}
+      <div className={`px-4 py-2.5 rounded-2xl border transition-all flex flex-wrap items-center justify-between gap-2 text-xs ${
+        isDark ? 'bg-slate-900/40 border-slate-850/60 text-slate-350' : 'bg-gray-50 border-gray-150/40 text-gray-600'
+      }`}>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className={`font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
+              {settings.profileName || 'ゲストユーザー'}
+            </span>
+          </div>
+          {settings.profileMemo && (
+            <>
+              <span className="text-gray-300 dark:text-slate-850">•</span>
+              <span className="text-gray-500 dark:text-slate-400 italic truncate max-w-[200px] sm:max-w-[350px] md:max-w-[500px]">
+                「{settings.profileMemo}」
+              </span>
+            </>
+          )}
+        </div>
+        {shukatsuDaysText && (
+          <span className={`font-bold font-mono px-2 py-0.5 rounded-md text-[10px] ${
+            isDark ? 'bg-slate-800 text-indigo-300' : 'bg-indigo-50 text-indigo-700 border border-indigo-100/10'
+          }`}>
+            {shukatsuDaysText}
+          </span>
+        )}
+      </div>
+
       {/* Top Welcome Bar */}
       <div className={`p-4 rounded-3xl border flex items-center justify-between transition-all ${
         isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-gray-100 shadow-3xs'

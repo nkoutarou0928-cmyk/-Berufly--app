@@ -96,7 +96,9 @@ export default function CompaniesView() {
   const [newHeadquarters, setNewHeadquarters] = useState('');
   const [newScale, setNewScale] = useState('');
   const [newWebsite, setNewWebsite] = useState('');
-  const [suggestions, setSuggestions] = useState<{ name: string; industry: string; headquarters: string; scale: string; website: string }[]>([]);
+  const [newEstablishedYear, setNewEstablishedYear] = useState('');
+  const [newEmployeeCount, setNewEmployeeCount] = useState('');
+  const [suggestions, setSuggestions] = useState<{ name: string; industry: string; headquarters: string; scale: string; website: string; establishedYear?: string; employeeCount?: string }[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
 
   React.useEffect(() => {
@@ -280,7 +282,9 @@ export default function CompaniesView() {
       website: newWebsite,
       selectionType: newSelectionType,
       internType: newSelectionType === 'intern' ? newInternType : undefined,
-      internSteps: []
+      internSteps: [],
+      establishedYear: newEstablishedYear,
+      employeeCount: newEmployeeCount
     });
 
     // Reset fields
@@ -296,6 +300,8 @@ export default function CompaniesView() {
     setNewHeadquarters('');
     setNewScale('');
     setNewWebsite('');
+    setNewEstablishedYear('');
+    setNewEmployeeCount('');
     
     setShowAddCompanyModal(false);
     setSelectedCompanyId(newId);
@@ -942,8 +948,10 @@ export default function CompaniesView() {
                               if (data.headquarters) setNewHeadquarters(data.headquarters);
                               if (data.scale) setNewScale(data.scale);
                               if (data.website) setNewWebsite(data.website);
+                              if (data.establishedYear) setNewEstablishedYear(data.establishedYear);
+                              if (data.employeeCount) setNewEmployeeCount(data.employeeCount);
 
-                              alert('✨ AI自動抽出が完了しました！業界、所在地、企業規模、URLを自動入力しました。');
+                              alert('✨ AI自動抽出が完了しました！業界、所在地、企業規模、URL、設立年、従業員数を自動入力しました。');
                             } catch (e) {
                               try {
                                 const domain = new URL(urlVal).hostname.replace('www.', '');
@@ -989,6 +997,8 @@ export default function CompaniesView() {
                                   setNewHeadquarters(s.headquarters);
                                   setNewScale(s.scale);
                                   setNewWebsite(s.website);
+                                  setNewEstablishedYear(s.establishedYear || '');
+                                  setNewEmployeeCount(s.employeeCount || '');
                                   setSuggestions([]);
                                 }}
                                 className="w-full text-left p-2 hover:bg-sky-50 text-[11px] block text-gray-800 focus:outline-hidden transition-colors"
@@ -1047,6 +1057,30 @@ export default function CompaniesView() {
                           onChange={e => setNewWebsite(e.target.value)}
                           placeholder="https://example.com"
                           className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-[11px] font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-gray-700 mb-1">設立年 / 創業年</label>
+                        <input 
+                          type="text"
+                          value={newEstablishedYear}
+                          onChange={e => setNewEstablishedYear(e.target.value)}
+                          placeholder="（例）1937年"
+                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-gray-700 mb-1">従業員数</label>
+                        <input 
+                          type="text"
+                          value={newEmployeeCount}
+                          onChange={e => setNewEmployeeCount(e.target.value)}
+                          placeholder="（例）約375,000人"
+                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-[11px]"
                         />
                       </div>
                     </div>
@@ -1659,13 +1693,35 @@ export default function CompaniesView() {
                     </div>
 
                     <div>
-                      <label className="block font-bold text-gray-600 mb-1">企業規模・従業員数</label>
+                      <label className="block font-bold text-gray-600 mb-1">企業規模</label>
                       <input 
                         type="text" 
                         value={company?.scale || ''}
                         onChange={e => updateCompany(company!.id, { scale: e.target.value })}
-                        placeholder="（例）150名 / 大手企業"
+                        placeholder="（例）大手企業"
                         className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-gray-600 mb-1">設立年 / 創業年</label>
+                      <input 
+                        type="text" 
+                        value={company?.establishedYear || ''}
+                        onChange={e => updateCompany(company!.id, { establishedYear: e.target.value })}
+                        placeholder="（例）1937年"
+                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 font-mono text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-gray-600 mb-1">従業員数</label>
+                      <input 
+                        type="text" 
+                        value={company?.employeeCount || ''}
+                        onChange={e => updateCompany(company!.id, { employeeCount: e.target.value })}
+                        placeholder="（例）約375,000人"
+                        className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm"
                       />
                     </div>
 

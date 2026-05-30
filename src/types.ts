@@ -78,6 +78,8 @@ export interface Company {
   headquarters?: string;
   scale?: string;
   website?: string;
+  establishedYear?: string;
+  employeeCount?: string;
 
   // Selection Type split fields
   selectionType?: 'main' | 'intern'; // 'main' = 本選考, 'intern' = インターン選考

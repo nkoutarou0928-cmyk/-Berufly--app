@@ -18,21 +18,11 @@ import {
   RotateCcw,
   Sparkles,
   User,
-  Camera,
   Sun,
   Moon,
   Monitor
 } from 'lucide-react';
 import { motion } from 'motion/react';
-
-export const AVATAR_PRESETS = [
-  { id: 'preset-1', emoji: '🎓', label: 'アカデミー' },
-  { id: 'preset-2', emoji: '💼', label: 'ビジネス' },
-  { id: 'preset-3', emoji: '🚀', label: 'ロケット' },
-  { id: 'preset-4', emoji: '🌟', label: 'スター' },
-  { id: 'preset-5', emoji: '🎯', label: 'ターゲット' },
-  { id: 'preset-6', emoji: '🐱', label: '招き猫' },
-];
 
 export default function SettingsView() {
   const { 
@@ -49,7 +39,8 @@ export default function SettingsView() {
     setBiometrics,
     migrateGuestToAccount,
     logout,
-    deleteAccount
+    deleteAccount,
+    setShowOnboarding
   } = useApp();
   const theme = getTheme(settings.themeColor);
 
@@ -64,140 +55,80 @@ export default function SettingsView() {
 
   return (
     <div className="space-y-6 pb-20 text-left">
-      <div>
-        <h2 className={`text-xl font-bold tracking-tight font-sans ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>
-          環境設定・チューニング
-        </h2>
-        <p className="text-xs text-gray-400 mt-0.5">アプリ全体のプロフィール、テーマカラー、ライト／ダーク表示を設定できます</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className={`text-xl font-bold tracking-tight font-sans ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>
+            環境設定・チューニング
+          </h2>
+          <p className="text-xs text-gray-400 mt-0.5">アプリ全体のプロフィール、テーマカラー、ライト／ダーク表示を設定できます</p>
+        </div>
+        <button 
+          type="button"
+          onClick={() => setShowOnboarding(true)}
+          className="self-start sm:self-center px-4.5 py-2.5 bg-indigo-50/70 hover:bg-indigo-100/80 text-indigo-700 dark:bg-slate-850 dark:hover:bg-slate-800 dark:text-indigo-400 text-xs font-bold rounded-xl transition-all border border-indigo-100/20 active:scale-95 shadow-3xs cursor-pointer flex items-center gap-1.5"
+        >
+          <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+          <span>使い方を見る（チュートリアル）</span>
+        </button>
       </div>
 
-      {/* --- Profile Settings Section --- */}
-      <div className={`p-5 rounded-3xl border shadow-xs space-y-4 ${
+      {/* --- Profile Settings Section (Simplified & Compacted) --- */}
+      <div className={`p-4 rounded-3xl border shadow-xs space-y-3.5 ${
         isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
       }`}>
-        <h3 className={`text-xs font-bold flex items-center gap-1.5 border-b pb-2.5 ${
-          isDark ? 'text-slate-200 border-slate-800' : 'text-gray-800 border-gray-50'
-        }`}>
-          <User className={`h-4.5 w-4.5 ${theme.text}`} />
-          プロフィール詳細設定
-        </h3>
+        <div className="flex items-center justify-between border-b pb-2 px-0.5 border-gray-100 dark:border-slate-800">
+          <h3 className={`text-xs font-bold flex items-center gap-1.5 ${
+            isDark ? 'text-slate-200' : 'text-gray-800'
+          }`}>
+            <User className={`h-4.5 w-4.5 ${theme.text}`} />
+            プロフィール設定
+          </h3>
+          <span className="text-[10px] text-gray-400 dark:text-slate-500 font-sans">
+            ホーム画面等に自動反映されます
+          </span>
+        </div>
         
-        <div className="space-y-4">
-          {/* Avatar and file uploader layout */}
-          <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start pt-1">
-            <div className="relative group flex-shrink-0">
-              <div className={`h-20 w-20 rounded-2xl flex items-center justify-center text-3xl shadow-md border-2 border-dashed transition-all ${
-                isDark ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200'
-              }`}>
-                {settings.profileAvatar && settings.profileAvatar.startsWith('data:') ? (
-                  <img 
-                    src={settings.profileAvatar} 
-                    alt="profile" 
-                    className="h-full w-full object-cover rounded-2xl animate-fade-in"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <span className="text-4xl">
-                    {AVATAR_PRESETS.find(p => p.id === settings.profileAvatar)?.emoji || '🎓'}
-                  </span>
-                )}
-              </div>
-              
-              {/* Camera Icon Overlay Trigger */}
-              <label 
-                htmlFor="avatar-uploader" 
-                className={`absolute -bottom-1 -right-1 p-1.5 rounded-lg text-white cursor-pointer shadow-md transition-all hover:scale-105 flex items-center justify-center ${theme.bg}`}
-              >
-                <Camera className="h-3.5 w-3.5" />
-                <input 
-                  type="file" 
-                  id="avatar-uploader" 
-                  accept="image/*" 
-                  capture="environment"
-                  className="hidden" 
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        updateSettings({ profileAvatar: reader.result as string });
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
-              </label>
-            </div>
-
-            <div className="flex-1 w-full space-y-2">
-              <span className={`block text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-                プリセットアイコンから選択
-              </span>
-              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                {AVATAR_PRESETS.map(preset => {
-                  const isSelected = settings.profileAvatar === preset.id;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => updateSettings({ profileAvatar: preset.id })}
-                      className={`h-10 w-10 text-xl rounded-xl flex items-center justify-center transition-all border cursor-pointer ${
-                        isSelected 
-                          ? `border-gray-900 bg-gray-50 ring-2 ring-gray-900/5 ${isDark ? 'border-slate-100 bg-slate-800' : ''}` 
-                          : `${isDark ? 'border-slate-800 bg-slate-900 hover:bg-slate-850' : 'border-gray-100 bg-white hover:bg-gray-50'}`
-                      }`}
-                      title={preset.label}
-                    >
-                      {preset.emoji}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={`block text-[11px] font-semibold mb-1.5 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-                名前・ニックネーム
-              </label>
-              <input 
-                type="text"
-                value={settings.profileName}
-                onChange={e => updateSettings({ profileName: e.target.value })}
-                placeholder="例: キャリア太郎"
-                className={`w-full p-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 ${
-                  isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-gray-50 border-gray-250 text-gray-800'
-                }`}
-              />
-            </div>
-
-            <div>
-              <label className={`block text-[11px] font-semibold mb-1.5 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-                就活開始日
-              </label>
-              <input 
-                type="date"
-                value={settings.shukatsuStartDate}
-                onChange={e => updateSettings({ shukatsuStartDate: e.target.value })}
-                className={`w-full p-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 font-mono ${
-                  isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-gray-50 border-gray-250 text-gray-800'
-                }`}
-              />
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+              名前・ニックネーム
+            </label>
+            <input 
+              type="text"
+              value={settings.profileName}
+              onChange={e => updateSettings({ profileName: e.target.value })}
+              placeholder="例: タロウ"
+              className={`w-full p-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 ${
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-100 font-medium' : 'bg-gray-50 border-gray-250 text-gray-800 font-medium'
+              }`}
+            />
           </div>
 
           <div>
-            <label className={`block text-[11px] font-semibold mb-1.5 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
-              自分への励ましの言葉（一言メモ）
+            <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+              就活開始日
+            </label>
+            <input 
+              type="date"
+              value={settings.shukatsuStartDate}
+              onChange={e => updateSettings({ shukatsuStartDate: e.target.value })}
+              className={`w-full p-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 font-mono ${
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-gray-50 border-gray-250 text-gray-800'
+              }`}
+            />
+          </div>
+
+          <div>
+            <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+              一言メモ（目標など）
             </label>
             <input 
               type="text"
               value={settings.profileMemo}
               onChange={e => updateSettings({ profileMemo: e.target.value })}
-              placeholder="例: 絶対内定！諦めず自分らしく。"
-              className={`w-full p-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 ${
-                isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-gray-50 border-gray-250 text-gray-800'
+              placeholder="例: 絶対志望内定！"
+              className={`w-full p-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 ${
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-100 font-medium' : 'bg-gray-50 border-gray-250 text-gray-800 font-medium'
               }`}
             />
           </div>

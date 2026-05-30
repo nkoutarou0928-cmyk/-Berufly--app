@@ -39,7 +39,6 @@ export default defineConfig(() => {
           ],
         },
         workbox: {
-          // キャッシュ戦略：ネットワーク優先、失敗時にキャッシュ使用
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -48,7 +47,7 @@ export default defineConfig(() => {
                 cacheName: 'google-fonts-cache',
                 expiration: {
                   maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365, // 1年
+                  maxAgeSeconds: 60 * 60 * 24 * 365,
                 },
                 cacheableResponse: {
                   statuses: [0, 200],
@@ -56,13 +55,10 @@ export default defineConfig(() => {
               },
             },
           ],
-          // オフライン時に表示するページ
           navigateFallback: '/index.html',
-          // キャッシュするファイルの最大サイズ（3MB）
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         },
         devOptions: {
-          // 開発時もService Workerを有効化（動作確認用）
           enabled: true,
         },
       }),
@@ -74,7 +70,7 @@ export default defineConfig(() => {
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
+      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
