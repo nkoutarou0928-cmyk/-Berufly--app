@@ -202,21 +202,21 @@ export default function CalendarView() {
     <div className="space-y-6 pb-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 tracking-tight">就活カレンダー</h2>
-          <p className="text-xs text-gray-400 mt-0.5">締め切りと面接日程を自動可視化。タップして詳細を編集できます</p>
+          <h2 className="text-xl font-bold text-app-text-primary tracking-tight">就活カレンダー</h2>
+          <p className="text-xs text-app-text-secondary mt-0.5">締め切りと面接日程を自動可視化。タップして詳細を編集できます</p>
         </div>
         
         {/* Toggle View Mode */}
-        <div className="flex p-0.5 bg-gray-100 rounded-lg text-xs self-start">
+        <div className="flex p-0.5 bg-app-bg-secondary rounded-lg text-xs self-start border border-app-border">
           <button 
             onClick={() => setViewMode('month')}
-            className={`py-1.5 px-3 rounded-md font-semibold transition-all cursor-pointer ${viewMode === 'month' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+            className={`py-1.5 px-3 rounded-md font-semibold transition-all cursor-pointer ${viewMode === 'month' ? 'bg-app-card-bg shadow-xs text-app-text-primary' : 'text-app-text-secondary hover:text-app-text-primary'}`}
           >
             月表示
           </button>
           <button 
             onClick={() => setViewMode('week')}
-            className={`py-1.5 px-3 rounded-md font-semibold transition-all cursor-pointer ${viewMode === 'week' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+            className={`py-1.5 px-3 rounded-md font-semibold transition-all cursor-pointer ${viewMode === 'week' ? 'bg-app-card-bg shadow-xs text-app-text-primary' : 'text-app-text-secondary hover:text-app-text-primary'}`}
           >
             週表示
           </button>
@@ -224,8 +224,8 @@ export default function CalendarView() {
       </div>
 
       {/* Navigation and Date Title banner */}
-      <div className="flex items-center justify-between bg-white px-4 py-3 rounded-2xl border border-gray-100 shadow-xs">
-        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+      <div className="flex items-center justify-between bg-app-card-bg px-4 py-3 rounded-2xl border border-app-card-border shadow-xs">
+        <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5">
           <Calendar className={`h-4.5 w-4.5 ${theme.text}`} />
           <span className="font-mono font-black">{year}年 {monthNames[month]}</span>
         </h3>
@@ -233,19 +233,19 @@ export default function CalendarView() {
         <div className="flex items-center gap-1">
           <button
             onClick={viewMode === 'month' ? handlePrevMonth : handlePrevWeek}
-            className="p-1.5 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer text-gray-600"
+            className="p-1.5 bg-app-button-bg border border-app-button-border rounded-lg hover:bg-app-button-hover transition-colors cursor-pointer text-app-button-text"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             onClick={() => setCurrentDate(new Date())}
-            className="px-2.5 py-1 text-[10px] font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+            className="px-2.5 py-1 text-[10px] font-bold text-app-button-text hover:bg-app-button-hover rounded-lg transition-colors cursor-pointer border border-transparent"
           >
             今月
           </button>
           <button
             onClick={viewMode === 'month' ? handleNextMonth : handleNextWeek}
-            className="p-1.5 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer text-gray-600"
+            className="p-1.5 bg-app-button-bg border border-app-button-border rounded-lg hover:bg-app-button-hover transition-colors cursor-pointer text-app-button-text"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -253,15 +253,15 @@ export default function CalendarView() {
       </div>
 
       {/* Main Calendar Grid / Week view */}
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-xs overflow-hidden">
+      <div className="bg-app-card-bg rounded-3xl border border-app-card-border shadow-xs overflow-hidden">
         
         {/* Days of week header */}
-        <div className="grid grid-cols-7 border-b border-gray-50 bg-gray-50/50 py-2.5">
+        <div className="grid grid-cols-7 border-b border-app-border bg-app-bg-secondary py-2.5">
           {daysOfWeek.map((day, idx) => (
             <div 
               key={day} 
               className={`text-center text-[10px] font-bold ${
-                idx === 0 ? 'text-rose-500' : idx === 6 ? 'text-blue-500' : 'text-gray-500'
+                idx === 0 ? 'text-rose-500' : idx === 6 ? 'text-blue-500' : 'text-app-text-secondary'
               }`}
             >
               {day}
@@ -277,11 +277,11 @@ export default function CalendarView() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-7 divide-x divide-y divide-gray-50 border-t border-gray-50"
+              className="grid grid-cols-7 divide-x divide-y divide-app-border border-t border-app-border bg-app-card-bg"
             >
               {daysGrid.map((dateObj, idx) => {
                 if (!dateObj) {
-                  return <div key={`empty-${idx}`} className="bg-gray-50/20 min-h-[90px]" />;
+                  return <div key={`empty-${idx}`} className="bg-app-bg-secondary/40 min-h-[90px]" />;
                 }
 
                 const dayNum = dateObj.getDate();
@@ -292,20 +292,20 @@ export default function CalendarView() {
                 return (
                   <div 
                     key={dateObj.toISOString()} 
-                    className={`min-h-[95px] p-1.5 flex flex-col justify-between hover:bg-gray-50/40 transition-colors group relative ${
-                      isCurrentSimulatedToday ? theme.lightBg : ''
+                    className={`min-h-[95px] p-1.5 flex flex-col justify-between hover:bg-app-button-hover transition-colors group relative ${
+                      isCurrentSimulatedToday ? 'bg-app-calendar-today-bg' : ''
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span 
                         className={`text-xs font-bold font-mono h-5 w-5 flex items-center justify-center rounded-full ${
                           isCurrentSimulatedToday 
-                            ? `${theme.bg} text-white font-semibold` 
+                            ? 'bg-app-calendar-selected-bg text-app-calendar-selected-text font-semibold' 
                             : dateObj.getDay() === 0 
                               ? 'text-rose-500' 
                               : dateObj.getDay() === 6 
                                 ? 'text-blue-500' 
-                                : 'text-gray-700'
+                                : 'text-app-text-primary'
                         }`}
                       >
                         {dayNum}
@@ -320,10 +320,10 @@ export default function CalendarView() {
                           onClick={() => navigateToCompany(evt.companyId, evt.type === 'deadline' ? 'es' : 'interview')}
                           className={`text-[9px] px-1.5 py-0.5 rounded-md font-sans truncate font-bold shadow-2xs hover:scale-[1.02] transform transition-all cursor-pointer block border ${
                             evt.type === 'deadline'
-                              ? 'bg-rose-50 text-rose-700 border-rose-100 hover:bg-rose-100'
+                              ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-900/50'
                               : evt.type === 'intern_step'
-                                ? 'bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100'
-                                : 'bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100'
+                                ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-100 dark:border-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/50'
+                                : 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                           }`}
                           title={`${evt.companyName} (${evt.title})`}
                         >
@@ -341,7 +341,7 @@ export default function CalendarView() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-7 divide-x divide-gray-50 min-h-[160px]"
+              className="grid grid-cols-7 divide-x divide-app-border min-h-[160px] bg-app-card-bg"
             >
               {weekDaysGrid.map(dateObj => {
                 const dayNum = dateObj.getDate();
@@ -352,19 +352,23 @@ export default function CalendarView() {
                 return (
                   <div 
                     key={dateObj.toISOString()} 
-                    className={`p-2 flex flex-col hover:bg-gray-50/40 transition-colors ${
-                      isCurrentSimulatedToday ? theme.lightBg : ''
+                    className={`p-2 flex flex-col hover:bg-app-button-hover transition-colors ${
+                      isCurrentSimulatedToday ? 'bg-app-calendar-today-bg' : ''
                     }`}
                   >
                     <div className="text-center font-mono py-1">
-                      <span className="text-[10px] block text-gray-400 mb-0.5">
+                      <span className="text-[10px] block text-app-text-secondary mb-0.5 font-bold">
                         {daysOfWeek[dateObj.getDay()]}
                       </span>
                       <span 
                         className={`inline-block text-xs font-black h-5.5 w-5.5 rounded-full ${
                           isCurrentSimulatedToday 
-                            ? `${theme.bg} text-white flex items-center justify-center mx-auto` 
-                            : 'text-gray-800'
+                            ? 'bg-app-calendar-selected-bg text-app-calendar-selected-text flex items-center justify-center mx-auto font-semibold' 
+                            : dateObj.getDay() === 0
+                              ? 'text-rose-500'
+                              : dateObj.getDay() === 6
+                                ? 'text-blue-500'
+                                : 'text-app-text-primary'
                         }`}
                       >
                         {dayNum}
@@ -378,14 +382,14 @@ export default function CalendarView() {
                           onClick={() => navigateToCompany(evt.companyId, evt.type === 'deadline' ? 'es' : 'interview')}
                           className={`text-[9px] p-1.5 rounded-lg font-bold shadow-2xs hover:scale-102 transform transition-all cursor-pointer block border text-left ${
                             evt.type === 'deadline'
-                              ? 'bg-rose-50 text-rose-700 border-rose-100'
+                              ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-900/50'
                               : evt.type === 'intern_step'
-                                ? 'bg-amber-50 text-amber-700 border-amber-100'
-                                : 'bg-blue-50 text-blue-700 border-blue-100'
+                                ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-100 dark:border-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/50'
+                                : 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                           }`}
                         >
                           <div className="font-sans truncate">{evt.companyName}</div>
-                          <span className="text-[8px] opacity-70 font-sans block mt-0.5">
+                          <span className="text-[8px] opacity-70 font-sans block mt-0.5 text-app-text-secondary">
                             {evt.type === 'deadline' ? '書類締切' : evt.type === 'intern_step' ? 'インターン' : '面接面談'}
                           </span>
                         </div>
@@ -400,18 +404,18 @@ export default function CalendarView() {
       </div>
 
       {/* Event Details lists for current selected month */}
-      <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs">
-        <h3 className="text-sm font-bold text-gray-800 flex items-center gap-1.5 border-b border-gray-50 pb-3">
+      <div className="bg-app-card-bg p-5 rounded-3xl border border-app-card-border shadow-xs">
+        <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5 border-b border-app-border pb-3">
           <Calendar className={`h-4.5 w-4.5 ${theme.text}`} />
           <span>今月のスケジュール・締切一覧</span>
-          <span className={`text-xs font-bold font-mono ${theme.textDark} ${theme.lightBg} px-2 py-0.5 rounded-full ml-1`}>
+          <span className={`text-xs font-bold font-mono ${theme.textDark} ${theme.lightBg} px-2 py-0.5 rounded-full ml-1 dark:bg-slate-850 dark:text-slate-200`}>
             {currentMonthEvents.length}件
           </span>
         </h3>
 
-        <div className="mt-4 divide-y divide-gray-50">
+        <div className="mt-4 divide-y divide-app-border">
           {currentMonthEvents.length === 0 ? (
-            <div className="py-6 text-center text-xs text-gray-400">
+            <div className="py-6 text-center text-xs text-app-text-secondary">
               今月の予定はありません。企業ディテールから「ES締切日」や「面接予定」を設定してみましょう
             </div>
           ) : (
@@ -419,27 +423,27 @@ export default function CalendarView() {
               <div 
                 key={evt.id}
                 onClick={() => navigateToCompany(evt.companyId, evt.type === 'deadline' ? 'es' : 'interview')}
-                className="py-3 flex items-center justify-between hover:bg-gray-50/50 rounded-xl px-2 transition-all cursor-pointer group"
+                className="py-3 flex items-center justify-between hover:bg-app-button-hover rounded-xl px-2 transition-all cursor-pointer group"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="text-lg">
                     {evt.type === 'deadline' ? '🚨' : evt.type === 'intern_step' ? '🎖️' : '💬'}
                   </span>
                   <div className="min-w-0">
-                    <p className={`text-xs font-bold text-gray-900 group-hover:${theme.text} transition-colors`}>
+                    <p className={`text-xs font-bold text-app-text-primary group-hover:${theme.text} transition-colors`}>
                       {evt.companyName}
                     </p>
-                    <p className="text-[10px] text-gray-500 mt-0.5">
+                    <p className="text-[10px] text-app-text-secondary mt-0.5">
                       {evt.title}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono font-bold text-gray-600 bg-gray-100 px-2.5 py-1 rounded-lg">
+                  <span className="text-xs font-mono font-bold text-app-button-text bg-app-bg-secondary px-2.5 py-1 rounded-lg border border-app-border">
                     {evt.date}
                   </span>
-                  <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                  <ChevronRight className="h-4 w-4 text-app-text-secondary group-hover:text-app-text-primary transition-colors" />
                 </div>
               </div>
             ))

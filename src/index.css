@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+:root {
+  --app-bg-primary: #FFFFFF;
+  --app-bg-secondary: #FAFAFA;
+  --app-text-primary: #111622;
+  --app-text-secondary: #6B7280;
+  --app-border: #E5E7EB;
+  --app-card-bg: #FFFFFF;
+  --app-card-border: #F3F4F6;
+  --app-button-bg: #FFFFFF;
+  --app-button-hover: #F3F4F6;
+  --app-button-border: #E5E7EB;
+  --app-button-text: #374151;
+  --app-calendar-today-bg: #F3F4F6;
+  --app-calendar-selected-bg: #4F46E5;
+  --app-calendar-selected-text: #FFFFFF;
+}
+
+.dark {
+  --app-bg-primary: #090A0C;
+  --app-bg-secondary: #040506;
+  --app-text-primary: #ECEFF4;
+  --app-text-secondary: #9CA3AF;
+  --app-border: #191B21;
+  --app-card-bg: #101216;
+  --app-card-border: #191B21;
+  --app-button-bg: #101216;
+  --app-button-hover: #191B21;
+  --app-button-border: #191B21;
+  --app-button-text: #ECEFF4;
+  --app-calendar-today-bg: #1E1B4B;
+  --app-calendar-selected-bg: #6366F1;
+  --app-calendar-selected-text: #FFFFFF;
+}
+
 @theme {
   --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
 
@@ -22,11 +56,27 @@
   --color-gray-100: #F4F4F6; /* ライトモードでの清潔感のある境界線 */
   --color-gray-150: #E5E7EB;
   --color-gray-200: #D1D5DB;
+
+  /* アプリ独自のセマンティックテーマカラー設定 */
+  --color-app-bg-primary: var(--app-bg-primary);
+  --color-app-bg-secondary: var(--app-bg-secondary);
+  --color-app-text-primary: var(--app-text-primary);
+  --color-app-text-secondary: var(--app-text-secondary);
+  --color-app-border: var(--app-border);
+  --color-app-card-bg: var(--app-card-bg);
+  --color-app-card-border: var(--app-card-border);
+  --color-app-button-bg: var(--app-button-bg);
+  --color-app-button-hover: var(--app-button-hover);
+  --color-app-button-border: var(--app-button-border);
+  --color-app-button-text: var(--app-button-text);
+  --color-app-calendar-today-bg: var(--app-calendar-today-bg);
+  --color-app-calendar-selected-bg: var(--app-calendar-selected-bg);
+  --color-app-calendar-selected-text: var(--app-calendar-selected-text);
 }
 
 body {
-  background-color: #FFFFFF;
-  color: #111622;
+  background-color: var(--app-bg-primary);
+  color: var(--app-text-primary);
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
@@ -50,4 +100,51 @@ body {
 }
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #374151;
+}
+
+/* Global catch-all overrides for hardcoded light-mode classes inside .dark container */
+.dark .bg-white {
+  background-color: var(--app-card-bg) !important;
+}
+.dark .bg-gray-50,
+.dark .bg-gray-100 {
+  background-color: var(--app-bg-secondary) !important;
+}
+.dark .border-gray-50,
+.dark .border-gray-100,
+.dark .border-gray-150,
+.dark .border-gray-200 {
+  border-color: var(--app-card-border) !important;
+}
+.dark .text-gray-950,
+.dark .text-gray-900,
+.dark .text-gray-850,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: var(--app-text-primary) !important;
+}
+.dark .text-gray-655,
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: var(--app-text-secondary) !important;
+}
+
+/* Form controls adaptive dark styling */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: var(--app-card-bg) !important;
+  color: var(--app-text-primary) !important;
+  border-color: var(--app-card-border) !important;
+}
+
+/* Action button adaptive dark styling */
+.dark button.bg-white {
+  background-color: var(--app-button-bg) !important;
+  border-color: var(--app-button-border) !important;
+  color: var(--app-button-text) !important;
+}
+.dark button.bg-white:hover {
+  background-color: var(--app-button-hover) !important;
 }
