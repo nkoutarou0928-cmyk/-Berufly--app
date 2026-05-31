@@ -101,3 +101,50 @@ body {
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #374151;
 }
+
+/* Global catch-all overrides for hardcoded light-mode classes inside .dark container */
+.dark .bg-white {
+  background-color: var(--app-card-bg) !important;
+}
+.dark .bg-gray-50,
+.dark .bg-gray-100 {
+  background-color: var(--app-bg-secondary) !important;
+}
+.dark .border-gray-50,
+.dark .border-gray-100,
+.dark .border-gray-150,
+.dark .border-gray-200 {
+  border-color: var(--app-card-border) !important;
+}
+.dark .text-gray-950,
+.dark .text-gray-900,
+.dark .text-gray-850,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: var(--app-text-primary) !important;
+}
+.dark .text-gray-655,
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: var(--app-text-secondary) !important;
+}
+
+/* Form controls adaptive dark styling */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: var(--app-card-bg) !important;
+  color: var(--app-text-primary) !important;
+  border-color: var(--app-card-border) !important;
+}
+
+/* Action button adaptive dark styling */
+.dark button.bg-white {
+  background-color: var(--app-button-bg) !important;
+  border-color: var(--app-button-border) !important;
+  color: var(--app-button-text) !important;
+}
+.dark button.bg-white:hover {
+  background-color: var(--app-button-hover) !important;
+}

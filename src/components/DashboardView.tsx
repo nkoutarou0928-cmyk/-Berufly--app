@@ -273,10 +273,10 @@ export default function DashboardView() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-800 z-55 overflow-hidden"
+                  className="absolute right-0 mt-2 w-80 bg-app-card-bg rounded-2xl shadow-xl border border-app-card-border z-55 overflow-hidden"
                 >
-                  <div className="p-3 bg-gray-55 dark:bg-slate-950 border-b border-gray-100 dark:border-slate-850 flex items-center justify-between">
-                    <span className="text-sm font-bold text-gray-850 dark:text-slate-200">通知センター（Simulated）</span>
+                  <div className="p-3 bg-app-bg-secondary border-b border-app-border flex items-center justify-between">
+                    <span className="text-sm font-bold text-app-text-primary">通知センター（Simulated）</span>
                     {unreadNotifs.length > 0 && (
                       <button 
                         onClick={markAllNotificationsRead}
@@ -286,9 +286,9 @@ export default function DashboardView() {
                       </button>
                     )}
                   </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-50 dark:divide-slate-850">
+                  <div className="max-h-72 overflow-y-auto divide-y divide-app-border">
                     {notifications.length === 0 ? (
-                      <div className="p-4 text-center text-xs text-gray-400 dark:text-slate-500">通知はありません</div>
+                      <div className="p-4 text-center text-xs text-app-text-secondary">通知はありません</div>
                     ) : (
                       notifications.map(notif => (
                         <div 
@@ -302,7 +302,7 @@ export default function DashboardView() {
                               setActiveTab('todos');
                             }
                           }}
-                          className={`p-3 text-left transition-colors cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-850 ${!notif.read ? 'bg-indigo-50/20 dark:bg-indigo-950/20' : ''}`}
+                          className={`p-3 text-left transition-colors cursor-pointer hover:bg-app-button-hover ${!notif.read ? 'bg-app-bg-secondary/60' : ''}`}
                         >
                           <div className="flex items-start gap-2">
                             <span className="mt-0.5">
@@ -436,20 +436,20 @@ export default function DashboardView() {
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         
         {/* Todo Completion Progress Widget */}
-        <div className="md:col-span-5 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+        <div className="md:col-span-5 bg-app-card-bg p-5 rounded-3xl border border-app-card-border shadow-xs flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h3 className="text-sm font-bold text-gray-850 dark:text-slate-150 flex items-center gap-1.5 text-[13px]">
+              <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5 text-[13px]">
                 <CheckSquare className={`h-4.5 w-4.5 ${theme.text}`} />
                 Todo達成率 ({todoPeriod === 'today' ? '今日' : todoPeriod === 'weekly' ? '今週' : '今月'})
               </h3>
-              <p className="text-[10px] text-gray-400 mt-0.5">
+              <p className="text-[10px] text-app-text-secondary mt-0.5">
                 {todoPeriod === 'today' ? '今日のタスク集計' : todoPeriod === 'weekly' ? '今日と今週のタスク集計' : '今日・今週・今月のタスク集計'}
               </p>
             </div>
             
             {/* Period Toggle Buttons */}
-            <div className="flex p-0.5 bg-gray-100 dark:bg-slate-950 rounded-lg text-[9px] font-sans font-bold self-start sm:self-center">
+            <div className="flex p-0.5 bg-app-bg-secondary rounded-lg text-[9px] font-sans font-bold self-start sm:self-center border border-app-border">
               {[
                 { id: 'today', label: '今日' },
                 { id: 'weekly', label: '今週' },
@@ -461,8 +461,8 @@ export default function DashboardView() {
                   onClick={() => setTodoPeriod(btn.id as any)}
                   className={`px-2 py-1 rounded-md transition-all cursor-pointer border-0 ${
                     todoPeriod === btn.id 
-                      ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-150 shadow-xs' 
-                      : 'text-gray-500 hover:text-gray-950 dark:text-slate-400 dark:hover:text-slate-200 bg-transparent'
+                      ? 'bg-app-card-bg text-app-text-primary shadow-xs' 
+                      : 'text-app-text-secondary hover:text-app-text-primary bg-transparent'
                   }`}
                 >
                   {btn.label}
@@ -479,7 +479,7 @@ export default function DashboardView() {
                   cx="56"
                   cy="56"
                   r="48"
-                  className="stroke-gray-100 dark:stroke-slate-800 fill-transparent"
+                  className="stroke-app-border fill-transparent"
                   strokeWidth="8"
                 />
                 <motion.circle
@@ -500,11 +500,11 @@ export default function DashboardView() {
                   key={periodCompletionRate}
                   initial={{ scale: 0.8, opacity: 0.5 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="text-2xl font-black font-mono text-gray-900 dark:text-white"
+                  className="text-2xl font-black font-mono text-app-text-primary"
                 >
                   {periodCompletionRate}%
                 </motion.span>
-                <span className="text-[10px] text-gray-400 font-medium">{completedPeriodCount} / {totalPeriodCount} 完了</span>
+                <span className="text-[10px] text-app-text-secondary font-medium">{completedPeriodCount} / {totalPeriodCount} 完了</span>
               </div>
             </div>
 
@@ -513,25 +513,25 @@ export default function DashboardView() {
             </div>
           </div>
 
-          <div className="border-t border-gray-50 dark:border-slate-850 pt-3 text-[11px] text-gray-500 flex justify-between">
+          <div className="border-t border-app-border pt-3 text-[11px] text-app-text-secondary flex justify-between">
             <span>完了: {completedPeriodCount}件</span>
             <span>残タスク: {remainingPeriodCount}件</span>
           </div>
         </div>
 
         {/* --- Action Funnel Visual (選考フロー図) --- */}
-        <div className="md:col-span-7 bg-white dark:bg-slate-900 p-5 rounded-2xl md:rounded-3xl border border-gray-100 dark:border-slate-800 shadow-xs flex flex-col justify-between text-left">
-          <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-850 pb-3">
+        <div className="md:col-span-7 bg-app-card-bg p-5 rounded-2xl md:rounded-3xl border border-app-card-border shadow-xs flex flex-col justify-between text-left">
+          <div className="flex items-center justify-between border-b border-app-border pb-3">
             <div>
-              <h3 className="text-sm font-bold text-gray-850 dark:text-slate-200 flex items-center gap-1.5">
+              <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5">
                 <TrendingUp className={`h-4.5 w-4.5 ${theme.text}`} />
                 選考フロー図 (ファネル表示)
               </h3>
-              <p className="text-[11px] text-gray-400 dark:text-slate-400 mt-0.5">
+              <p className="text-[11px] text-app-text-secondary mt-0.5">
                 ステージごとの企業数と、次のステージへの通過率 (%) を自動集計
               </p>
             </div>
-            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 font-mono">Simulated Funnel</span>
+            <span className="text-[10px] font-bold text-app-text-secondary font-mono">Simulated Funnel</span>
           </div>
 
           {/* Funnel Layers */}
@@ -774,33 +774,33 @@ export default function DashboardView() {
       </div>
 
       {/* --- Dynamic Shukatsu Chart Mode Switcher (就活サマリー指標) --- */}
-      <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-xs text-left">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 dark:border-slate-850 pb-3">
+      <div className="bg-app-card-bg p-5 rounded-3xl border border-app-card-border shadow-xs text-left">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-app-border pb-3">
           <div>
-            <h3 className="text-sm font-bold text-gray-850 dark:text-slate-200 flex items-center gap-1.5">
+            <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5">
               <TrendingUp className="h-4.5 w-4.5 text-amber-500" />
               就活サマリー指標
             </h3>
-            <p className="text-[11px] text-gray-400 dark:text-slate-400 mt-0.5">応募社数・ES・面接・内定の数</p>
+            <p className="text-[11px] text-app-text-secondary mt-0.5">応募社数・ES・面接・内定の数</p>
           </div>
           
           {/* Toggle Modes */}
-          <div className="flex p-0.5 bg-gray-100 dark:bg-slate-950 rounded-lg text-[11px]">
+          <div className="flex p-0.5 bg-app-bg-secondary rounded-lg text-[11px] border border-app-border">
             <button 
               onClick={() => setGraphMode('weekly')}
-              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'weekly' ? 'bg-white dark:bg-slate-800 shadow-xs text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'}`}
+              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'weekly' ? 'bg-app-card-bg shadow-xs text-app-text-primary' : 'text-app-text-secondary hover:text-app-text-primary'}`}
             >
               週表示 (棒)
             </button>
             <button 
               onClick={() => setGraphMode('monthly')}
-              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'monthly' ? 'bg-white dark:bg-slate-800 shadow-xs text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'}`}
+              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'monthly' ? 'bg-app-card-bg shadow-xs text-app-text-primary' : 'text-app-text-secondary hover:text-app-text-primary'}`}
             >
               月表示 (線)
             </button>
             <button 
               onClick={() => setGraphMode('cumulative')}
-              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'cumulative' ? 'bg-white dark:bg-slate-800 shadow-xs text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'}`}
+              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'cumulative' ? 'bg-app-card-bg shadow-xs text-app-text-primary' : 'text-app-text-secondary hover:text-app-text-primary'}`}
             >
               累計カード
             </button>
@@ -1016,8 +1016,8 @@ export default function DashboardView() {
       </div>
 
       {/* --- Goals Progress Bar Card Section --- */}
-      <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-xs text-left">
-        <h3 className="text-sm font-bold text-gray-850 dark:text-slate-200 flex items-center gap-1.5 border-b border-gray-50 dark:border-slate-850 pb-3">
+      <div className="bg-app-card-bg p-5 rounded-3xl border border-app-card-border shadow-xs text-left">
+        <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5 border-b border-app-border pb-3">
           <Award className={`h-4.5 w-4.5 ${theme.text}`} />
           現在の就活目標達成率
         </h3>
