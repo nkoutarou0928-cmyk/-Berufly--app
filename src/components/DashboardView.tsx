@@ -211,46 +211,38 @@ export default function DashboardView() {
   return (
     <div className="space-y-6 pb-20 text-left">
       {/* Compact Welcome Ribbon */}
-      <div className={`px-4 py-2.5 rounded-2xl border transition-all flex flex-wrap items-center justify-between gap-2 text-xs ${
-        isDark ? 'bg-slate-900/40 border-slate-850/60 text-slate-350' : 'bg-gray-50 border-gray-150/40 text-gray-600'
-      }`}>
+      <div className="px-4 py-2.5 rounded-2xl border border-app-border bg-app-bg-secondary text-app-text-secondary transition-all flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className={`font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
+            <span className="font-bold text-app-text-primary">
               {settings.profileName || 'ゲストユーザー'}
             </span>
           </div>
           {settings.profileMemo && (
             <>
-              <span className="text-gray-300 dark:text-slate-850">•</span>
-              <span className="text-gray-500 dark:text-slate-400 italic truncate max-w-[200px] sm:max-w-[350px] md:max-w-[500px]">
+              <span className="text-app-border">•</span>
+              <span className="text-app-text-secondary italic truncate max-w-[200px] sm:max-w-[350px] md:max-w-[500px]">
                 「{settings.profileMemo}」
               </span>
             </>
           )}
         </div>
         {shukatsuDaysText && (
-          <span className={`font-bold font-mono px-2 py-0.5 rounded-md text-[10px] ${
-            isDark ? 'bg-slate-800 text-indigo-300' : 'bg-indigo-50 text-indigo-700 border border-indigo-100/10'
-          }`}>
+          <span className="font-bold font-mono px-2 py-0.5 rounded-md text-[10px] bg-app-card-bg text-app-text-primary border border-app-border">
             {shukatsuDaysText}
           </span>
         )}
       </div>
 
       {/* Top Welcome Bar */}
-      <div className={`p-4 rounded-3xl border flex items-center justify-between transition-all ${
-        isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-gray-100 shadow-3xs'
-      }`}>
+      <div className="p-4 rounded-3xl border border-app-card-border bg-app-card-bg flex items-center justify-between transition-all shadow-3xs">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-left">
-          <h2 className={`text-base font-bold tracking-tight ${isDark ? 'text-slate-150' : 'text-gray-900'} font-sans`}>
+          <h2 className="text-base font-bold tracking-tight text-app-text-primary font-sans">
             {getFormattedToday()}
           </h2>
           {filteredCompanies.length > 0 && (
-            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
-              isDark ? 'bg-slate-800 border-slate-700 text-indigo-400' : 'bg-indigo-50 text-indigo-700 border border-indigo-100/50'
-            } font-sans`}>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-app-bg-secondary text-app-text-primary border border-app-border font-sans">
               <TrendingUp className="h-3.5 w-3.5 text-indigo-505" />
               <span>先週の振り返り: ES提出+{trendES}社 | Todo達成率{trendTodoRate}% (+{trendTodoDiff}%)</span>
             </div>
@@ -262,11 +254,9 @@ export default function DashboardView() {
           <button 
             id="notif_badge_btn"
             onClick={() => setShowNotifications(!showNotifications)}
-            className={`p-2 rounded-xl border transition-all cursor-pointer relative shadow-3xs ${
-              isDark ? 'bg-slate-800 border-slate-700 hover:bg-slate-755' : 'bg-white border-gray-100 hover:bg-gray-50'
-            }`}
+            className="p-2 rounded-xl border border-app-button-border bg-app-button-bg hover:bg-app-button-hover text-app-button-text transition-all cursor-pointer relative shadow-3xs"
           >
-            <Bell className={`h-5 w-5 ${unreadNotifs.length > 0 ? theme.text : (isDark ? 'text-slate-400' : 'text-gray-500')}`} />
+            <Bell className={`h-5 w-5 ${unreadNotifs.length > 0 ? theme.text : 'text-app-text-secondary'}`} />
             {unreadNotifs.length > 0 && (
               <span className="absolute -top-1 -right-1 block h-4 w-4 bg-rose-500 text-[10px] text-white font-bold rounded-full flex items-center justify-center animate-pulse">
                 {unreadNotifs.length}
@@ -327,15 +317,6 @@ export default function DashboardView() {
                             </div>
                           </div>
                         </div>
-                      ))d-500" />}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-bold text-gray-900">{notif.title}</p>
-                              <p className="text-[11px] text-gray-655 line-clamp-2 mt-0.5">{notif.message}</p>
-                              <span className="text-[9px] text-gray-455 font-mono mt-1 block">{notif.timestamp}</span>
-                            </div>
-                          </div>
-                        </div>
                       ))
                     )}
                   </div>
@@ -347,25 +328,21 @@ export default function DashboardView() {
       </div>
 
       {/* Selection Type Switcher (本選考 vs インターン選考) */}
-      <div className={`p-1.5 rounded-2xl border flex items-center justify-between gap-4 transition-all ${
-        isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-gray-100 shadow-3xs'
-      }`}>
+      <div className="p-1.5 rounded-2xl border border-app-card-border bg-app-card-bg flex items-center justify-between gap-4 transition-all shadow-3xs">
         <div className="pl-2 flex items-center gap-1.5">
           <Sparkles className={`h-4.5 w-4.5 ${theme.text}`} />
-          <span className={`text-xs font-bold font-sans ${isDark ? 'text-slate-205' : 'text-gray-805'}`}>
+          <span className="text-xs font-bold font-sans text-app-text-secondary">
             {selectionTypeFilter === 'intern' ? 'インターン選考のサマリーを表示中' : '本選考のサマリーを表示中'}
           </span>
         </div>
-        <div className={`flex p-0.5 rounded-xl border text-xs font-sans ${
-          isDark ? 'bg-slate-950 border-slate-800' : 'bg-gray-100 border-gray-200'
-        }`}>
+        <div className="flex p-0.5 rounded-xl border border-app-border bg-app-bg-secondary text-xs font-sans">
           <button
             type="button"
             onClick={() => setSelectionTypeFilter('main')}
             className={`py-1.5 px-3.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
               selectionTypeFilter === 'main'
-                ? (isDark ? 'bg-slate-800 text-indigo-400 shadow-sm' : 'bg-white text-indigo-700 shadow-xs')
-                : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-900')
+                ? 'bg-app-card-bg text-app-text-primary shadow-xs'
+                : 'text-app-text-secondary hover:text-app-text-primary'
             }`}
           >
             本選考
@@ -375,8 +352,8 @@ export default function DashboardView() {
             onClick={() => setSelectionTypeFilter('intern')}
             className={`py-1.5 px-3.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1 ${
               selectionTypeFilter === 'intern'
-                ? (isDark ? 'bg-slate-800 text-indigo-400 shadow-sm' : 'bg-white text-indigo-700 shadow-xs')
-                : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-900')
+                ? 'bg-app-card-bg text-app-text-primary shadow-xs'
+                : 'text-app-text-secondary hover:text-app-text-primary'
             }`}
           >
             インターン選考
