@@ -283,22 +283,22 @@ export default function DashboardView() {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-55 overflow-hidden"
+                  className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-800 z-55 overflow-hidden"
                 >
-                  <div className="p-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                    <span className="text-sm font-bold text-gray-805">通知センター（Simulated）</span>
+                  <div className="p-3 bg-gray-55 dark:bg-slate-950 border-b border-gray-100 dark:border-slate-850 flex items-center justify-between">
+                    <span className="text-sm font-bold text-gray-850 dark:text-slate-200">通知センター（Simulated）</span>
                     {unreadNotifs.length > 0 && (
                       <button 
                         onClick={markAllNotificationsRead}
-                        className={`text-xs font-semibold ${theme.text} hover:underline`}
+                        className={`text-xs font-semibold ${theme.text} hover:underline cursor-pointer`}
                       >
                         すべて既読
                       </button>
                     )}
                   </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                  <div className="max-h-72 overflow-y-auto divide-y divide-gray-50 dark:divide-slate-850">
                     {notifications.length === 0 ? (
-                      <div className="p-4 text-center text-xs text-gray-400">通知はありません</div>
+                      <div className="p-4 text-center text-xs text-gray-400 dark:text-slate-500">通知はありません</div>
                     ) : (
                       notifications.map(notif => (
                         <div 
@@ -312,13 +312,22 @@ export default function DashboardView() {
                               setActiveTab('todos');
                             }
                           }}
-                          className={`p-3 text-left transition-colors cursor-pointer hover:bg-gray-50 ${!notif.read ? 'bg-indigo-50/20' : ''}`}
+                          className={`p-3 text-left transition-colors cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-850 ${!notif.read ? 'bg-indigo-50/20 dark:bg-indigo-950/20' : ''}`}
                         >
                           <div className="flex items-start gap-2">
                             <span className="mt-0.5">
                               {notif.type === 'es_deadline' && <span className="inline-block h-2.5 w-2.5 rounded-full bg-rose-500" />}
                               {notif.type === 'interview' && <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-500" />}
                               {notif.type === 'todo' && <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-gray-900 dark:text-slate-100">{notif.title}</p>
+                              <p className="text-[11px] text-gray-655 dark:text-slate-350 line-clamp-2 mt-0.5">{notif.message}</p>
+                              <span className="text-[9px] text-gray-455 dark:text-slate-500 font-mono mt-1 block">{notif.timestamp}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))d-500" />}
                             </span>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-gray-900">{notif.title}</p>
@@ -379,68 +388,68 @@ export default function DashboardView() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div 
           onClick={() => setActiveTab('companies')}
-          className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100/60 hover:bg-blue-50/80 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+          className="bg-blue-50/50 dark:bg-blue-950/20 p-4 rounded-2xl border border-blue-100/60 dark:border-blue-900/30 hover:bg-blue-50/80 dark:hover:bg-blue-950/30 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-blue-700">エントリー社数</span>
-            <Building2 className="h-4 w-4 text-blue-500" />
+            <span className="text-xs font-bold text-blue-700 dark:text-blue-300">エントリー社数</span>
+            <Building2 className="h-4 w-4 text-blue-500 dark:text-blue-400" />
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-3xl font-black font-mono text-blue-900">{totalRegistered}</span>
-            <span className="text-xs text-blue-600 font-sans">社</span>
+            <span className="text-3xl font-black font-mono text-blue-900 dark:text-blue-200">{totalRegistered}</span>
+            <span className="text-xs text-blue-600 dark:text-blue-400 font-sans">社</span>
           </div>
-          <div className="text-[10px] text-blue-500/80 mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-[10px] text-blue-500/80 dark:text-blue-400/70 mt-1 flex items-center gap-0.5 truncate">
             <span>Interest / ES / Selecting</span>
           </div>
         </div>
 
         <div 
           onClick={() => setActiveTab('companies')}
-          className="bg-amber-50/50 p-4 rounded-2xl border border-amber-100/60 hover:bg-amber-50/80 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+          className="bg-amber-50/50 dark:bg-amber-950/20 p-4 rounded-2xl border border-amber-100/60 dark:border-amber-900/30 hover:bg-amber-50/80 dark:hover:bg-amber-950/30 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-700">ES提出数</span>
-            <Award className="h-4 w-4 text-amber-500" />
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-300">ES提出数</span>
+            <Award className="h-4 w-4 text-amber-500 dark:text-amber-400" />
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-3xl font-black font-mono text-amber-900">{esSubmittedCount}</span>
-            <span className="text-xs text-amber-600 font-sans">社</span>
+            <span className="text-3xl font-black font-mono text-amber-900 dark:text-amber-200">{esSubmittedCount}</span>
+            <span className="text-xs text-amber-600 dark:text-amber-400 font-sans">社</span>
           </div>
-          <div className="text-[10px] text-amber-500/80 mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-[10px] text-amber-500/80 dark:text-amber-400/70 mt-1 flex items-center gap-0.5 truncate">
             <span>（提出完了および選考中）</span>
           </div>
         </div>
 
         <div 
           onClick={() => setActiveTab('companies')}
-          className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100/60 hover:bg-emerald-50/80 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+          className="bg-emerald-50/50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100/60 dark:border-emerald-900/30 hover:bg-emerald-50/80 dark:hover:bg-emerald-950/30 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-700">面接実施（進行）</span>
-            <Calendar className="h-4 w-4 text-emerald-500" />
+            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">面接実施（進行）</span>
+            <Calendar className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-3xl font-black font-mono text-emerald-900">{interviewCount}</span>
-            <span className="text-xs text-emerald-600 font-sans">社</span>
+            <span className="text-3xl font-black font-mono text-emerald-900 dark:text-emerald-200">{interviewCount}</span>
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-sans">社</span>
           </div>
-          <div className="text-[10px] text-emerald-500/80 mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-[10px] text-emerald-500/80 dark:text-emerald-400/70 mt-1 flex items-center gap-0.5 truncate">
             <span>面接予定・実績のある企業</span>
           </div>
         </div>
 
         <div 
           onClick={() => setActiveTab('companies')}
-          className="bg-yellow-50/50 p-4 rounded-2xl border border-yellow-200 hover:bg-yellow-105 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+          className="bg-yellow-50/50 dark:bg-yellow-950/20 p-4 rounded-2xl border border-yellow-200 dark:border-yellow-900/30 hover:bg-yellow-50/80 dark:hover:bg-yellow-950/30 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-yellow-800">内定獲得数</span>
-            <Award className="h-4 w-4 text-yellow-600 animate-bounce" />
+            <span className="text-xs font-bold text-yellow-800 dark:text-yellow-300">内定獲得数</span>
+            <Award className="h-4 w-4 text-yellow-600 dark:text-yellow-400 animate-bounce" />
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-3xl font-black font-mono text-yellow-900">{offersCount}</span>
-            <span className="text-xs text-yellow-600 font-sans">社</span>
+            <span className="text-3xl font-black font-mono text-yellow-900 dark:text-yellow-200">{offersCount}</span>
+            <span className="text-xs text-yellow-600 dark:text-yellow-400 font-sans">社</span>
           </div>
-          <div className="text-[10px] text-yellow-600/80 mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-[10px] text-yellow-600/80 dark:text-yellow-400/70 mt-1 flex items-center gap-0.5 truncate">
             <span>（内定および内々定）</span>
           </div>
         </div>
@@ -534,18 +543,18 @@ export default function DashboardView() {
         </div>
 
         {/* --- Action Funnel Visual (選考フロー図) --- */}
-        <div className="md:col-span-7 bg-white p-5 rounded-2xl md:rounded-3xl border border-gray-100 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+        <div className="md:col-span-7 bg-white dark:bg-slate-900 p-5 rounded-2xl md:rounded-3xl border border-gray-100 dark:border-slate-800 shadow-xs flex flex-col justify-between text-left">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-850 pb-3">
             <div>
-              <h3 className="text-sm font-bold text-gray-850 flex items-center gap-1.5">
+              <h3 className="text-sm font-bold text-gray-850 dark:text-slate-200 flex items-center gap-1.5">
                 <TrendingUp className={`h-4.5 w-4.5 ${theme.text}`} />
                 選考フロー図 (ファネル表示)
               </h3>
-              <p className="text-[11px] text-gray-400 mt-0.5">
+              <p className="text-[11px] text-gray-400 dark:text-slate-400 mt-0.5">
                 ステージごとの企業数と、次のステージへの通過率 (%) を自動集計
               </p>
             </div>
-            <span className="text-[10px] font-bold text-gray-400 font-mono">Simulated Funnel</span>
+            <span className="text-[10px] font-bold text-gray-400 dark:text-slate-500 font-mono">Simulated Funnel</span>
           </div>
 
           {/* Funnel Layers */}
@@ -788,33 +797,33 @@ export default function DashboardView() {
       </div>
 
       {/* --- Dynamic Shukatsu Chart Mode Switcher (就活サマリー指標) --- */}
-      <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-3">
+      <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-xs text-left">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 dark:border-slate-850 pb-3">
           <div>
-            <h3 className="text-sm font-bold text-gray-850 flex items-center gap-1.5">
+            <h3 className="text-sm font-bold text-gray-850 dark:text-slate-200 flex items-center gap-1.5">
               <TrendingUp className="h-4.5 w-4.5 text-amber-500" />
               就活サマリー指標
             </h3>
-            <p className="text-[11px] text-gray-400 mt-0.5">応募社数・ES・面接・内定の数</p>
+            <p className="text-[11px] text-gray-400 dark:text-slate-400 mt-0.5">応募社数・ES・面接・内定の数</p>
           </div>
           
           {/* Toggle Modes */}
-          <div className="flex p-0.5 bg-gray-100 rounded-lg text-[11px]">
+          <div className="flex p-0.5 bg-gray-100 dark:bg-slate-950 rounded-lg text-[11px]">
             <button 
               onClick={() => setGraphMode('weekly')}
-              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'weekly' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'weekly' ? 'bg-white dark:bg-slate-800 shadow-xs text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'}`}
             >
               週表示 (棒)
             </button>
             <button 
               onClick={() => setGraphMode('monthly')}
-              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'monthly' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'monthly' ? 'bg-white dark:bg-slate-800 shadow-xs text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'}`}
             >
               月表示 (線)
             </button>
             <button 
               onClick={() => setGraphMode('cumulative')}
-              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'cumulative' ? 'bg-white shadow-xs text-gray-900' : 'text-gray-500 hover:text-gray-900'}`}
+              className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'cumulative' ? 'bg-white dark:bg-slate-800 shadow-xs text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-slate-200'}`}
             >
               累計カード
             </button>
@@ -1030,15 +1039,15 @@ export default function DashboardView() {
       </div>
 
       {/* --- Goals Progress Bar Card Section --- */}
-      <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-xs">
-        <h3 className="text-sm font-bold text-gray-850 flex items-center gap-1.5 border-b border-gray-50 pb-3">
+      <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-xs text-left">
+        <h3 className="text-sm font-bold text-gray-850 dark:text-slate-200 flex items-center gap-1.5 border-b border-gray-50 dark:border-slate-850 pb-3">
           <Award className={`h-4.5 w-4.5 ${theme.text}`} />
           現在の就活目標達成率
         </h3>
 
         <div className="mt-4 space-y-4">
           {goals.length === 0 ? (
-            <div className="py-4 text-center text-xs text-gray-400">
+            <div className="py-4 text-center text-xs text-gray-400 dark:text-slate-500">
               目標はまだ登録されていません。「Todoリスト」タブの一番下で目標を設定してみましょう！
             </div>
           ) : (
@@ -1048,13 +1057,13 @@ export default function DashboardView() {
               const rate = subs.length > 0 ? Math.round((finished / subs.length) * 100) : 0;
 
               return (
-                <div key={goal.id} className="space-y-1.5 p-3 rounded-xl hover:bg-gray-50/50 border border-gray-50 transition-colors">
+                <div key={goal.id} className="space-y-1.5 p-3 rounded-xl hover:bg-gray-50/50 dark:hover:bg-slate-850/50 border border-gray-50 dark:border-slate-800 transition-colors">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-gray-800">{goal.title}</span>
+                    <span className="font-bold text-gray-800 dark:text-slate-200">{goal.title}</span>
                     <span className={`font-mono font-bold ${theme.textDark}`}>{rate}% ({finished}/{subs.length})</span>
                   </div>
                   {/* Progress bar container */}
-                  <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-gray-100 dark:bg-slate-950 h-2 rounded-full overflow-hidden">
                     <motion.div 
                       className={`h-full ${theme.bg}`}
                       initial={{ width: 0 }}
