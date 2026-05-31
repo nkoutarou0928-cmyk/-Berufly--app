@@ -32,8 +32,10 @@ interface AppContextType {
   startAsGuest: () => void;
   signUpWithEmail: (email: string, pass: string, name: string) => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
-  loginWithSocial: (provider: 'google' | 'apple') => Promise<void>;
+  verifyEmailCode: (email: string, code: string) => Promise<void>;
+  resendVerificationCode: (email: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  completePasswordReset: (email: string, token: string, newPass: string) => Promise<void>;
   migrateGuestToAccount: (email: string, name: string) => Promise<void>;
   logout: () => void;
   deleteAccount: () => void;
@@ -286,28 +288,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (storedNotifications) {
         setNotifications(JSON.parse(storedNotifications));
       } else {
-        const initial = initialStatus === 'authenticated' ? [] : [
-          {
-            id: 'notif-1',
-            title: 'ES締め切り間近',
-            message: 'フロンティア食品株式会社のES締め切り（2026-06-01）が3日後に迫っています！確認しましょう。',
-            type: 'es_deadline',
-            targetCompanyId: 'co-2',
-            date: '2026-05-29',
-            timestamp: '今日 09:00',
-            read: false
-          },
-          {
-            id: 'notif-2',
-            title: '面接リマインド',
-            message: '明日、グローバルテック株式会社の書類通過面談を振り返るか、一次面接の準備を行いましょう。',
-            type: 'interview',
-            targetCompanyId: 'co-1',
-            date: '2026-06-02',
-            timestamp: '昨日 17:30',
-            read: true
-          }
-        ];
+        const initial: NotificationItem[] = [];
         setNotifications(initial);
         localStorage.setItem(`shukatsu_notifications` + suffix, JSON.stringify(initial));
       }
@@ -433,50 +414,104 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setSelfAnalysis(INITIAL_SELF_ANALYSIS);
   };
 
+  // ----------------------------------------------------
+  // 🔐 厳格なログイン・認証・パスワードリセットのモックDBロジック
+  // ----------------------------------------------------
+  interface RegisteredUser {
+    email: string;
+    pass: string;
+    name: string;
+    uid: string;
+    verified: boolean;
+    verificationCode?: string;
+    resetToken?: string;
+    resetTokenExpires?: number;
+  }
+
+  const INITIAL_REGISTERED_USERS: RegisteredUser[] = [
+    {
+      email: 'demo@career.com',
+      pass: 'Career1234',
+      name: 'デモユーザー',
+      uid: 'user-demo-1234',
+      verified: true
+    }
+  ];
+
+  const getRegisteredUsers = (): RegisteredUser[] => {
+    const users = localStorage.getItem('shukatsu_registered_users');
+    if (!users) {
+      localStorage.setItem('shukatsu_registered_users', JSON.stringify(INITIAL_REGISTERED_USERS));
+      return INITIAL_REGISTERED_USERS;
+    }
+    try {
+      return JSON.parse(users);
+    } catch (e) {
+      return INITIAL_REGISTERED_USERS;
+    }
+  };
+
+  const saveRegisteredUsers = (users: RegisteredUser[]) => {
+    localStorage.setItem('shukatsu_registered_users', JSON.stringify(users));
+  };
+
   const signUpWithEmail = async (email: string, pass: string, name: string) => {
-    // Generate a secure account UID
+    const users = getRegisteredUsers();
+    
+    // メール重複チェック
+    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+      throw new Error('このメールアドレスはすでに登録されています');
+    }
+
+    // パスワード要件チェック (8文字以上・英数字混合)
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(pass)) {
+      throw new Error('パスワードは8文字以上で、英数字の両方を含める必要があります');
+    }
+
+    // 6桁の認証コード生成
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
     const uid = `user-${Date.now()}`;
-    localStorage.setItem('shukatsu_auth_status', 'authenticated');
-    localStorage.setItem('shukatsu_user_uid', uid);
-    localStorage.setItem('shukatsu_user_email', email);
-    localStorage.setItem('shukatsu_user_name', name);
 
-    // Save initial fresh settings for this newly signed-up profile
-    const personalSettings = { ...INITIAL_SETTINGS, profileName: name };
-    localStorage.setItem(`shukatsu_settings_${uid}`, JSON.stringify(personalSettings));
-    localStorage.setItem(`shukatsu_companies_${uid}`, JSON.stringify([]));
-    localStorage.setItem(`shukatsu_trash_companies_${uid}`, JSON.stringify([]));
-    localStorage.setItem(`shukatsu_todos_${uid}`, JSON.stringify([]));
-    localStorage.setItem(`shukatsu_ob_visits_${uid}`, JSON.stringify([]));
-    localStorage.setItem(`shukatsu_comparisons_${uid}`, JSON.stringify([]));
-    localStorage.setItem(`shukatsu_self_analysis_${uid}`, JSON.stringify({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] }));
-    localStorage.setItem(`shukatsu_notifications_${uid}`, JSON.stringify([]));
+    const newUser: RegisteredUser = {
+      email,
+      pass,
+      name,
+      uid,
+      verified: false,
+      verificationCode: code
+    };
 
-    setCurrentUser({ uid, email, name, isAnonymous: false });
-    setAuthStatus('authenticated');
+    users.push(newUser);
+    saveRegisteredUsers(users);
 
-    setCompanies([]);
-    setTrashCompanies([]);
-    setTodos([]);
-    setSettings(personalSettings);
-    setObVisits([]);
-    setOfferComparisons([]);
-    setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
-    setNotifications([]);
-
-    triggerSync();
+    // アラートでダミーメール通知
+    alert(`📧 [認証メール送信] ${email} 宛に確認メールを送信しました。\n認証コード: ${code}\n\nメール認証が完了するまでログインはできません。`);
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
-    const uid = `user-linked`;
+    const users = getRegisteredUsers();
+    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (!user) {
+      throw new Error('このメールアドレスは登録されていません');
+    }
+
+    if (user.pass !== pass) {
+      throw new Error('パスワードが正しくありません');
+    }
+
+    if (!user.verified) {
+      throw new Error('VERIFICATION_REQUIRED');
+    }
+
+    const uid = user.uid;
     localStorage.setItem('shukatsu_auth_status', 'authenticated');
     localStorage.setItem('shukatsu_user_uid', uid);
     localStorage.setItem('shukatsu_user_email', email);
-    // Linked name or general username
-    const name = email.split('@')[0];
-    localStorage.setItem('shukatsu_user_name', name);
+    localStorage.setItem('shukatsu_user_name', user.name);
 
-    // Try load existing records or boot with basic initial data
+    // 既存データのロードまたは初期化
     const storedCo = localStorage.getItem(`shukatsu_companies_${uid}`);
     const personalCo = storedCo ? JSON.parse(storedCo) : INITIAL_COMPANIES;
 
@@ -489,7 +524,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const storedTrash = localStorage.getItem(`shukatsu_trash_companies_${uid}`);
     const personalTrash = storedTrash ? JSON.parse(storedTrash) : [];
 
-    setCurrentUser({ uid, email, name, isAnonymous: false });
+    setCurrentUser({ uid, email, name: user.name, isAnonymous: false });
     setAuthStatus('authenticated');
 
     setCompanies(personalCo);
@@ -500,16 +535,88 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     triggerSync();
   };
 
-  const loginWithSocial = async (provider: 'google' | 'apple') => {
-    const providerMail = provider === 'google' ? 'social.google@career.com' : 'social.apple@career.com';
-    const providerName = provider === 'google' ? 'Google就職アカウント' : 'Apple就職アカウント';
-    await signUpWithEmail(providerMail, 'social-password', providerName);
+  const verifyEmailCode = async (email: string, code: string) => {
+    const users = getRegisteredUsers();
+    const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (idx === -1) {
+      throw new Error('このメールアドレスは登録されていません');
+    }
+
+    if (users[idx].verificationCode !== code) {
+      throw new Error('認証コードが正しくありません');
+    }
+
+    users[idx].verified = true;
+    users[idx].verificationCode = undefined;
+    saveRegisteredUsers(users);
+
+    alert('✅ メールアドレスの認証が完了しました！ログインしてください。');
+  };
+
+  const resendVerificationCode = async (email: string) => {
+    const users = getRegisteredUsers();
+    const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (idx === -1) {
+      throw new Error('このメールアドレスは登録されていません');
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    users[idx].verificationCode = code;
+    saveRegisteredUsers(users);
+
+    alert(`📧 [認証メール再送信] ${email} 宛に新しい確認メールを送信しました。\n認証コード: ${code}`);
   };
 
   const resetPassword = async (email: string) => {
-    // Simulated SSL-encrypted reset token dispatch
-    console.log(`Sending encrypted SSL reset password query to: ${email}`);
-    alert(`パスワード再設定リンクを送信しました:\n${email} 宛のメールをご確認の上、再設定を行ってください。`);
+    const users = getRegisteredUsers();
+    const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (idx === -1) {
+      throw new Error('このメールアドレスは登録されていません');
+    }
+
+    const token = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = Date.now() + 24 * 60 * 60 * 1000; // 24時間
+
+    users[idx].resetToken = token;
+    users[idx].resetTokenExpires = expires;
+    saveRegisteredUsers(users);
+
+    alert(`📧 [パスワードリセットメール] ${email} 宛に再設定メールを送信しました（有効期限：24時間）。\nリセットトークン: ${token}\n\nこのトークンを使用して新しいパスワードを設定してください。`);
+  };
+
+  const completePasswordReset = async (email: string, token: string, newPass: string) => {
+    const users = getRegisteredUsers();
+    const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (idx === -1) {
+      throw new Error('このメールアドレスは登録されていません');
+    }
+
+    const user = users[idx];
+
+    if (!user.resetToken || user.resetToken !== token) {
+      throw new Error('リセットトークンが正しくありません');
+    }
+
+    if (!user.resetTokenExpires || user.resetTokenExpires < Date.now()) {
+      throw new Error('リセットトークンの有効期限が切れています（有効期限は24時間です）');
+    }
+
+    // パスワード要件チェック (8文字以上・英数字混合)
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+    if (!passwordRegex.test(newPass)) {
+      throw new Error('新しいパスワードは8文字以上で、英数字の両方を含める必要があります');
+    }
+
+    users[idx].pass = newPass;
+    users[idx].resetToken = undefined;
+    users[idx].resetTokenExpires = undefined;
+    saveRegisteredUsers(users);
+
+    alert('📝 パスワードの再設定が完了しました！新しいパスワードでログインしてください。');
   };
 
   // Convert guest accounts to cloud synchronized databases seamlessly
@@ -607,7 +714,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (companies.length === 0) return;
     
     // Check if we need to issue warnings
-    const todayStr = '2026-05-29';
+    const todayStr = new Date().toISOString().split('T')[0];
     const today = new Date(todayStr);
 
     const generatedAlarms: NotificationItem[] = [...notifications];
@@ -1071,7 +1178,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addNotificationAlarm = (title: string, message: string, type: NotificationItem['type'], targetCompanyId?: string, targetTodoId?: string) => {
-    const todayStr = '2026-05-29';
+    const todayStr = new Date().toISOString().split('T')[0];
     const newAlarm: NotificationItem = {
       id: `alarm-${Date.now()}`,
       title,
@@ -1122,8 +1229,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         startAsGuest,
         signUpWithEmail,
         loginWithEmail,
-        loginWithSocial,
+        verifyEmailCode,
+        resendVerificationCode,
         resetPassword,
+        completePasswordReset,
         migrateGuestToAccount,
         logout,
         deleteAccount,

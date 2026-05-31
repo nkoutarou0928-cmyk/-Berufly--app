@@ -44,6 +44,7 @@ export default function DashboardView() {
   const [graphMode, setGraphMode] = useState<'weekly' | 'monthly' | 'cumulative'>('cumulative');
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectionTypeFilter, setSelectionTypeFilter] = useState<'main' | 'intern'>('main');
+  const [todoPeriod, setTodoPeriod] = useState<'today' | 'weekly' | 'monthly'>('weekly');
 
   const filteredCompanies = companies.filter(c => {
     const type = c.selectionType || 'main'; // fall back to main
@@ -68,22 +69,36 @@ export default function DashboardView() {
     : filteredCompanies.filter(c => c.status === 'offered').length;
 
   // --- 2. Todo completion rate ---
-  const weeklyTodos = todos.filter(t => t.scope === 'weekly' || t.scope === 'today');
-  const totalWeeklyCount = weeklyTodos.length;
-  const completedWeeklyCount = weeklyTodos.filter(t => t.completed).length;
-  const weeklyCompletionRate = totalWeeklyCount > 0 ? Math.round((completedWeeklyCount / totalWeeklyCount) * 105) : 0;
-  const remainingWeeklyCount = totalWeeklyCount - completedWeeklyCount;
+  const periodTodos = todos.filter(t => {
+    if (todoPeriod === 'today') return t.scope === 'today';
+    if (todoPeriod === 'weekly') return t.scope === 'weekly' || t.scope === 'today';
+    return t.scope === 'monthly' || t.scope === 'weekly' || t.scope === 'today';
+  });
+  const totalPeriodCount = periodTodos.length;
+  const completedPeriodCount = periodTodos.filter(t => t.completed).length;
+  const periodCompletionRate = totalPeriodCount > 0 ? Math.round((completedPeriodCount / totalPeriodCount) * 100) : 0;
+  const remainingPeriodCount = totalPeriodCount - completedPeriodCount;
 
-  // Completion Rate Messages
+  // Completion Rate Messages based on period
   let completionMessage = '';
-  if (weeklyCompletionRate === 100) {
-    completionMessage = '完璧！今週も全力でした！';
-  } else if (weeklyCompletionRate >= 70) {
-    completionMessage = `もう少し！あと${remainingWeeklyCount}個で完了！`;
-  } else if (weeklyCompletionRate >= 40) {
-    completionMessage = '折り返し！後半も頑張ろう！';
+  if (todoPeriod === 'today') {
+    if (periodCompletionRate === 100) completionMessage = '完璧！今日のタスク全制覇！';
+    else if (periodCompletionRate >= 70) completionMessage = `もう少し！残り${remainingPeriodCount}個！`;
+    else if (periodCompletionRate >= 40) completionMessage = 'いい調子！引き続き頑張ろう！';
+    else if (totalPeriodCount > 0) completionMessage = '今日のタスクを開始しよう！';
+    else completionMessage = '今日のタスクを追加しましょう！';
+  } else if (todoPeriod === 'weekly') {
+    if (periodCompletionRate === 100) completionMessage = '完璧！今週も全力でした！';
+    else if (periodCompletionRate >= 70) completionMessage = `順調！あと${remainingPeriodCount}個で完了！`;
+    else if (periodCompletionRate >= 40) completionMessage = '折り返し！後半も頑張ろう！';
+    else if (totalPeriodCount > 0) completionMessage = '今週もコツコツ進めましょう！';
+    else completionMessage = '今週のタスクを追加しましょう！';
   } else {
-    completionMessage = '今日から巻き返そう！';
+    if (periodCompletionRate === 100) completionMessage = '完璧！今月のTodoは全制覇！';
+    else if (periodCompletionRate >= 70) completionMessage = `目標間近！あと${remainingPeriodCount}個！`;
+    else if (periodCompletionRate >= 40) completionMessage = '着実に前進中！頑張りましょう！';
+    else if (totalPeriodCount > 0) completionMessage = '今月の目標をスタート！';
+    else completionMessage = '今月のタスクを追加しましょう！';
   }
 
   // --- 3. Compute Funnel (本選考用) ---
@@ -166,11 +181,22 @@ export default function DashboardView() {
     setActiveTab('companies');
   };
 
+  const getFormattedToday = () => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = today.getMonth() + 1;
+    const d = today.getDate();
+    const w = ['日', '月', '火', '水', '木', '金', '土'][today.getDay()];
+    return `${y}年${m}月${d}日(${w})`;
+  };
+
   // Days since Shukatsu Start Date helper
   const getShukatsuDaysCount = () => {
     if (!settings.shukatsuStartDate) return null;
     const start = new Date(settings.shukatsuStartDate);
-    const today = new Date('2026-05-29'); // Simulated local time 2026-05-29
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    start.setHours(0, 0, 0, 0);
     const diffTime = today.getTime() - start.getTime();
     if (diffTime < 0) {
       const diffDays = Math.ceil(Math.abs(diffTime) / (1000 * 60 * 60 * 24));
@@ -219,7 +245,7 @@ export default function DashboardView() {
       }`}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-left">
           <h2 className={`text-base font-bold tracking-tight ${isDark ? 'text-slate-150' : 'text-gray-900'} font-sans`}>
-            2026年5月29日(金)
+            {getFormattedToday()}
           </h2>
           {filteredCompanies.length > 0 && (
             <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
@@ -411,26 +437,52 @@ export default function DashboardView() {
             <Award className="h-4 w-4 text-yellow-600 animate-bounce" />
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-3xl font-black font-mono text-yellow-950">{offersCount}</span>
-            <span className="text-xs text-yellow-700 font-sans">社</span>
+            <span className="text-3xl font-black font-mono text-yellow-900">{offersCount}</span>
+            <span className="text-xs text-yellow-600 font-sans">社</span>
           </div>
-          <div className="text-[10px] text-yellow-700/80 mt-1 flex items-center gap-0.5 font-sans truncate">
-            <span>🎉 内定おめでとうございます！</span>
+          <div className="text-[10px] text-yellow-600/80 mt-1 flex items-center gap-0.5 truncate">
+            <span>（内定および内々定）</span>
           </div>
         </div>
       </div>
 
-      {/* --- Second Grid: Weekly achievement rate (Pie Chart) & Mode switcher Graph --- */}
+      {/* --- Second Grid: Achievement rate & Mode switcher Graph --- */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         
-        {/* Weekly Completion Progress Widget */}
-        <div className="md:col-span-5 bg-white p-5 rounded-3xl border border-gray-100 shadow-xs flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-gray-850 flex items-center gap-1.5">
-              <CheckSquare className={`h-4.5 w-4.5 ${theme.text}`} />
-              今週のTodo達成率
-            </h3>
-            <p className="text-[11px] text-gray-400 mt-0.5">今日と今週締め切りのタスク集計</p>
+        {/* Todo Completion Progress Widget */}
+        <div className="md:col-span-5 bg-white dark:bg-slate-900 p-5 rounded-3xl border border-gray-100 dark:border-slate-800 shadow-xs flex flex-col justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-bold text-gray-850 dark:text-slate-150 flex items-center gap-1.5 text-[13px]">
+                <CheckSquare className={`h-4.5 w-4.5 ${theme.text}`} />
+                Todo達成率 ({todoPeriod === 'today' ? '今日' : todoPeriod === 'weekly' ? '今週' : '今月'})
+              </h3>
+              <p className="text-[10px] text-gray-400 mt-0.5">
+                {todoPeriod === 'today' ? '今日のタスク集計' : todoPeriod === 'weekly' ? '今日と今週のタスク集計' : '今日・今週・今月のタスク集計'}
+              </p>
+            </div>
+            
+            {/* Period Toggle Buttons */}
+            <div className="flex p-0.5 bg-gray-100 dark:bg-slate-950 rounded-lg text-[9px] font-sans font-bold self-start sm:self-center">
+              {[
+                { id: 'today', label: '今日' },
+                { id: 'weekly', label: '今週' },
+                { id: 'monthly', label: '今月' }
+              ].map(btn => (
+                <button
+                  key={btn.id}
+                  type="button"
+                  onClick={() => setTodoPeriod(btn.id as any)}
+                  className={`px-2 py-1 rounded-md transition-all cursor-pointer border-0 ${
+                    todoPeriod === btn.id 
+                      ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-150 shadow-xs' 
+                      : 'text-gray-500 hover:text-gray-950 dark:text-slate-400 dark:hover:text-slate-200 bg-transparent'
+                  }`}
+                >
+                  {btn.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="my-5 flex flex-col items-center justify-center">
@@ -441,7 +493,7 @@ export default function DashboardView() {
                   cx="56"
                   cy="56"
                   r="48"
-                  className="stroke-gray-100 fill-transparent"
+                  className="stroke-gray-100 dark:stroke-slate-800 fill-transparent"
                   strokeWidth="8"
                 />
                 <motion.circle
@@ -453,13 +505,20 @@ export default function DashboardView() {
                   strokeLinecap="round"
                   stroke={theme.hex}
                   initial={{ strokeDasharray: "301.6", strokeDashoffset: "301.6" }}
-                  animate={{ strokeDashoffset: 301.6 - (301.6 * weeklyCompletionRate) / 100 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  animate={{ strokeDashoffset: 301.6 - (301.6 * periodCompletionRate) / 100 }}
+                  transition={{ type: 'spring', damping: 15, stiffness: 80 }}
                 />
               </svg>
               <div className="absolute flex flex-col items-center">
-                <span className="text-2xl font-black font-mono text-gray-900">{weeklyCompletionRate}%</span>
-                <span className="text-[10px] text-gray-400 font-medium">{completedWeeklyCount} / {totalWeeklyCount} 完了</span>
+                <motion.span 
+                  key={periodCompletionRate}
+                  initial={{ scale: 0.8, opacity: 0.5 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="text-2xl font-black font-mono text-gray-900 dark:text-white"
+                >
+                  {periodCompletionRate}%
+                </motion.span>
+                <span className="text-[10px] text-gray-400 font-medium">{completedPeriodCount} / {totalPeriodCount} 完了</span>
               </div>
             </div>
 
@@ -468,9 +527,9 @@ export default function DashboardView() {
             </div>
           </div>
 
-          <div className="border-t border-gray-50 pt-3 text-[11px] text-gray-500 flex justify-between">
-            <span>完了: {completedWeeklyCount}件</span>
-            <span>残タスク: {remainingWeeklyCount}件</span>
+          <div className="border-t border-gray-50 dark:border-slate-850 pt-3 text-[11px] text-gray-500 flex justify-between">
+            <span>完了: {completedPeriodCount}件</span>
+            <span>残タスク: {remainingPeriodCount}件</span>
           </div>
         </div>
 

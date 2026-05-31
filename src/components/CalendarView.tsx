@@ -25,8 +25,15 @@ export default function CalendarView() {
   // States
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   
-  // Set default initial calendar focus around current simulated date: 2026-05-29 (May 2026)
-  const [currentDate, setCurrentDate] = useState<Date>(new Date('2026-05-29'));
+  const today = new Date();
+  const isToday = (date: Date) => {
+    return date.getFullYear() === today.getFullYear() &&
+           date.getMonth() === today.getMonth() &&
+           date.getDate() === today.getDate();
+  };
+
+  // Set default initial calendar focus around current date
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
 
   // Helpers for Month Grid calculation
   const year = currentDate.getFullYear();
@@ -231,7 +238,7 @@ export default function CalendarView() {
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
-            onClick={() => setCurrentDate(new Date('2026-05-29'))}
+            onClick={() => setCurrentDate(new Date())}
             className="px-2.5 py-1 text-[10px] font-bold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
           >
             今月
@@ -280,11 +287,7 @@ export default function CalendarView() {
                 const dayNum = dateObj.getDate();
                 const matchedEvents = getEventsForDate(dateObj);
                 
-                // Highlight today (May 29, 2026)
-                const isCurrentSimulatedToday = 
-                  dateObj.getFullYear() === 2026 && 
-                  dateObj.getMonth() === 4 && 
-                  dateObj.getDate() === 29;
+                const isCurrentSimulatedToday = isToday(dateObj);
 
                 return (
                   <div 
@@ -344,10 +347,7 @@ export default function CalendarView() {
                 const dayNum = dateObj.getDate();
                 const matchedEvents = getEventsForDate(dateObj);
                 
-                const isCurrentSimulatedToday = 
-                  dateObj.getFullYear() === 2026 && 
-                  dateObj.getMonth() === 4 && 
-                  dateObj.getDate() === 29;
+                const isCurrentSimulatedToday = isToday(dateObj);
 
                 return (
                   <div 
