@@ -46,8 +46,6 @@ function WelcomeScreen() {
     startAsGuest, 
     signUpWithEmail, 
     loginWithEmail, 
-    verifyEmailCode,
-    resendVerificationCode,
     resetPassword,
     completePasswordReset,
     settings 
@@ -55,7 +53,7 @@ function WelcomeScreen() {
   
   const theme = getTheme(settings.themeColor);
 
-  const [activeTab, setActiveTab] = useState<'guest' | 'signup' | 'login' | 'verify' | 'forgot_password' | 'reset_password'>('guest');
+  const [activeTab, setActiveTab] = useState<'guest' | 'signup' | 'login' | 'forgot_password' | 'reset_password'>('guest');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -63,9 +61,7 @@ function WelcomeScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Verification & reset states
-  const [verificationCode, setVerificationCode] = useState('');
-  const [pendingVerificationEmail, setPendingVerificationEmail] = useState('');
+  // Reset states
   const [resetToken, setResetToken] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
@@ -89,8 +85,6 @@ function WelcomeScreen() {
             return;
           }
           await signUpWithEmail(email, password, name);
-          setPendingVerificationEmail(email);
-          setActiveTab('verify');
         } else if (activeTab === 'login') {
           if (!email || !password) {
             alert('メールアドレスとパスワードを入力してください。');
@@ -100,46 +94,11 @@ function WelcomeScreen() {
           await loginWithEmail(email, password);
         }
       } catch (err: any) {
-        if (err.message === 'VERIFICATION_REQUIRED') {
-          alert('⚠️ メールアドレスの認証が完了していません。送信された確認コードを入力してください。');
-          setPendingVerificationEmail(email);
-          setActiveTab('verify');
-        } else {
-          alert(err.message || '認証処理中にエラーが発生しました。再度お試しください。');
-        }
+        alert(err.message || '認証処理中にエラーが発生しました。再度お試しください。');
       } finally {
         setIsLoading(false);
       }
     }, 850);
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!verificationCode) {
-      alert('認証コードを入力してください。');
-      return;
-    }
-    setIsLoading(true);
-    setTimeout(async () => {
-      try {
-        await verifyEmailCode(pendingVerificationEmail, verificationCode);
-        setActiveTab('login');
-        setPassword('');
-        setVerificationCode('');
-      } catch (err: any) {
-        alert(err.message || '認証コードが正しくありません。');
-      } finally {
-        setIsLoading(false);
-      }
-    }, 700);
-  };
-
-  const handleResendCode = async () => {
-    try {
-      await resendVerificationCode(pendingVerificationEmail);
-    } catch (err: any) {
-      alert(err.message || '認証コードの再送信に失敗しました。');
-    }
   };
 
   const handleRequestReset = async (e: React.FormEvent) => {
@@ -374,59 +333,6 @@ function WelcomeScreen() {
                 >
                   {activeTab === 'signup' ? '✨ 新規アカウントを作成する' : '🔑 ログインしてデータを同期'}
                 </button>
-              </form>
-            )}
-
-            {/* Email Verification Screen */}
-            {activeTab === 'verify' && (
-              <form onSubmit={handleVerifyCode} className="space-y-4 text-left">
-                <div className="p-4 bg-amber-50/50 dark:bg-slate-950/20 border border-amber-200/50 rounded-2xl">
-                  <span className="text-xs font-bold text-amber-800 dark:text-amber-400 block mb-1">
-                    📬 メールアドレス確認コード
-                  </span>
-                  <p className="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
-                    登録したメールアドレス {pendingVerificationEmail} 宛に送信された6桁の確認コードを入力してください。メール認証が完了するまでログインはできません。
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] text-gray-400 font-bold mb-1">確認コード（6桁の数字）</label>
-                  <input
-                    type="text"
-                    required
-                    value={verificationCode}
-                    onChange={e => setVerificationCode(e.target.value)}
-                    placeholder="123456"
-                    maxLength={6}
-                    className="w-full px-3 py-2 text-center text-lg font-mono font-bold tracking-widest bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:outline-hidden text-gray-800 dark:text-white"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleResendCode}
-                    className="flex-1 py-2 border border-gray-200 dark:border-slate-800 font-bold rounded-xl text-gray-500 text-xs hover:bg-gray-50 dark:hover:bg-slate-850 cursor-pointer text-center"
-                  >
-                    🔄 コードを再送信
-                  </button>
-                  <button
-                    type="submit"
-                    className={`flex-1 py-2 font-bold rounded-xl text-white ${theme.bg} ${theme.hover} cursor-pointer text-xs`}
-                  >
-                    ✅ 認証を完了する
-                  </button>
-                </div>
-
-                <div className="text-center mt-2">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('login')}
-                    className="text-[10px] font-bold text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 hover:underline cursor-pointer"
-                  >
-                    ログイン画面に戻る
-                  </button>
-                </div>
               </form>
             )}
 

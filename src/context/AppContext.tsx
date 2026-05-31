@@ -158,12 +158,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       
       if (darkActive) {
         document.documentElement.classList.add('dark');
-        document.body.style.backgroundColor = '#111827';
-        document.body.style.color = '#F9FAFB';
+        document.body.style.backgroundColor = '#090A0C';
+        document.body.style.color = '#ECEFF4';
       } else {
         document.documentElement.classList.remove('dark');
-        document.body.style.backgroundColor = '#F8F9FA';
-        document.body.style.color = '#1F2937';
+        document.body.style.backgroundColor = '#FFFFFF';
+        document.body.style.color = '#111622';
       }
     };
 
@@ -469,8 +469,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       throw new Error('パスワードは8文字以上で、英数字の両方を含める必要があります');
     }
 
-    // 6桁の認証コード生成
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
     const uid = `user-${Date.now()}`;
 
     const newUser: RegisteredUser = {
@@ -478,15 +476,43 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       pass,
       name,
       uid,
-      verified: false,
-      verificationCode: code
+      verified: true
     };
 
     users.push(newUser);
     saveRegisteredUsers(users);
 
-    // アラートでダミーメール通知
-    alert(`📧 [認証メール送信] ${email} 宛に確認メールを送信しました。\n認証コード: ${code}\n\nメール認証が完了するまでログインはできません。`);
+    // 登録と同時に即時ログイン状態に移行
+    localStorage.setItem('shukatsu_auth_status', 'authenticated');
+    localStorage.setItem('shukatsu_user_uid', uid);
+    localStorage.setItem('shukatsu_user_email', email);
+    localStorage.setItem('shukatsu_user_name', name);
+
+    const personalSettings = { ...INITIAL_SETTINGS, profileName: name };
+    localStorage.setItem(`shukatsu_settings_${uid}`, JSON.stringify(personalSettings));
+    localStorage.setItem(`shukatsu_companies_${uid}`, JSON.stringify([]));
+    localStorage.setItem(`shukatsu_trash_companies_${uid}`, JSON.stringify([]));
+    localStorage.setItem(`shukatsu_todos_${uid}`, JSON.stringify([]));
+    localStorage.setItem(`shukatsu_ob_visits_${uid}`, JSON.stringify([]));
+    localStorage.setItem(`shukatsu_comparisons_${uid}`, JSON.stringify([]));
+    localStorage.setItem(`shukatsu_self_analysis_${uid}`, JSON.stringify({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] }));
+    localStorage.setItem(`shukatsu_notifications_${uid}`, JSON.stringify([]));
+
+    setCurrentUser({ uid, email, name, isAnonymous: false });
+    setAuthStatus('authenticated');
+
+    setCompanies([]);
+    setTrashCompanies([]);
+    setTodos([]);
+    setSettings(personalSettings);
+    setObVisits([]);
+    setOfferComparisons([]);
+    setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+    setNotifications([]);
+
+    triggerSync();
+
+    alert('✨ 新規登録およびログインが完了しました！');
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
