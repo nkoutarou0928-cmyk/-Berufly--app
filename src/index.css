@@ -2,11 +2,32 @@
 
 @theme {
   --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+
+  /* 既存の slate パレットを、青みを抑えた目に優しい超深ダークグレーにオーバーライド */
+  --color-slate-50: #F9FAFB;
+  --color-slate-100: #F3F4F6;
+  --color-slate-150: #EBECEF;
+  --color-slate-200: #E5E7EB;
+  --color-slate-350: #D1D5DB;
+  --color-slate-400: #9CA3AF;
+  --color-slate-500: #6B7280;
+  --color-slate-700: #374151;
+  --color-slate-800: #191B21; /* 目に優しいカードの境界線（ダークモード） */
+  --color-slate-850: #101216; /* 中間のカード・ポップアップ背景 */
+  --color-slate-900: #090A0C; /* 黒に近い深みのあるダークグレー背景 */
+  --color-slate-950: #040506; /* 漆黒に近い背景 */
+
+  /* グレーパレットも清潔感のある高コントラスト・低刺激な色調に調整 */
+  --color-gray-50: #FAFAFA; /* より純白に近いクリーンな背景 */
+  --color-gray-100: #F4F4F6; /* ライトモードでの清潔感のある境界線 */
+  --color-gray-150: #E5E7EB;
+  --color-gray-200: #D1D5DB;
 }
 
 body {
-  background-color: #F8F9FA;
-  color: #1F2937;
+  background-color: #FFFFFF;
+  color: #111622;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Custom scrollbar to keep layout clean and minimal */
@@ -21,6 +42,12 @@ body {
   background: #E5E7EB;
   border-radius: 9999px;
 }
+.dark ::-webkit-scrollbar-thumb {
+  background: #191B21;
+}
 ::-webkit-scrollbar-thumb:hover {
   background: #D1D5DB;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #374151;
 }

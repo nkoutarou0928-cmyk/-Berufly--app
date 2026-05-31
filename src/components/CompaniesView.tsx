@@ -528,7 +528,7 @@ export default function CompaniesView() {
 
   // New Intern Selection step tracking states
   const [newStepName, setNewStepName] = useState('');
-  const [newStepDate, setNewStepDate] = useState('2026-05-29');
+  const [newStepDate, setNewStepDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [newStepResult, setNewStepResult] = useState<'selecting' | 'passed' | 'rejected' | 'none'>('none');
   const [newStepNotes, setNewStepNotes] = useState('');
   const [showAddStepForm, setShowAddStepForm] = useState(false);
@@ -540,7 +540,7 @@ export default function CompaniesView() {
   const [handoffCopyNotes, setHandoffCopyNotes] = useState(true);
 
   // New Interview Form states
-  const [newIntDate, setNewIntDate] = useState('2026-05-29');
+  const [newIntDate, setNewIntDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [newIntStage, setNewIntStage] = useState('一次面接');
   const [newIntFormat, setNewIntFormat] = useState<'individual' | 'group' | 'other'>('individual');
   const [newIntQ, setNewIntQ] = useState('');
@@ -552,7 +552,7 @@ export default function CompaniesView() {
   // OB visit form states
   const [newObName, setNewObName] = useState('');
   const [newObDept, setNewObDept] = useState('');
-  const [newObDate, setNewObDate] = useState('2026-05-29');
+  const [newObDate, setNewObDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [newObNotes, setNewObNotes] = useState('');
 
   // Offer comparison form states
@@ -1093,22 +1093,6 @@ export default function CompaniesView() {
                     一覧
                   </button>
                 </div>
-
-                <button
-                  onClick={() => {
-                    setIsAdminMode(!isAdminMode);
-                    if (!isAdminMode) {
-                      loadAdminData();
-                    }
-                  }}
-                  className={`flex items-center gap-1.5 text-[10px] font-black py-1.5 px-3 rounded-lg border cursor-pointer transition-all ${
-                    isAdminMode
-                      ? 'bg-rose-55 border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-350'
-                      : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 dark:bg-slate-900 dark:border-slate-800 dark:text-indigo-400'
-                  } shadow-xs mr-1.5 md:mr-2`}
-                >
-                  {isAdminMode ? '🛡️ 管理者閉じる' : '🛡️ 管理者メニュー'}
-                </button>
 
                 <button
                   onClick={() => setShowAddCompanyModal(true)}

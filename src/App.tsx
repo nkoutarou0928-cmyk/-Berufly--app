@@ -46,19 +46,25 @@ function WelcomeScreen() {
     startAsGuest, 
     signUpWithEmail, 
     loginWithEmail, 
-    loginWithSocial, 
     resetPassword,
+    completePasswordReset,
     settings 
   } = useApp();
   
   const theme = getTheme(settings.themeColor);
 
-  const [activeTab, setActiveTab] = useState<'guest' | 'signup' | 'login'>('guest');
+  const [activeTab, setActiveTab] = useState<'guest' | 'signup' | 'login' | 'forgot_password' | 'reset_password'>('guest');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Reset states
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
 
   const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,8 +74,13 @@ function WelcomeScreen() {
     setTimeout(async () => {
       try {
         if (activeTab === 'signup') {
-          if (!email || !password || !name) {
+          if (!email || !password || !name || !passwordConfirm) {
             alert('すべての入力欄を埋めてください。');
+            setIsLoading(false);
+            return;
+          }
+          if (password !== passwordConfirm) {
+            alert('パスワードとパスワード確認が一致しません。');
             setIsLoading(false);
             return;
           }
@@ -82,12 +93,57 @@ function WelcomeScreen() {
           }
           await loginWithEmail(email, password);
         }
-      } catch (err) {
-        alert('認証処理中にエラーが発生しました。再度お試しください。');
+      } catch (err: any) {
+        alert(err.message || '認証処理中にエラーが発生しました。再度お試しください。');
       } finally {
         setIsLoading(false);
       }
     }, 850);
+  };
+
+  const handleRequestReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      alert('再設定用メールアドレスを入力してください。');
+      return;
+    }
+    setIsLoading(true);
+    setTimeout(async () => {
+      try {
+        await resetPassword(email);
+        setActiveTab('reset_password');
+      } catch (err: any) {
+        alert(err.message || 'パスワードリセットメールの送信に失敗しました。');
+      } finally {
+        setIsLoading(false);
+      }
+    }, 700);
+  };
+
+  const handleCompleteReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetToken || !newPassword || !newPasswordConfirm) {
+      alert('すべての入力欄を埋めてください。');
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      alert('新しいパスワードとパスワード確認が一致しません。');
+      return;
+    }
+    setIsLoading(true);
+    setTimeout(async () => {
+      try {
+        await completePasswordReset(email, resetToken, newPassword);
+        setActiveTab('login');
+        setResetToken('');
+        setNewPassword('');
+        setNewPasswordConfirm('');
+      } catch (err: any) {
+        alert(err.message || 'パスワードの再設定に失敗しました。');
+      } finally {
+        setIsLoading(false);
+      }
+    }, 700);
   };
 
   // Automated biometric face/finger simulation login bypass
@@ -95,10 +151,9 @@ function WelcomeScreen() {
   const handleBiometricLogin = () => {
     setIsLoading(true);
     setTimeout(() => {
-      // Prompt simulated dialog
       alert('🔐 外部端末 Touch ID / Face ID 連携チェックに成功しました（SSL鍵ペア検証）。\n自動ログインに成功しました。データベースを自動同期します。');
-      const savedEmail = localStorage.getItem('shukatsu_user_email') || 'biometric.user@career.com';
-      loginWithEmail(savedEmail, 'biometric-pass-bypassed');
+      const savedEmail = localStorage.getItem('shukatsu_user_email') || 'demo@career.com';
+      loginWithEmail(savedEmail, 'Career1234');
       setIsLoading(false);
     }, 700);
   };
@@ -126,25 +181,28 @@ function WelcomeScreen() {
         </div>
 
         {/* Tab Buttons */}
-        <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100 dark:bg-slate-950 rounded-2xl mb-5">
-          {[
-            { id: 'guest', label: 'ゲスト利用' },
-            { id: 'signup', label: '新規登録' },
-            { id: 'login', label: 'ログイン' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`py-2 text-[11px] font-black rounded-xl transition-all cursor-pointer ${
-                activeTab === tab.id 
-                  ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-150 shadow-xs' 
-                  : 'text-gray-400 dark:text-slate-500 hover:text-gray-900 dark:hover:text-slate-350'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {['guest', 'signup', 'login'].includes(activeTab) && (
+          <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100 dark:bg-slate-950 rounded-2xl mb-5">
+            {[
+              { id: 'guest', label: 'ゲスト利用' },
+              { id: 'signup', label: '新規登録' },
+              { id: 'login', label: 'ログイン' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`py-2 text-[11px] font-black rounded-xl transition-all cursor-pointer ${
+                  activeTab === tab.id 
+                    ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-150 shadow-xs' 
+                    : 'text-gray-400 dark:text-slate-500 hover:text-gray-900 dark:hover:text-slate-350'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {isLoading ? (
           <div className="py-12 flex flex-col items-center justify-center space-y-3">
@@ -167,6 +225,7 @@ function WelcomeScreen() {
                 </div>
 
                 <button
+                  type="button"
                   onClick={startAsGuest}
                   className={`w-full py-2.5 font-bold rounded-xl text-white ${theme.bg} ${theme.hover} cursor-pointer shadow-sm text-xs active:scale-98 transition`}
                 >
@@ -224,33 +283,46 @@ function WelcomeScreen() {
                       required
                       value={password}
                       onChange={e => setPassword(e.target.value)}
-                      placeholder="6文字以上のパスワード"
+                      placeholder="8文字以上の英数字混合パスワード"
                       className="w-full pl-8.5 pr-10 py-2 text-xs bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:outline-hidden text-gray-800 dark:text-white"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-650"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-650 cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                 </div>
 
+                {activeTab === 'signup' && (
+                  <div>
+                    <label className="block text-[10px] text-gray-400 font-bold mb-1">パスワード（確認）</label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                        <Lock className="h-3.5 w-3.5" />
+                      </span>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={passwordConfirm}
+                        onChange={e => setPasswordConfirm(e.target.value)}
+                        placeholder="パスワードを再入力してください"
+                        className="w-full pl-8.5 pr-3 py-2 text-xs bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:outline-hidden text-gray-800 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {activeTab === 'login' && (
                   <div className="text-right">
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!email) {
-                          alert('再設定メールを送信するため、まずメールアドレス欄を入力してください。');
-                          return;
-                        }
-                        resetPassword(email);
-                      }}
-                      className="text-[10px] hover:underline font-bold text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
+                      onClick={() => setActiveTab('forgot_password')}
+                      className="text-[10px] hover:underline font-bold text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 cursor-pointer"
                     >
-                      パスワードをお忘れですか？
+                      パスワードを忘れた方はこちら
                     </button>
                   </div>
                 )}
@@ -259,48 +331,138 @@ function WelcomeScreen() {
                   type="submit"
                   className={`w-full py-2.5 font-bold rounded-xl text-white ${theme.bg} ${theme.hover} cursor-pointer shadow-sm text-xs active:scale-98 transition mt-2`}
                 >
-                  {activeTab === 'signup' ? '✨ アカウントを作成して始める' : '🔑 ログインしてデータを同期'}
+                  {activeTab === 'signup' ? '✨ 新規アカウントを作成する' : '🔑 ログインしてデータを同期'}
                 </button>
               </form>
             )}
 
-            {/* Google / Apple Social Logins */}
-            {(activeTab === 'signup' || activeTab === 'login') && (
-              <div className="space-y-2.5 pt-3 border-t border-gray-100 dark:border-slate-800">
-                <div className="text-center">
-                  <span className="text-[10px] font-bold text-gray-400">またはソーシャル連携で認証</span>
+            {/* Forgot Password Request Screen */}
+            {activeTab === 'forgot_password' && (
+              <form onSubmit={handleRequestReset} className="space-y-4 text-left">
+                <div className="p-4 bg-gray-50 dark:bg-slate-950/20 border border-gray-200 dark:border-slate-800 rounded-2xl">
+                  <span className="text-xs font-bold text-gray-700 dark:text-slate-300 block mb-1">
+                    🔑 パスワード再設定メール送信
+                  </span>
+                  <p className="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
+                    登録されているメールアドレスを入力してください。24時間有効なパスワードリセット用の再設定コードがメール送信されます。
+                  </p>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+
+                <div>
+                  <label className="block text-[10px] text-gray-400 font-bold mb-1">メールアドレス</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                      <User className="h-3.5 w-3.5" />
+                    </span>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="example@career.com"
+                      className="w-full pl-8.5 pr-3 py-2 text-xs bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:outline-hidden text-gray-800 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className={`w-full py-2.5 font-bold rounded-xl text-white ${theme.bg} ${theme.hover} cursor-pointer shadow-sm text-xs active:scale-98 transition`}
+                >
+                  📧 リセットコードを送信する
+                </button>
+
+                <div className="text-center mt-2">
                   <button
-                    onClick={() => {
-                      setIsLoading(true);
-                      setTimeout(() => {
-                        loginWithSocial('google');
-                        setIsLoading(false);
-                      }, 700);
-                    }}
-                    className="flex items-center justify-center gap-1.5 py-2 px-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition cursor-pointer dark:border-slate-850 dark:hover:bg-slate-850 text-[11px]"
+                    type="button"
+                    onClick={() => setActiveTab('login')}
+                    className="text-[10px] font-bold text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 hover:underline cursor-pointer"
                   >
-                    <span>🌐 Googleで連携</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsLoading(true);
-                      setTimeout(() => {
-                        loginWithSocial('apple');
-                        setIsLoading(false);
-                      }, 700);
-                    }}
-                    className="flex items-center justify-center gap-1.5 py-2 px-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition cursor-pointer dark:border-slate-850 dark:hover:bg-slate-850 text-[11px]"
-                  >
-                    <span>🍎 Appleで連携</span>
+                    ログイン画面に戻る
                   </button>
                 </div>
-              </div>
+              </form>
+            )}
+
+            {/* Complete Password Reset Screen */}
+            {activeTab === 'reset_password' && (
+              <form onSubmit={handleCompleteReset} className="space-y-3 text-left">
+                <div className="p-4 bg-indigo-50/50 dark:bg-slate-950/20 border border-indigo-205/50 rounded-2xl">
+                  <span className="text-xs font-bold text-indigo-800 dark:text-indigo-400 block mb-1">
+                    📝 パスワードの再設定
+                  </span>
+                  <p className="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
+                    メールに送信された6桁のリセットコードを入力し、新しいパスワード（8文字以上かつ英数字混合）を設定してください。
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-gray-400 font-bold mb-1">リセットコード</label>
+                  <input
+                    type="text"
+                    required
+                    value={resetToken}
+                    onChange={e => setResetToken(e.target.value)}
+                    placeholder="123456"
+                    className="w-full px-3 py-2 text-center text-base font-mono font-bold bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:outline-hidden text-gray-800 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-gray-400 font-bold mb-1">新しいパスワード</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                      <Lock className="h-3.5 w-3.5" />
+                    </span>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="8文字以上の英数字混合パスワード"
+                      className="w-full pl-8.5 pr-10 py-2 text-xs bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:outline-hidden text-gray-800 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] text-gray-400 font-bold mb-1">新しいパスワード（確認）</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                      <Lock className="h-3.5 w-3.5" />
+                    </span>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={newPasswordConfirm}
+                      onChange={e => setNewPasswordConfirm(e.target.value)}
+                      placeholder="新しいパスワードを再入力してください"
+                      className="w-full pl-8.5 pr-3 py-2 text-xs bg-gray-50 dark:bg-slate-950 border border-gray-200 dark:border-slate-800 rounded-xl focus:outline-hidden text-gray-800 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className={`w-full py-2.5 font-bold rounded-xl text-white ${theme.bg} ${theme.hover} cursor-pointer shadow-sm text-xs active:scale-98 transition`}
+                >
+                  🔐 新しいパスワードを保存する
+                </button>
+
+                <div className="text-center mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('login')}
+                    className="text-[10px] font-bold text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 hover:underline cursor-pointer"
+                  >
+                    ログイン画面に戻る
+                  </button>
+                </div>
+              </form>
             )}
 
             {/* Quick biometric login bypass shortcut */}
-            {isBiometricSaved && activeTab !== 'guest' && (
+            {isBiometricSaved && activeTab !== 'guest' && ['signup', 'login'].includes(activeTab) && (
               <div className="pt-2">
                 <button
                   type="button"

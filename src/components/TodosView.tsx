@@ -41,7 +41,7 @@ export default function TodosView() {
   // States
   const [activeScope, setActiveScope] = useState<TodoScope>('today');
   const [newTitle, setNewTitle] = useState('');
-  const [newDueDate, setNewDueDate] = useState('2026-05-29');
+  const [newDueDate, setNewDueDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [newGoalTitle, setNewGoalTitle] = useState('');
   const [newSubtaskInputs, setNewSubtaskInputs] = useState<Record<string, string>>({});
 
