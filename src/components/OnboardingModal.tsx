@@ -369,7 +369,8 @@ export const OnboardingModal: React.FC = () => {
   const { 
     showOnboarding, 
     setShowOnboarding, 
-    startAsGuest 
+    startAsGuest,
+    authStatus
   } = useApp();
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -431,7 +432,9 @@ export const OnboardingModal: React.FC = () => {
   };
 
   const handleCompleteOnboarding = () => {
-    startAsGuest();
+    if (authStatus !== 'authenticated') {
+      startAsGuest();
+    }
     localStorage.setItem('shukatsu_onboarded', 'true');
     setShowOnboarding(false);
   };
