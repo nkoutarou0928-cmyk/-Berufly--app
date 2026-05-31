@@ -365,68 +365,68 @@ export default function DashboardView() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div 
           onClick={() => setActiveTab('companies')}
-          className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30 hover:bg-blue-100/60 dark:hover:bg-blue-950/30 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+          className="bg-app-card-bg p-4 rounded-2xl border border-app-card-border hover:bg-app-button-hover transition-all cursor-pointer relative group overflow-hidden shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-blue-700 dark:text-blue-300">エントリー社数</span>
+            <span className="text-xs font-bold text-app-text-secondary">エントリー社数</span>
             <Building2 className="h-4 w-4 text-blue-500 dark:text-blue-400" />
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-3xl font-black font-mono text-blue-900 dark:text-blue-200">{totalRegistered}</span>
-            <span className="text-xs text-blue-600 dark:text-blue-400 font-sans">社</span>
+            <span className="text-3xl font-black font-mono text-blue-600 dark:text-blue-400">{totalRegistered}</span>
+            <span className="text-xs text-app-text-secondary font-sans">社</span>
           </div>
-          <div className="text-[10px] text-blue-600 dark:text-blue-400/70 mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-[10px] text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
             <span>Interest / ES / Selecting</span>
           </div>
         </div>
 
         <div 
           onClick={() => setActiveTab('companies')}
-          className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30 hover:bg-amber-100/60 dark:hover:bg-amber-950/30 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+          className="bg-app-card-bg p-4 rounded-2xl border border-app-card-border hover:bg-app-button-hover transition-all cursor-pointer relative group overflow-hidden shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-700 dark:text-amber-300">ES提出数</span>
+            <span className="text-xs font-bold text-app-text-secondary">ES提出数</span>
             <Award className="h-4 w-4 text-amber-500 dark:text-amber-400" />
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-3xl font-black font-mono text-amber-900 dark:text-amber-200">{esSubmittedCount}</span>
-            <span className="text-xs text-amber-600 dark:text-amber-400 font-sans">社</span>
+            <span className="text-3xl font-black font-mono text-amber-600 dark:text-amber-400">{esSubmittedCount}</span>
+            <span className="text-xs text-app-text-secondary font-sans">社</span>
           </div>
-          <div className="text-[10px] text-amber-650 dark:text-amber-400/70 mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-[10px] text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
             <span>（提出完了および選考中）</span>
           </div>
         </div>
 
         <div 
           onClick={() => setActiveTab('companies')}
-          className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100/60 dark:hover:bg-emerald-950/30 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+          className="bg-app-card-bg p-4 rounded-2xl border border-app-card-border hover:bg-app-button-hover transition-all cursor-pointer relative group overflow-hidden shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">面接実施（進行）</span>
+            <span className="text-xs font-bold text-app-text-secondary">面接実施（進行）</span>
             <Calendar className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-3xl font-black font-mono text-emerald-900 dark:text-emerald-200">{interviewCount}</span>
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-sans">社</span>
+            <span className="text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">{interviewCount}</span>
+            <span className="text-xs text-app-text-secondary font-sans">社</span>
           </div>
-          <div className="text-[10px] text-emerald-600 dark:text-emerald-400/70 mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-[10px] text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
             <span>面接予定・実績のある企業</span>
           </div>
         </div>
 
         <div 
           onClick={() => setActiveTab('companies')}
-          className="bg-yellow-50 dark:bg-yellow-950/20 p-4 rounded-2xl border border-yellow-100 dark:border-yellow-900/30 hover:bg-yellow-100/60 dark:hover:bg-yellow-950/30 transition-all cursor-pointer relative group overflow-hidden shadow-xs"
+          className="bg-app-card-bg p-4 rounded-2xl border border-app-card-border hover:bg-app-button-hover transition-all cursor-pointer relative group overflow-hidden shadow-xs"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-yellow-800 dark:text-yellow-300">内定獲得数</span>
+            <span className="text-xs font-bold text-app-text-secondary">内定獲得数</span>
             <Award className="h-4 w-4 text-yellow-600 dark:text-yellow-400 animate-bounce" />
           </div>
           <div className="mt-2.5 flex items-baseline gap-1">
-            <span className="text-3xl font-black font-mono text-yellow-900 dark:text-yellow-200">{offersCount}</span>
-            <span className="text-xs text-yellow-600 dark:text-yellow-400 font-sans">社</span>
+            <span className="text-3xl font-black font-mono text-yellow-600 dark:text-yellow-400">{offersCount}</span>
+            <span className="text-xs text-app-text-secondary font-sans">社</span>
           </div>
-          <div className="text-[10px] text-yellow-700 dark:text-yellow-400/70 mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-[10px] text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
             <span>（内定および内々定）</span>
           </div>
         </div>
