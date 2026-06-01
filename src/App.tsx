@@ -489,7 +489,8 @@ function AppContent() {
     isDark, 
     authStatus, 
     currentUser, 
-    syncStatus 
+    syncStatus,
+    logout
   } = useApp();
   
   const theme = getTheme(settings.themeColor);
@@ -628,8 +629,8 @@ function AppContent() {
               <span className={`text-xs font-black tracking-tight block ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>
                 CareerNavi+
               </span>
-              <span className="text-[9px] text-gray-400 font-bold block -mt-0.5">
-                {authStatus === 'guest' ? '👤 ゲストモード（未同期）' : `☁️ 同期アカウント: ${currentUser?.name}`}
+              <span className="text-[9px] text-gray-400 font-bold block -mt-0.5 font-sans">
+                {authStatus === 'guest' ? '👤 ゲストモード（未同期）' : `☁️ 同期: ${currentUser?.name} (${currentUser?.email})`}
               </span>
             </div>
           </div>
@@ -645,6 +646,14 @@ function AppContent() {
               <CornerDownRight className={`h-3 w-3 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
               {syncStatus === 'offline' ? 'OFFLINE' : syncStatus === 'syncing' ? 'SYNCING...' : 'ONLINE SYNCED'}
             </span>
+
+            <button
+              type="button"
+              onClick={logout}
+              className="text-[10px] font-bold text-rose-500 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 px-2.5 py-1 rounded-full transition-colors cursor-pointer border border-rose-100 dark:border-rose-900/40 shrink-0 font-sans"
+            >
+              ログアウト
+            </button>
           </div>
         </div>
       </header>
