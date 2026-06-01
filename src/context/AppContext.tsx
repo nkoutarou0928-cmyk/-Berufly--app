@@ -689,6 +689,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       throw new Error('パスワードは8文字以上で、英数字の両方を含める必要があります');
     }
 
+    console.log('[Supabase SignUp]: Attempting signup for email:', email);
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password: pass,
@@ -700,24 +702,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     });
 
     if (error) {
+      console.error('[Supabase SignUp Error]:', error);
+      alert('【新規登録エラー】\n登録に失敗しました: ' + error.message);
       throw new Error(error.message);
     }
 
     if (!data.user) {
+      console.error('[Supabase SignUp Error]: User data is empty after signup.');
       throw new Error('登録中にエラーが発生しました');
     }
 
     const uid = data.user.id;
 
-    // Initialize self_analysis table for this user in Supabase
-    const initialSelfAnalysis = {
-      user_id: uid,
-      self_pr: '',
-      gakuchika: '',
-      base_motivations: [],
-      faqs: []
-    };
-    await supabase.from('self_analysis').upsert(initialSelfAnalysis);
+    // Check if email confirmation is required (session is null when email confirm is enabled on Supabase dashboard)
+    if (!data.session) {
+      console.log('[Supabase SignUp]: Account created, waiting for email confirmation.');
+      alert('✨ アカウントの作成に成功しました！\n確認用の認証メールを送信しましたので、メール内の確認リンクをクリックしてアカウントを有効化してからログインを行ってください。');
+      return;
+    }
+
+    console.log('[Supabase SignUp]: Signup completed with immediate session.');
 
     localStorage.setItem('shukatsu_auth_status', 'authenticated');
     localStorage.setItem('shukatsu_user_uid', uid);
