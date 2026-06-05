@@ -118,6 +118,11 @@ interface AppContextType {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   clearNotifications: () => void;
+
+  // Direct Supabase save triggers
+  saveCompanies: (newCompanies: Company[]) => Promise<void>;
+  saveTodos: (newTodos: TodoItem[]) => Promise<void>;
+  saveSelfAnalysis: (newAnalysis: SelfAnalysis) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -411,28 +416,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // Save to LocalStorage helpers, supporting reactive account databases
   const saveCompanies = async (newCompanies: Company[]) => {
-    console.log('--- [Supabase Sync] saveCompaniesが呼び出されました ---');
-    console.log('データ (newCompanies):', newCompanies);
-    console.log('現在の認証状態 (authStatus):', authStatus);
-    console.log('現在のユーザー (currentUser):', currentUser);
+    console.log("saveCompaniesが呼び出されました。データ:", newCompanies);
     setCompanies(newCompanies);
-    localStorage.setItem(`shukatsu_companies` + getSuffix(), JSON.stringify(newCompanies));
-    if (authStatus === 'authenticated' && currentUser) {
-      console.log('[Supabase Sync] saveCompanies: 認証状態のためSupabaseと同期を行います。');
-      try {
-        setSyncStatus('syncing');
 
-        // Dynamically get active user from Supabase auth
-        const { data: { user }, error: authUserErr } = await supabase.auth.getUser();
-        if (authUserErr) {
-          console.error('[Supabase saveCompanies Auth Error]:', authUserErr);
-          alert("データの保存に失敗しました（認証確認エラー）: " + authUserErr.message);
-          throw authUserErr;
-        }
-        if (!user) {
-          throw new Error('Supabase authenticated user session not found');
-        }
-        const activeUserId = user.id;
+    try {
+      const { data: { user }, error: authUserErr } = await supabase.auth.getUser();
+      const activeUserId = user?.id;
+      const suffix = activeUserId ? `_${activeUserId}` : '';
+      localStorage.setItem(`shukatsu_companies` + suffix, JSON.stringify(newCompanies));
+
+      if (activeUserId) {
+        console.log('[Supabase Sync] saveCompanies: 認証状態のためSupabaseと同期を行います。ユーザーID:', activeUserId);
+        setSyncStatus('syncing');
 
         // Simple and robust: clean slate approach for the active user
         const { error: deleteErr } = await supabase.from('companies').delete().eq('user_id', activeUserId);
@@ -532,14 +527,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
 
         setSyncStatus('synced');
-      } catch (e: any) {
-        console.error('[saveCompanies caught exception]:', e);
-        setSyncStatus('error');
-        alert("データの保存に失敗しました: " + (e.message || e));
+      } else {
+        console.log('[Supabase Sync] saveCompanies: 未ログインまたはゲストのためSupabase同期はスキップされます。');
       }
-    } else {
-      console.log('[Supabase Sync] saveCompanies: 未ログインまたはゲストのためSupabase同期はスキップされます。');
-      if (authStatus === 'authenticated') triggerSync();
+    } catch (e: any) {
+      console.error('[saveCompanies caught exception]:', e);
+      setSyncStatus('error');
+      alert("データの保存に失敗しました: " + (e.message || e));
     }
   };
 
@@ -550,28 +544,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const saveTodos = async (newTodos: TodoItem[]) => {
-    console.log('--- [Supabase Sync] saveTodosが呼び出されました ---');
-    console.log('データ (newTodos):', newTodos);
-    console.log('現在の認証状態 (authStatus):', authStatus);
-    console.log('現在のユーザー (currentUser):', currentUser);
+    console.log("saveTodosが呼び出されました。データ:", newTodos);
     setTodos(newTodos);
-    localStorage.setItem(`shukatsu_todos` + getSuffix(), JSON.stringify(newTodos));
-    if (authStatus === 'authenticated' && currentUser) {
-      console.log('[Supabase Sync] saveTodos: 認証状態のためSupabaseと同期を行います。');
-      try {
-        setSyncStatus('syncing');
 
-        // Dynamically get active user from Supabase auth
-        const { data: { user }, error: authUserErr } = await supabase.auth.getUser();
-        if (authUserErr) {
-          console.error('[Supabase saveTodos Auth Error]:', authUserErr);
-          alert("データの保存に失敗しました（Todo認証確認エラー）: " + authUserErr.message);
-          throw authUserErr;
-        }
-        if (!user) {
-          throw new Error('Supabase authenticated user session not found');
-        }
-        const activeUserId = user.id;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const activeUserId = user?.id;
+      const suffix = activeUserId ? `_${activeUserId}` : '';
+      localStorage.setItem(`shukatsu_todos` + suffix, JSON.stringify(newTodos));
+
+      if (activeUserId) {
+        console.log('[Supabase Sync] saveTodos: 認証状態のためSupabaseと同期を行います。ユーザーID:', activeUserId);
+        setSyncStatus('syncing');
 
         const { error: deleteErr } = await supabase.from('todos').delete().eq('user_id', activeUserId);
         if (deleteErr) {
@@ -598,14 +582,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         setSyncStatus('synced');
-      } catch (e: any) {
-        console.error('[saveTodos caught exception]:', e);
-        setSyncStatus('error');
-        alert("データの保存に失敗しました: " + (e.message || e));
+      } else {
+        console.log('[Supabase Sync] saveTodos: 未ログインまたはゲストのためSupabase同期はスキップされます。');
       }
-    } else {
-      console.log('[Supabase Sync] saveTodos: 未ログインまたはゲストのためSupabase同期はスキップされます。');
-      if (authStatus === 'authenticated') triggerSync();
+    } catch (e: any) {
+      console.error('[saveTodos caught exception]:', e);
+      setSyncStatus('error');
+      alert("データの保存に失敗しました: " + (e.message || e));
     }
   };
 
@@ -634,28 +617,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const saveSelfAnalysis = async (newAnalysis: SelfAnalysis) => {
-    console.log('--- [Supabase Sync] saveSelfAnalysisが呼び出されました ---');
-    console.log('データ (newAnalysis):', newAnalysis);
-    console.log('現在の認証状態 (authStatus):', authStatus);
-    console.log('現在のユーザー (currentUser):', currentUser);
+    console.log("saveSelfAnalysisが呼び出されました。データ:", newAnalysis);
     setSelfAnalysis(newAnalysis);
-    localStorage.setItem(`shukatsu_self_analysis` + getSuffix(), JSON.stringify(newAnalysis));
-    if (authStatus === 'authenticated' && currentUser) {
-      console.log('[Supabase Sync] saveSelfAnalysis: 認証状態のためSupabaseと同期を行います。');
-      try {
-        setSyncStatus('syncing');
 
-        // Dynamically get active user from Supabase auth
-        const { data: { user }, error: authUserErr } = await supabase.auth.getUser();
-        if (authUserErr) {
-          console.error('[Supabase saveSelfAnalysis Auth Error]:', authUserErr);
-          alert("データの保存に失敗しました（自己分析認証確認エラー）: " + authUserErr.message);
-          throw authUserErr;
-        }
-        if (!user) {
-          throw new Error('Supabase authenticated user session not found');
-        }
-        const activeUserId = user.id;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const activeUserId = user?.id;
+      const suffix = activeUserId ? `_${activeUserId}` : '';
+      localStorage.setItem(`shukatsu_self_analysis` + suffix, JSON.stringify(newAnalysis));
+
+      if (activeUserId) {
+        console.log('[Supabase Sync] saveSelfAnalysis: 認証状態のためSupabaseと同期を行います。ユーザーID:', activeUserId);
+        setSyncStatus('syncing');
 
         const toUpsert = {
           user_id: activeUserId,
@@ -672,14 +645,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
 
         setSyncStatus('synced');
-      } catch (e: any) {
-        console.error('[saveSelfAnalysis caught exception]:', e);
-        setSyncStatus('error');
-        alert("データの保存に失敗しました: " + (e.message || e));
+      } else {
+        console.log('[Supabase Sync] saveSelfAnalysis: 未ログインまたはゲストのためSupabase同期はスキップされます。');
       }
-    } else {
-      console.log('[Supabase Sync] saveSelfAnalysis: 未ログインまたはゲストのためSupabase同期はスキップされます。');
-      if (authStatus === 'authenticated') triggerSync();
+    } catch (e: any) {
+      console.error('[saveSelfAnalysis caught exception]:', e);
+      setSyncStatus('error');
+      alert("データの保存に失敗しました: " + (e.message || e));
     }
   };
 
@@ -1627,7 +1599,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         addNotificationAlarm,
         markNotificationRead,
         markAllNotificationsRead,
-        clearNotifications
+        clearNotifications,
+        saveCompanies,
+        saveTodos,
+        saveSelfAnalysis
       }}
     >
       {children}

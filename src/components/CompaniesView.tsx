@@ -67,7 +67,8 @@ export default function CompaniesView() {
     addOfferComparison,
     deleteOfferComparison,
     isDark,
-    selfAnalysis
+    selfAnalysis,
+    saveCompanies
   } = useApp();
 
   const theme = getTheme(settings.themeColor);
@@ -677,7 +678,9 @@ export default function CompaniesView() {
     e.preventDefault();
     if (!newName.trim() || !newIndustry.trim()) return;
 
-    const newId = addCompany({
+    const newId = `co-${Date.now()}`;
+    const newCompany: Company = {
+      id: newId,
       name: newName,
       industry: newIndustry,
       preference: newPreference,
@@ -697,8 +700,13 @@ export default function CompaniesView() {
       employeeCount: newEmployeeCount,
       isForeign: newIsForeign,
       category: newCategory,
-      lastUpdated: newLastUpdated || new Date().toISOString().split('T')[0]
-    });
+      lastUpdated: newLastUpdated || new Date().toISOString().split('T')[0],
+      esMemos: [],
+      interviewMemos: []
+    };
+
+    const updated = [...companies, newCompany];
+    saveCompanies(updated);
 
     // Dynamically post search registration to server shared corpus for auto-incremental database lookup
     fetch('/api/company/add', {

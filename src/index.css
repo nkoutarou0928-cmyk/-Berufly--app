@@ -1,18 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --app-bg-primary: #FFFFFF;
-  --app-bg-secondary: #FAFAFA;
+  --app-bg-primary: #F8F9FA;
+  --app-bg-secondary: #F1F3F5;
   --app-text-primary: #111622;
   --app-text-secondary: #6B7280;
   --app-border: #E5E7EB;
   --app-card-bg: #FFFFFF;
-  --app-card-border: #F3F4F6;
+  --app-card-border: #E5E7EB;
   --app-button-bg: #FFFFFF;
-  --app-button-hover: #F3F4F6;
+  --app-button-hover: #F1F3F5;
   --app-button-border: #E5E7EB;
   --app-button-text: #374151;
-  --app-calendar-today-bg: #F3F4F6;
+  --app-calendar-today-bg: #E5E7EB;
   --app-calendar-selected-bg: #4F46E5;
   --app-calendar-selected-text: #FFFFFF;
 }

@@ -27,16 +27,9 @@ import { motion, AnimatePresence } from 'motion/react';
 export default function SelfAnalysisView() {
   const { 
     selfAnalysis, 
-    updateSelfPR, 
-    updateGakuchika, 
-    addBaseMotivation, 
-    updateBaseMotivation, 
-    deleteBaseMotivation, 
-    addFAQ, 
-    updateFAQ, 
-    deleteFAQ, 
     settings, 
-    isDark 
+    isDark,
+    saveSelfAnalysis
   } = useApp();
 
   const theme = getTheme(settings.themeColor);
@@ -78,23 +71,34 @@ export default function SelfAnalysisView() {
     if (!motivationIndustry || !motivationContent) return;
 
     if (motivationIdToEdit) {
-      updateBaseMotivation(motivationIdToEdit, {
-        industry: motivationIndustry,
-        occupation: motivationOccupation,
-        content: motivationContent
-      });
+      const updatedMotivations = selfAnalysis.baseMotivations.map(bm => 
+        bm.id === motivationIdToEdit 
+          ? { ...bm, industry: motivationIndustry, occupation: motivationOccupation, content: motivationContent } 
+          : bm
+      );
+      saveSelfAnalysis({ ...selfAnalysis, baseMotivations: updatedMotivations });
       setMotivationIdToEdit(null);
     } else {
-      addBaseMotivation({
+      const newMotivation = {
+        id: `bm-${Date.now()}`,
         industry: motivationIndustry,
         occupation: motivationOccupation,
         content: motivationContent
+      };
+      saveSelfAnalysis({
+        ...selfAnalysis,
+        baseMotivations: [...selfAnalysis.baseMotivations, newMotivation]
       });
       setIsAddingMotivation(false);
     }
     setMotivationIndustry('');
     setMotivationOccupation('');
     setMotivationContent('');
+  };
+
+  const handleDeleteMotivation = (id: string) => {
+    const updated = selfAnalysis.baseMotivations.filter(bm => bm.id !== id);
+    saveSelfAnalysis({ ...selfAnalysis, baseMotivations: updated });
   };
 
   const startEditMotivation = (id: string, industry: string, occupation: string, content: string) => {
@@ -110,20 +114,30 @@ export default function SelfAnalysisView() {
     if (!faqQuestion || !faqAnswer) return;
 
     if (faqIdToEdit) {
-      updateFAQ(faqIdToEdit, {
-        question: faqQuestion,
-        answer: faqAnswer
-      });
+      const updatedFAQs = selfAnalysis.faqs.map(f => 
+        f.id === faqIdToEdit ? { ...f, question: faqQuestion, answer: faqAnswer } : f
+      );
+      saveSelfAnalysis({ ...selfAnalysis, faqs: updatedFAQs });
       setFaqIdToEdit(null);
     } else {
-      addFAQ({
+      const newFAQ = {
+        id: `faq-${Date.now()}`,
         question: faqQuestion,
         answer: faqAnswer
+      };
+      saveSelfAnalysis({
+        ...selfAnalysis,
+        faqs: [...selfAnalysis.faqs, newFAQ]
       });
       setIsAddingFAQ(false);
     }
     setFaqQuestion('');
     setFaqAnswer('');
+  };
+
+  const handleDeleteFAQ = (id: string) => {
+    const updated = selfAnalysis.faqs.filter(f => f.id !== id);
+    saveSelfAnalysis({ ...selfAnalysis, faqs: updated });
   };
 
   const startEditFAQ = (id: string, q: string, a: string) => {
@@ -229,7 +243,7 @@ export default function SelfAnalysisView() {
               <div className="space-y-2">
                 <textarea
                   value={selfAnalysis.selfPR || ''}
-                  onChange={e => updateSelfPR(e.target.value)}
+                  onChange={e => saveSelfAnalysis({ ...selfAnalysis, selfPR: e.target.value })}
                   rows={6}
                   maxLength={1500}
                   placeholder="私の強みは【主体的解決力】です。大学時代、サークル活動にて～"
@@ -271,7 +285,7 @@ export default function SelfAnalysisView() {
               <div className="space-y-2">
                 <textarea
                   value={selfAnalysis.gakuchika || ''}
-                  onChange={e => updateGakuchika(e.target.value)}
+                  onChange={e => saveSelfAnalysis({ ...selfAnalysis, gakuchika: e.target.value })}
                   rows={6}
                   maxLength={1500}
                   placeholder="学生時代に最も注力したことは、サークル代表としての新規会員獲得です。当初～"
@@ -454,7 +468,7 @@ export default function SelfAnalysisView() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => deleteBaseMotivation(bm.id)}
+                          onClick={() => handleDeleteMotivation(bm.id)}
                           className={`p-1 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer ${
                             isDark ? 'hover:bg-rose-950/35 text-slate-400 hover:text-rose-400' : 'text-gray-400 hover:text-rose-600'
                           }`}
@@ -648,7 +662,7 @@ export default function SelfAnalysisView() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => deleteFAQ(faq.id)}
+                          onClick={() => handleDeleteFAQ(faq.id)}
                           className={`p-1 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer ${
                             isDark ? 'hover:bg-rose-950/35 text-slate-400 hover:text-rose-400' : 'text-gray-400 hover:text-rose-600'
                           }`}
