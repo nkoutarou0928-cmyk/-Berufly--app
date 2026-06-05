@@ -447,8 +447,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             status: c.status,
             selection_status_intern: c.selectionStatusIntern,
             selection_stage: c.selectionStage,
-            es_deadline: c.esDeadline,
-            interview_date: c.interviewDate,
+            es_deadline: c.esDeadline || null,
+            interview_date: c.interviewDate || null,
             es_memos: c.esMemos,
             interview_memos: c.interviewMemos,
             notes: c.notes,
@@ -571,7 +571,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             title: t.title,
             completed: t.completed,
             scope: t.scope,
-            due_date: t.dueDate,
+            due_date: t.dueDate || null,
             subtasks: t.subtasks
           }));
           const { error: insertErr } = await supabase.from('todos').insert(toInsert);
@@ -837,9 +837,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setSettings({ ...INITIAL_SETTINGS, profileName: name });
       setSyncStatus('synced');
       console.log('[Supabase Sync Completed]: Cloud data successfully synchronized to local state.');
-    } catch (e) {
+    } catch (e: any) {
       console.error('[loadUserDataFromSupabase caught exception]:', e);
       setSyncStatus('error');
+      alert("データの取得に失敗しました: " + (e.message || e));
     }
   };
 
