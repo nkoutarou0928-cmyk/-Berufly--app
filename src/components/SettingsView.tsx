@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { THEME_PRESETS, getTheme } from '../utils/theme';
+import { supabase } from '../utils/supabaseClient';
 import { 
   Settings, 
   Bell, 
@@ -50,6 +51,10 @@ export default function SettingsView() {
   // States
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
+  // Cloud Counts States
+  const [cloudCompaniesCount, setCloudCompaniesCount] = useState<number | null>(null);
+  const [cloudTodosCount, setCloudTodosCount] = useState<number | null>(null);
+
   // Home Screen installation setup states
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState<boolean>(false);
@@ -73,6 +78,31 @@ export default function SettingsView() {
       window.removeEventListener('beforeinstallprompt', handler);
     };
   }, []);
+
+  // Fetch real-time counts from Supabase
+  useEffect(() => {
+    if (authStatus === 'authenticated' && currentUser?.uid) {
+      const fetchCounts = async () => {
+        try {
+          const { count: coCount, error: coErr } = await supabase
+            .from('companies')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', currentUser.uid);
+            
+          const { count: tdCount, error: tdErr } = await supabase
+            .from('todos')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', currentUser.uid);
+
+          if (!coErr && coCount !== null) setCloudCompaniesCount(coCount);
+          if (!tdErr && tdCount !== null) setCloudTodosCount(tdCount);
+        } catch (e) {
+          console.error('Failed to fetch counts from Supabase:', e);
+        }
+      };
+      fetchCounts();
+    }
+  }, [authStatus, currentUser, companies, todos]);
 
   const handleHomeInstall = async () => {
     if (deferredPrompt) {
@@ -630,11 +660,15 @@ export default function SettingsView() {
           }`}>
             <div className="p-1">
               <span className="block text-[10px] text-gray-400">登録企業数</span>
-              <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>{companies.length} 社</span>
+              <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
+                {authStatus === 'authenticated' && cloudCompaniesCount !== null ? `${cloudCompaniesCount} 社` : `${companies.length} 社`}
+              </span>
             </div>
             <div className={`p-1 border-x ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
               <span className="block text-[10px] text-gray-400">タスク総数</span>
-              <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>{todos.length} 件</span>
+              <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
+                {authStatus === 'authenticated' && cloudTodosCount !== null ? `${cloudTodosCount} 件` : `${todos.length} 件`}
+              </span>
             </div>
             <div className="p-1">
               <span className="block text-[10px] text-gray-400">OB・訪問記録</span>
