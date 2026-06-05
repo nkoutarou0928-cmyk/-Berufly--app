@@ -39,6 +39,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Company, CompanyStatus, SelectionStage, ESQuestionMemo, InterviewMemo, ESCategory, ESStatus, InternStatus, InternType, InternStep } from '../types';
 import { MASTER_COMPANIES } from '../constants/companies';
+import { supabase } from '../utils/supabaseClient';
 
 export default function CompaniesView() {
   const { 
@@ -452,48 +453,81 @@ export default function CompaniesView() {
       return;
     }
 
-    // Direct local search against MASTER_COMPANIES
-    const scored = MASTER_COMPANIES.map(comp => {
-      let score = 0;
-      const compNameNorm = normalize(comp.name);
-      
-      // Exact match
-      if (compNameNorm === normQ) {
-        score += 100;
-      }
-      // Starts with
-      else if (compNameNorm.startsWith(normQ)) {
-        score += 50;
-      }
-      // Contains
-      else if (compNameNorm.includes(normQ)) {
-        score += 30;
+    const fetchSuggestions = async () => {
+      try {
+        // Query Supabase for companies where user_id is null and name contains the input (case-insensitive)
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*')
+          .is('user_id', null)
+          .ilike('name', `%${q}%`)
+          .limit(10);
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map(item => ({
+            name: item.name,
+            industry: item.industry || '',
+            headquarters: item.headquarters || '',
+            scale: item.scale || '',
+            website: item.website || '',
+            establishedYear: item.established_year || '',
+            employeeCount: item.employee_count || '',
+            isForeign: item.is_foreign || false,
+            category: item.category || '',
+            lastUpdated: item.last_updated || '',
+            corporateNumber: item.corporate_number || ''
+          }));
+          setSuggestions(mapped);
+          return;
+        }
+      } catch (err) {
+        console.error('Error fetching master companies from Supabase:', err);
       }
 
-      // Check website
-      const websiteLower = (comp.website || "").toLowerCase();
-      if (websiteLower.includes(q.toLowerCase())) {
-        score += 20;
-      }
+      // Offline / Error / Empty result fallback: Search against local MASTER_COMPANIES
+      const scored = MASTER_COMPANIES.map(comp => {
+        let score = 0;
+        const compNameNorm = normalize(comp.name);
+        
+        // Exact match
+        if (compNameNorm === normQ) {
+          score += 100;
+        }
+        // Starts with
+        else if (compNameNorm.startsWith(normQ)) {
+          score += 50;
+        }
+        // Contains
+        else if (compNameNorm.includes(normQ)) {
+          score += 30;
+        }
 
-      // Check industry & category
-      const indNorm = normalize(comp.industry);
-      const catNorm = normalize(comp.category || "");
-      if (indNorm.includes(normQ) || catNorm.includes(normQ)) {
-        score += 10;
-      }
+        // Check website
+        const websiteLower = (comp.website || "").toLowerCase();
+        if (websiteLower.includes(q.toLowerCase())) {
+          score += 20;
+        }
 
-      return { comp, score };
-    });
+        // Check industry & category
+        const indNorm = normalize(comp.industry);
+        const catNorm = normalize(comp.category || "");
+        if (indNorm.includes(normQ) || catNorm.includes(normQ)) {
+          score += 10;
+        }
 
-    // Filter out zero-score matches, sort by score descending, then take top 10
-    const matches = scored
-      .filter(item => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .map(item => item.comp)
-      .slice(0, 10);
+        return { comp, score };
+      });
 
-    setSuggestions(matches);
+      const matches = scored
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(item => item.comp)
+        .slice(0, 10);
+
+      setSuggestions(matches);
+    };
+
+    fetchSuggestions();
   }, [newName]);
 
   // ES copy tool helper states
@@ -1526,70 +1560,109 @@ export default function CompaniesView() {
                                   {suggestions
                                     .filter(s => !recentlySearched.some(r => r.name.toLowerCase() === s.name.toLowerCase()))
                                     .map((s, index) => (
-                                      <button
+                                      <div
                                         key={`suggest-${index}`}
-                                        type="button"
-                                        onMouseDown={(e) => {
-                                          // Prevent input blur event
-                                          e.preventDefault();
-                                        }}
-                                        onClick={() => {
-                                          setNewName(s.name);
-                                          setNewIndustry(s.industry);
-                                          setNewHeadquarters(s.headquarters);
-                                          setNewScale(s.scale);
-                                          setNewWebsite(s.website);
-                                          setNewEstablishedYear(s.establishedYear || '');
-                                          setNewEmployeeCount(s.employeeCount || '');
-                                          setNewIsForeign(!!s.isForeign);
-                                          setNewCategory(s.category || '');
-                                          setNewLastUpdated(s.lastUpdated || '');
-                                          setSuggestions([]);
-                                          addToRecentlySearched(s);
-                                        }}
-                                        className="w-full text-left p-2.5 hover:bg-sky-50 text-[11px] block text-gray-800 focus:outline-hidden transition-colors border-0 border-b border-gray-100"
+                                        className="w-full flex items-center justify-between p-2.5 hover:bg-sky-50/50 text-[11px] text-gray-800 transition-colors border-b border-gray-100/60"
                                       >
-                                        <div className="flex justify-between items-start">
-                                          <span className="font-bold block text-gray-900 text-[12px]">{s.name}</span>
-                                          {s.corporateNumber && (
-                                            <span className="text-[9px] text-gray-400 font-mono scale-95 origin-right">
-                                              {s.corporateNumber.startsWith("T") ? s.corporateNumber : `法人番号: ${s.corporateNumber}`}
-                                            </span>
-                                          )}
+                                        <div
+                                          onClick={() => {
+                                            setNewName(s.name);
+                                            setNewIndustry(s.industry);
+                                            setNewHeadquarters(s.headquarters);
+                                            setNewScale(s.scale);
+                                            setNewWebsite(s.website);
+                                            setNewEstablishedYear(s.establishedYear || '');
+                                            setNewEmployeeCount(s.employeeCount || '');
+                                            setNewIsForeign(!!s.isForeign);
+                                            setNewCategory(s.category || '');
+                                            setNewLastUpdated(s.lastUpdated || '');
+                                            setSuggestions([]);
+                                            addToRecentlySearched(s);
+                                          }}
+                                          className="flex-1 min-w-0 pr-2 cursor-pointer text-left"
+                                        >
+                                          <div className="flex justify-between items-start">
+                                            <span className="font-bold block text-gray-900 text-[12px]">{s.name}</span>
+                                            {s.corporateNumber && (
+                                              <span className="text-[9px] text-gray-400 font-mono scale-95 origin-right">
+                                                {s.corporateNumber.startsWith("T") ? s.corporateNumber : `法人番号: ${s.corporateNumber}`}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                            <span className="text-[10px] text-gray-500">{s.industry} | {s.headquarters}</span>
+                                            {s.isForeign ? (
+                                              <span className="text-[9px] text-amber-700 bg-amber-55 border border-amber-200 rounded px-1 scale-90 font-bold">
+                                                外資系
+                                              </span>
+                                            ) : (
+                                              <span className="text-[9px] text-sky-700 bg-sky-55 border border-sky-200 rounded px-1 scale-90 font-bold">
+                                                日系
+                                              </span>
+                                            )}
+                                            {s.category && (
+                                              <span className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded px-1 scale-90 font-medium">
+                                                {s.category}
+                                              </span>
+                                            )}
+                                            {s.lastUpdated && (
+                                              <span className="text-[9px] text-gray-400 font-mono scale-90">
+                                                🔄 {s.lastUpdated}
+                                              </span>
+                                            )}
+                                            {s.source && (
+                                              <span className="text-[9px] text-indigo-700 bg-indigo-50 rounded px-1 scale-90 font-medium">
+                                                検索元: {s.source}
+                                              </span>
+                                            )}
+                                            {s.source && (s.source.includes("国税庁") || s.source.includes("NTA")) && (
+                                              <span className="text-[9px] text-red-600 bg-red-50 border border-red-100 rounded px-1 scale-90 font-bold">
+                                                ※情報が正確でない場合があります (国税庁)
+                                              </span>
+                                            )}
+                                          </div>
                                         </div>
-                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                          <span className="text-[10px] text-gray-500">{s.industry} | {s.headquarters}</span>
-                                          {s.isForeign ? (
-                                            <span className="text-[9px] text-amber-700 bg-amber-55 border border-amber-200 rounded px-1 scale-90 font-bold">
-                                              外資系
-                                            </span>
-                                          ) : (
-                                            <span className="text-[9px] text-sky-700 bg-sky-55 border border-sky-200 rounded px-1 scale-90 font-bold">
-                                              日系
-                                            </span>
-                                          )}
-                                          {s.category && (
-                                            <span className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded px-1 scale-90 font-medium">
-                                              {s.category}
-                                            </span>
-                                          )}
-                                          {s.lastUpdated && (
-                                            <span className="text-[9px] text-gray-400 font-mono scale-90">
-                                              🔄 {s.lastUpdated}
-                                            </span>
-                                          )}
-                                          {s.source && (
-                                            <span className="text-[9px] text-indigo-700 bg-indigo-50 rounded px-1 scale-90 font-medium">
-                                              検索元: {s.source}
-                                            </span>
-                                          )}
-                                          {s.source && (s.source.includes("国税庁") || s.source.includes("NTA")) && (
-                                            <span className="text-[9px] text-red-600 bg-red-50 border border-red-100 rounded px-1 scale-90 font-bold">
-                                              ※情報が正確でない場合があります (国税庁)
-                                            </span>
-                                          )}
-                                        </div>
-                                      </button>
+
+                                        <button
+                                          type="button"
+                                          onMouseDown={(e) => {
+                                            e.preventDefault();
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            
+                                            // Immediately add to my list
+                                            addCompany({
+                                              name: s.name,
+                                              industry: s.industry || 'IT・通信',
+                                              preference: 3,
+                                              status: 'interested',
+                                              selectionStage: 'none',
+                                              esDeadline: '',
+                                              interviewDate: '',
+                                              notes: '',
+                                              headquarters: s.headquarters || '',
+                                              scale: s.scale || '',
+                                              website: s.website || '',
+                                              selectionType: 'main',
+                                              internSteps: [],
+                                              establishedYear: s.establishedYear || '',
+                                              employeeCount: s.employeeCount || '',
+                                              isForeign: !!s.isForeign,
+                                              category: s.category || '',
+                                              lastUpdated: new Date().toISOString().split('T')[0]
+                                            });
+
+                                            alert(`✨ ${s.name} をマイリスト（企業管理）に追加しました！`);
+                                            setSuggestions([]);
+                                            setShowAddCompanyModal(false);
+                                          }}
+                                          className="ml-2 py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-lg transition text-[10px] cursor-pointer shrink-0 leading-none shadow-xs"
+                                        >
+                                          ＋ 追加
+                                        </button>
+                                      </div>
                                     ))}
                                 </div>
                               </div>

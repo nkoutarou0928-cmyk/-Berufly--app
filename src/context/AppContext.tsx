@@ -199,9 +199,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             name,
             isAnonymous: false
           });
-          // Load fresh data asynchronously from Supabase
-          setTimeout(() => {
-            loadUserDataFromSupabase(storedUid, name);
+          // Verify session on startup and fetch fresh cloud data asynchronously
+          setTimeout(async () => {
+            try {
+              const { data: { user }, error: authErr } = await supabase.auth.getUser();
+              if (authErr) {
+                console.error('[Supabase Startup Auth Verification Error]:', authErr);
+              }
+              if (user) {
+                console.log('[Supabase Session Verified]: Loading user data from Supabase for user:', user.email);
+                loadUserDataFromSupabase(user.id, name);
+              } else {
+                console.warn('[Supabase Session Not Found]: LocalStorage auth status exists but Supabase session is invalid.');
+              }
+            } catch (err) {
+              console.error('[Verify Session Exception on startup]:', err);
+            }
           }, 0);
         }
       } else if (initialStatus === 'guest') {
@@ -313,6 +326,53 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Listen for Supabase Auth changes to keep state synced dynamically
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[Supabase Auth Event Listener]:', event, session?.user?.email);
+      if (session?.user) {
+        const uid = session.user.id;
+        const email = session.user.email || '';
+        const name = session.user.user_metadata?.name || email.split('@')[0];
+        
+        // If state is not already authenticated, or if user switched, update it
+        if (authStatus !== 'authenticated' || !currentUser || currentUser.uid !== uid) {
+          console.log('[Supabase Auth Change Detected]: Syncing user state to React context for:', email);
+          localStorage.setItem('shukatsu_auth_status', 'authenticated');
+          localStorage.setItem('shukatsu_user_uid', uid);
+          localStorage.setItem('shukatsu_user_email', email);
+          localStorage.setItem('shukatsu_user_name', name);
+          
+          setCurrentUser({ uid, email, name, isAnonymous: false });
+          setAuthStatus('authenticated');
+          await loadUserDataFromSupabase(uid, name);
+        }
+      } else {
+        // If signed out, and we were authenticated, perform cleanup
+        const lastAuthStatus = localStorage.getItem('shukatsu_auth_status');
+        if (lastAuthStatus === 'authenticated') {
+          console.log('[Supabase Auth Change Detected]: Signed out, performing cleanup.');
+          localStorage.removeItem('shukatsu_auth_status');
+          localStorage.removeItem('shukatsu_user_uid');
+          localStorage.removeItem('shukatsu_user_email');
+          localStorage.removeItem('shukatsu_user_name');
+          setCurrentUser(null);
+          setAuthStatus('welcome');
+          setCompanies([]);
+          setTrashCompanies([]);
+          setTodos([]);
+          setObVisits([]);
+          setOfferComparisons([]);
+          setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [authStatus, currentUser]);
+
   // Listen for online/offline events for real-time automatic syncing status bar
   useEffect(() => {
     const handleOnline = () => {
@@ -359,12 +419,29 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (authStatus === 'authenticated' && currentUser) {
       try {
         setSyncStatus('syncing');
+
+        // Dynamically get active user from Supabase auth
+        const { data: { user }, error: authUserErr } = await supabase.auth.getUser();
+        if (authUserErr) {
+          console.error('[Supabase saveCompanies Auth Error]:', authUserErr);
+          throw authUserErr;
+        }
+        if (!user) {
+          throw new Error('Supabase authenticated user session not found');
+        }
+        const activeUserId = user.id;
+
         // Simple and robust: clean slate approach for the active user
-        await supabase.from('companies').delete().eq('user_id', currentUser.uid);
+        const { error: deleteErr } = await supabase.from('companies').delete().eq('user_id', activeUserId);
+        if (deleteErr) {
+          console.error('[Supabase Save Companies Delete Error]:', deleteErr);
+          throw deleteErr;
+        }
+
         if (newCompanies.length > 0) {
           const toInsert = newCompanies.map(c => ({
             id: c.id,
-            user_id: currentUser.uid,
+            user_id: activeUserId,
             name: c.name,
             industry: c.industry,
             preference: c.preference,
@@ -387,17 +464,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             intern_type: c.internType,
             intern_steps: c.internSteps
           }));
-          await supabase.from('companies').insert(toInsert);
+          const { error: insertErr } = await supabase.from('companies').insert(toInsert);
+          if (insertErr) {
+            console.error('[Supabase Save Companies Insert Error]:', insertErr);
+            throw insertErr;
+          }
         }
 
         // Keep the events table synchronized
-        await supabase.from('events').delete().eq('user_id', currentUser.uid);
+        const { error: deleteEventsErr } = await supabase.from('events').delete().eq('user_id', activeUserId);
+        if (deleteEventsErr) {
+          console.error('[Supabase Save Events Delete Error]:', deleteEventsErr);
+          throw deleteEventsErr;
+        }
+
         const eventsToInsert = [];
         for (const company of newCompanies) {
           const isIntern = company.selectionType === 'intern';
           if (company.esDeadline) {
             eventsToInsert.push({
-              user_id: currentUser.uid,
+              user_id: activeUserId,
               company_id: company.id,
               company_name: company.name,
               title: isIntern ? 'インターンES締切' : 'ES締切',
@@ -407,7 +493,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           }
           if (company.interviewDate) {
             eventsToInsert.push({
-              user_id: currentUser.uid,
+              user_id: activeUserId,
               company_id: company.id,
               company_name: company.name,
               title: isIntern ? 'インターン面接' : '面接',
@@ -419,7 +505,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             company.internSteps.forEach(step => {
               if (step.date) {
                 eventsToInsert.push({
-                  user_id: currentUser.uid,
+                  user_id: activeUserId,
                   company_id: company.id,
                   company_name: company.name,
                   title: step.stepName,
@@ -431,12 +517,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         if (eventsToInsert.length > 0) {
-          await supabase.from('events').insert(eventsToInsert);
+          const { error: insertEventsErr } = await supabase.from('events').insert(eventsToInsert);
+          if (insertEventsErr) {
+            console.error('[Supabase Save Events Insert Error]:', insertEventsErr);
+            throw insertEventsErr;
+          }
         }
 
         setSyncStatus('synced');
       } catch (e) {
-        console.error(e);
+        console.error('[saveCompanies caught exception]:', e);
         setSyncStatus('error');
       }
     } else {
@@ -456,22 +546,43 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (authStatus === 'authenticated' && currentUser) {
       try {
         setSyncStatus('syncing');
-        await supabase.from('todos').delete().eq('user_id', currentUser.uid);
+
+        // Dynamically get active user from Supabase auth
+        const { data: { user }, error: authUserErr } = await supabase.auth.getUser();
+        if (authUserErr) {
+          console.error('[Supabase saveTodos Auth Error]:', authUserErr);
+          throw authUserErr;
+        }
+        if (!user) {
+          throw new Error('Supabase authenticated user session not found');
+        }
+        const activeUserId = user.id;
+
+        const { error: deleteErr } = await supabase.from('todos').delete().eq('user_id', activeUserId);
+        if (deleteErr) {
+          console.error('[Supabase Save Todos Delete Error]:', deleteErr);
+          throw deleteErr;
+        }
+
         if (newTodos.length > 0) {
           const toInsert = newTodos.map(t => ({
             id: t.id,
-            user_id: currentUser.uid,
+            user_id: activeUserId,
             title: t.title,
             completed: t.completed,
             scope: t.scope,
             due_date: t.dueDate,
             subtasks: t.subtasks
           }));
-          await supabase.from('todos').insert(toInsert);
+          const { error: insertErr } = await supabase.from('todos').insert(toInsert);
+          if (insertErr) {
+            console.error('[Supabase Save Todos Insert Error]:', insertErr);
+            throw insertErr;
+          }
         }
         setSyncStatus('synced');
       } catch (e) {
-        console.error(e);
+        console.error('[saveTodos caught exception]:', e);
         setSyncStatus('error');
       }
     } else {
@@ -509,17 +620,34 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (authStatus === 'authenticated' && currentUser) {
       try {
         setSyncStatus('syncing');
+
+        // Dynamically get active user from Supabase auth
+        const { data: { user }, error: authUserErr } = await supabase.auth.getUser();
+        if (authUserErr) {
+          console.error('[Supabase saveSelfAnalysis Auth Error]:', authUserErr);
+          throw authUserErr;
+        }
+        if (!user) {
+          throw new Error('Supabase authenticated user session not found');
+        }
+        const activeUserId = user.id;
+
         const toUpsert = {
-          user_id: currentUser.uid,
+          user_id: activeUserId,
           self_pr: newAnalysis.selfPR,
           gakuchika: newAnalysis.gakuchika,
           base_motivations: newAnalysis.baseMotivations,
           faqs: newAnalysis.faqs
         };
-        await supabase.from('self_analysis').upsert(toUpsert);
+        const { error: upsertErr } = await supabase.from('self_analysis').upsert(toUpsert);
+        if (upsertErr) {
+          console.error('[Supabase Save Self Analysis Upsert Error]:', upsertErr);
+          throw upsertErr;
+        }
+
         setSyncStatus('synced');
       } catch (e) {
-        console.error(e);
+        console.error('[saveSelfAnalysis caught exception]:', e);
         setSyncStatus('error');
       }
     } else {
@@ -591,6 +719,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const loadUserDataFromSupabase = async (uid: string, name: string) => {
     try {
       setSyncStatus('syncing');
+      console.log('[Supabase SELECT]: Fetching user data from cloud for user_id:', uid);
 
       // Fetch companies
       const { data: cos, error: cosErr } = await supabase
@@ -598,8 +727,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .select('*')
         .eq('user_id', uid);
       
+      if (cosErr) {
+        console.error('[Supabase Load Companies SELECT Error]:', cosErr);
+        // Alert developer in console for potential RLS issues
+        console.warn('💡 Tip: Please check that your Supabase RLS policy for the "companies" table allows SELECT for user_id = auth.uid().');
+        throw cosErr;
+      }
+      
       let loadedCos: Company[] = [];
-      if (!cosErr && cos) {
+      if (cos) {
         loadedCos = cos.map(c => ({
           id: c.id,
           name: c.name,
@@ -625,6 +761,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           internSteps: c.intern_steps || []
         }));
         setCompanies(loadedCos);
+        localStorage.setItem(`shukatsu_companies_${uid}`, JSON.stringify(loadedCos));
       } else {
         setCompanies([]);
       }
@@ -635,15 +772,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .select('*')
         .eq('user_id', uid);
 
-      if (!tdsErr && tds) {
-        setTodos(tds.map(t => ({
+      if (tdsErr) {
+        console.error('[Supabase Load Todos SELECT Error]:', tdsErr);
+        console.warn('💡 Tip: Please check that your Supabase RLS policy for the "todos" table allows SELECT for user_id = auth.uid().');
+        throw tdsErr;
+      }
+
+      if (tds) {
+        const loadedTodos = tds.map(t => ({
           id: t.id,
           title: t.title,
           completed: t.completed,
           scope: t.scope || 'today',
           dueDate: t.due_date || '',
           subtasks: t.subtasks || []
-        })));
+        }));
+        setTodos(loadedTodos);
+        localStorage.setItem(`shukatsu_todos_${uid}`, JSON.stringify(loadedTodos));
       } else {
         setTodos([]);
       }
@@ -655,14 +800,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .eq('user_id', uid)
         .maybeSingle();
 
-      if (!saErr && sa) {
-        setSelfAnalysis({
+      if (saErr) {
+        console.error('[Supabase Load Self Analysis SELECT Error]:', saErr);
+        console.warn('💡 Tip: Please check that your Supabase RLS policy for the "self_analysis" table allows SELECT for user_id = auth.uid().');
+        throw saErr;
+      }
+
+      if (sa) {
+        const loadedSA = {
           selfPR: sa.self_pr || '',
           gakuchika: sa.gakuchika || '',
           baseMotivations: sa.base_motivations || [],
           faqs: sa.faqs || []
-        });
+        };
+        setSelfAnalysis(loadedSA);
+        localStorage.setItem(`shukatsu_self_analysis_${uid}`, JSON.stringify(loadedSA));
       } else {
+        // No record exists yet, create one
+        console.log('[Supabase Load Self Analysis]: No record found, creating initial template.');
         const initialSA = {
           user_id: uid,
           self_pr: '',
@@ -670,14 +825,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           base_motivations: [],
           faqs: []
         };
-        await supabase.from('self_analysis').upsert(initialSA);
+        const { error: upsertErr } = await supabase.from('self_analysis').upsert(initialSA);
+        if (upsertErr) {
+          console.error('[Supabase Create Self Analysis Upsert Error]:', upsertErr);
+          // Don't crash loading if creating self-analysis fails, but log it
+        }
         setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+        localStorage.setItem(`shukatsu_self_analysis_${uid}`, JSON.stringify({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] }));
       }
 
       setSettings({ ...INITIAL_SETTINGS, profileName: name });
       setSyncStatus('synced');
+      console.log('[Supabase Sync Completed]: Cloud data successfully synchronized to local state.');
     } catch (e) {
-      console.error(e);
+      console.error('[loadUserDataFromSupabase caught exception]:', e);
       setSyncStatus('error');
     }
   };

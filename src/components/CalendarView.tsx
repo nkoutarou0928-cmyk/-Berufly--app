@@ -69,6 +69,7 @@ export default function CalendarView() {
     setCurrentDate(new Date(year, month - 1, 1));
   };
 
+  // Next/Previous week
   const handleNextMonth = () => {
     setCurrentDate(new Date(year, month + 1, 1));
   };
@@ -234,8 +235,8 @@ export default function CalendarView() {
     <div className="space-y-6 pb-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-app-text-primary tracking-tight">就活カレンダー</h2>
-          <p className="text-xs text-app-text-secondary mt-0.5">締め切り・面接予定・ToDoタスクを自動可視化。タップして詳細を確認できます</p>
+          <h2 className="text-xl font-bold text-black dark:text-white tracking-tight">就活カレンダー</h2>
+          <p className="text-xs text-gray-800 dark:text-slate-200 mt-0.5 font-extrabold">締め切り・面接予定・ToDoタスクを自動可視化。タップして詳細を確認できます</p>
         </div>
         
         {/* Toggle View Mode */}
@@ -257,7 +258,7 @@ export default function CalendarView() {
 
       {/* Navigation and Date Title banner */}
       <div className="flex items-center justify-between bg-app-card-bg px-4 py-3 rounded-2xl border border-app-card-border shadow-xs">
-        <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5">
+        <h3 className="text-sm font-bold text-black dark:text-white flex items-center gap-1.5">
           <Calendar className={`h-4.5 w-4.5 ${theme.text}`} />
           <span className="font-mono font-black">{year}年 {monthNames[month]}</span>
         </h3>
@@ -294,10 +295,10 @@ export default function CalendarView() {
               key={day} 
               className={`text-center text-xs font-black tracking-wider ${
                 idx === 0 
-                  ? 'text-rose-600 dark:text-rose-400' 
+                  ? 'text-rose-950 dark:text-rose-50' 
                   : idx === 6 
-                    ? 'text-blue-600 dark:text-blue-400' 
-                    : 'text-gray-900 dark:text-slate-100'
+                    ? 'text-blue-950 dark:text-blue-50' 
+                    : 'text-black dark:text-white'
               }`}
             >
               {day}
@@ -317,7 +318,7 @@ export default function CalendarView() {
             >
               {daysGrid.map((dateObj, idx) => {
                 if (!dateObj) {
-                  return <div key={`empty-${idx}`} className="bg-app-bg-secondary/40 min-h-[90px]" />;
+                  return <div key={`empty-${idx}`} className="bg-app-bg-secondary min-h-[90px]" />;
                 }
 
                 const dayNum = dateObj.getDate();
@@ -328,20 +329,20 @@ export default function CalendarView() {
                 return (
                   <div 
                     key={dateObj.toISOString()} 
-                    className={`min-h-[95px] p-1.5 flex flex-col justify-between hover:bg-app-button-hover transition-colors group relative ${
-                      isCurrentSimulatedToday ? 'bg-app-calendar-today-bg' : ''
+                    className={`min-h-[95px] p-1.5 flex flex-col justify-between hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors border-0 relative bg-app-card-bg ${
+                      isCurrentSimulatedToday ? 'ring-2 ring-inset ring-indigo-600 dark:ring-indigo-500' : ''
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <span 
-                        className={`text-sm font-extrabold font-mono h-6 w-6 flex items-center justify-center rounded-full ${
+                        className={`text-sm font-black font-mono h-6 w-6 flex items-center justify-center rounded-full ${
                           isCurrentSimulatedToday 
-                            ? 'bg-app-calendar-selected-bg text-white font-black shadow-xs' 
+                            ? 'bg-indigo-600 text-white font-black shadow-xs dark:bg-indigo-500' 
                             : dateObj.getDay() === 0 
-                              ? 'text-rose-600 dark:text-rose-400' 
+                              ? 'text-rose-950 dark:text-rose-50 font-black' 
                               : dateObj.getDay() === 6 
-                                ? 'text-blue-600 dark:text-blue-400' 
-                                : 'text-gray-900 dark:text-slate-100'
+                                ? 'text-blue-950 dark:text-blue-50 font-black' 
+                                : 'text-black dark:text-white'
                         }`}
                       >
                         {dayNum}
@@ -363,12 +364,12 @@ export default function CalendarView() {
                           }}
                           className={`text-[10px] px-1.5 py-0.5 rounded-md font-sans truncate font-extrabold shadow-2xs hover:scale-[1.02] transform transition-all cursor-pointer block border ${
                             evt.type === 'deadline'
-                              ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 border-rose-200 dark:border-rose-900/60 hover:bg-rose-200 dark:hover:bg-rose-900/70'
+                              ? 'bg-rose-100 border-rose-300 text-black dark:bg-rose-950/80 dark:border-rose-800 dark:text-white hover:bg-rose-200 dark:hover:bg-rose-900/80'
                               : evt.type === 'intern_step'
-                                ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-900/60 hover:bg-amber-200 dark:hover:bg-amber-900/70'
+                                ? 'bg-amber-100 border-amber-300 text-black dark:bg-amber-950/80 dark:border-amber-800 dark:text-white hover:bg-amber-200 dark:hover:bg-amber-900/80'
                                 : evt.type === 'todo'
-                                  ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-900/60 hover:bg-purple-200 dark:hover:bg-purple-900/70'
-                                  : 'bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-900/60 hover:bg-blue-200 dark:hover:bg-blue-900/70'
+                                  ? 'bg-purple-100 border-purple-300 text-black dark:bg-purple-950/80 dark:border-purple-800 dark:text-white hover:bg-purple-200 dark:hover:bg-purple-900/80'
+                                  : 'bg-blue-100 border-blue-300 text-black dark:bg-blue-950/80 dark:border-blue-800 dark:text-white hover:bg-blue-200 dark:hover:bg-blue-900/80'
                           }`}
                           title={evt.type === 'todo' ? `ToDo: ${evt.title}` : `${evt.companyName} (${evt.title})`}
                         >
@@ -399,23 +400,23 @@ export default function CalendarView() {
                 return (
                   <div 
                     key={dateObj.toISOString()} 
-                    className={`p-2 flex flex-col hover:bg-app-button-hover transition-colors ${
-                      isCurrentSimulatedToday ? 'bg-app-calendar-today-bg' : ''
+                    className={`p-2 flex flex-col hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors bg-app-card-bg border-0 ${
+                      isCurrentSimulatedToday ? 'ring-2 ring-inset ring-indigo-600 dark:ring-indigo-500' : ''
                     }`}
                   >
                     <div className="text-center font-mono py-1">
-                      <span className="text-[10px] block text-app-text-secondary mb-0.5 font-bold">
+                      <span className="text-[10px] block text-gray-800 dark:text-gray-200 mb-0.5 font-bold">
                         {daysOfWeek[dateObj.getDay()]}
                       </span>
                       <span 
-                        className={`inline-block text-sm font-extrabold h-6 w-6 rounded-full ${
+                        className={`inline-block text-sm font-black h-6 w-6 rounded-full ${
                           isCurrentSimulatedToday 
-                            ? 'bg-app-calendar-selected-bg text-white flex items-center justify-center mx-auto font-black shadow-xs' 
+                            ? 'bg-indigo-600 text-white flex items-center justify-center mx-auto font-black shadow-xs dark:bg-indigo-500' 
                             : dateObj.getDay() === 0
-                              ? 'text-rose-600 dark:text-rose-400 font-extrabold'
+                              ? 'text-rose-950 dark:text-rose-50 font-black'
                               : dateObj.getDay() === 6
-                                ? 'text-blue-600 dark:text-blue-400 font-extrabold'
-                                : 'text-gray-900 dark:text-slate-100 font-extrabold'
+                                ? 'text-blue-950 dark:text-blue-50 font-black'
+                                : 'text-black dark:text-white font-black'
                         }`}
                       >
                         {dayNum}
@@ -436,18 +437,18 @@ export default function CalendarView() {
                           }}
                           className={`text-[10px] p-1.5 rounded-lg font-extrabold shadow-2xs hover:scale-102 transform transition-all cursor-pointer block border text-left ${
                             evt.type === 'deadline'
-                              ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 border-rose-200 dark:border-rose-900/60 hover:bg-rose-200 dark:hover:bg-rose-900/70'
+                              ? 'bg-rose-100 border-rose-300 text-black dark:bg-rose-950/80 dark:border-rose-800 dark:text-white hover:bg-rose-200 dark:hover:bg-rose-900/80'
                               : evt.type === 'intern_step'
-                                ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-900/60 hover:bg-amber-200 dark:hover:bg-amber-900/70'
+                                ? 'bg-amber-100 border-amber-300 text-black dark:bg-amber-950/80 dark:border-amber-800 dark:text-white hover:bg-amber-200 dark:hover:bg-amber-900/80'
                                 : evt.type === 'todo'
-                                  ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-900/60 hover:bg-purple-200 dark:hover:bg-purple-900/70'
-                                  : 'bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-900/60 hover:bg-blue-200 dark:hover:bg-blue-900/70'
+                                  ? 'bg-purple-100 border-purple-300 text-black dark:bg-purple-950/80 dark:border-purple-800 dark:text-white hover:bg-purple-200 dark:hover:bg-purple-900/80'
+                                  : 'bg-blue-100 border-blue-300 text-black dark:bg-blue-950/80 dark:border-blue-800 dark:text-white hover:bg-blue-200 dark:hover:bg-blue-900/80'
                           }`}
                         >
                           <div className="font-sans truncate">
                             {evt.type === 'todo' ? `${evt.completed ? '✅' : '◽️'} ${evt.title}` : evt.companyName}
                           </div>
-                          <span className="text-[8px] opacity-85 font-sans font-extrabold block mt-0.5 text-gray-700 dark:text-slate-350">
+                          <span className="text-[8px] opacity-90 font-sans font-extrabold block mt-0.5 text-gray-800 dark:text-slate-200">
                             {evt.type === 'todo' ? 'タスク' : evt.type === 'deadline' ? '書類締切' : evt.type === 'intern_step' ? 'インターン' : '面接面談'}
                           </span>
                         </div>
@@ -463,17 +464,17 @@ export default function CalendarView() {
 
       {/* Event Details lists for current selected month */}
       <div className="bg-app-card-bg p-5 rounded-3xl border border-app-card-border shadow-xs">
-        <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5 border-b border-app-border pb-3">
+        <h3 className="text-sm font-bold text-black dark:text-white flex items-center gap-1.5 border-b border-app-border pb-3">
           <Calendar className={`h-4.5 w-4.5 ${theme.text}`} />
           <span>今月のスケジュール・締切一覧</span>
-          <span className={`text-xs font-bold font-mono ${theme.textDark} ${theme.lightBg} px-2 py-0.5 rounded-full ml-1 dark:bg-slate-850 dark:text-slate-200`}>
+          <span className={`text-xs font-bold font-mono text-black dark:text-white bg-app-bg-secondary px-2 py-0.5 rounded-full ml-1 border border-app-border`}>
             {currentMonthEvents.length}件
           </span>
         </h3>
 
         <div className="mt-4 divide-y divide-app-border">
           {currentMonthEvents.length === 0 ? (
-            <div className="py-6 text-center text-xs text-app-text-secondary">
+            <div className="py-6 text-center text-xs text-gray-800 dark:text-gray-250">
               今月の予定はありません。企業ディテールから「ES締切日」や「面接予定」を設定してみましょう
             </div>
           ) : (
@@ -500,17 +501,17 @@ export default function CalendarView() {
                           : '💬'}
                   </span>
                   <div className="min-w-0">
-                    <p className={`text-xs font-extrabold text-gray-900 dark:text-slate-100 group-hover:${theme.text} transition-colors`}>
+                    <p className={`text-xs font-extrabold text-black dark:text-white group-hover:${theme.text} transition-colors`}>
                       {evt.type === 'todo' ? evt.title : evt.companyName}
                     </p>
-                    <p className="text-[10px] text-gray-500 dark:text-slate-400 font-extrabold mt-0.5">
+                    <p className="text-[10px] text-gray-800 dark:text-slate-200 font-extrabold mt-0.5">
                       {evt.type === 'todo' ? 'ToDoタスク' : evt.title}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono font-bold text-gray-800 dark:text-slate-200 bg-app-bg-secondary px-2.5 py-1 rounded-lg border border-app-border">
+                  <span className="text-xs font-mono font-bold text-black dark:text-white bg-app-bg-secondary px-2.5 py-1 rounded-lg border border-app-border">
                     {evt.date}
                   </span>
                   <ChevronRightIcon className="h-4 w-4 text-app-text-secondary group-hover:text-app-text-primary transition-colors" />
