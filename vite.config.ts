@@ -11,9 +11,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     define: {
-      'process.env.NEXT_PUBLIC_SUPABASE_URL': JSON.stringify(supabaseUrl),
-      'process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
-      'process.env': {}, // Browser safety net to prevent 'process is not defined' runtime exceptions
+      // IMPORTANT: 'process.env' must come BEFORE individual keys.
+      // If it comes after, it overwrites all specific env vars with an empty object.
+      'process.env': {
+        NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
+      },
     },
     plugins: [
       react(),
@@ -68,7 +71,7 @@ export default defineConfig(({ mode }) => {
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         },
         devOptions: {
-          enabled: true,
+          enabled: false, // SW\u3092dev\u6642\u306f\u7121\u52b9\u5316\uff08\u53e4\u3044\u30ad\u30e3\u30c3\u30b7\u30e5\u3092\u8fd4\u3055\u306a\u3044\u3088\u3046\u306b\uff09
         },
       }),
     ],
