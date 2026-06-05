@@ -328,12 +328,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || authStatus !== 'authenticated' || !currentUser || currentUser.uid !== uid) {
           console.log('[Supabase Auth Change/Login Detected]: Forcing user state to sync ONLY from Supabase cloud for:', email);
           
+          const lastUid = localStorage.getItem('shukatsu_user_uid');
+          const isUserSwitchOrFreshLogin = event === 'SIGNED_IN' || lastUid !== uid;
+
           localStorage.setItem('shukatsu_auth_status', 'authenticated');
           localStorage.setItem('shukatsu_user_uid', uid);
           localStorage.setItem('shukatsu_user_email', email);
           localStorage.setItem('shukatsu_user_name', name);
-          
-          const isUserSwitchOrFreshLogin = event === 'SIGNED_IN' || !currentUser || currentUser.uid !== uid;
           
           setCurrentUser({ uid, email, name, isAnonymous: false });
           setAuthStatus('authenticated');
@@ -719,13 +720,35 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const loadUserDataFromSupabase = async (uid: string, name: string) => {
     try {
       setSyncStatus('syncing');
-      console.log('[Supabase SELECT]: Fetching user data from cloud for user_id:', uid);
+
+      // 1. Resolve user session with retries if necessary to ensure token is present and fully resolved
+      let currentUserSession = null;
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          currentUserSession = user;
+          break;
+        }
+        console.warn(`[Supabase Load] Attempt ${attempt}: User ID not resolved yet. Waiting 500ms...`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      if (!currentUserSession?.id) {
+        console.error('[Supabase Load Error]: User ID could not be verified after 5 attempts.');
+        alert('ログインユーザーの認証情報の確認に失敗しました。時間をおいて再試行してください。');
+        setSyncStatus('error');
+        return;
+      }
+
+      const verifiedUid = currentUserSession.id;
+      // 3. Output started load log
+      console.log("Supabaseからデータ取得を開始します。対象UID:", verifiedUid);
 
       // Fetch companies
       const { data: cos, error: cosErr } = await supabase
         .from('companies')
         .select('*')
-        .eq('user_id', uid);
+        .eq('user_id', verifiedUid);
       
       if (cosErr) {
         console.error('[Supabase Load Companies SELECT Error]:', cosErr);
@@ -735,7 +758,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
       
       let loadedCos: Company[] = [];
-      if (cos) {
+      if (cos && cos.length > 0) {
         loadedCos = cos.map(c => ({
           id: c.id,
           name: c.name,
@@ -761,16 +784,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           internSteps: c.intern_steps || []
         }));
         setCompanies(loadedCos);
-        localStorage.setItem(`shukatsu_companies_${uid}`, JSON.stringify(loadedCos));
+        localStorage.setItem(`shukatsu_companies_${verifiedUid}`, JSON.stringify(loadedCos));
       } else {
-        setCompanies([]);
+        const localData = localStorage.getItem(`shukatsu_companies_${verifiedUid}`);
+        if (localData) {
+          try {
+            const parsed = JSON.parse(localData);
+            if (parsed && parsed.length > 0) {
+              console.log('[Supabase Sync] Local companies exist, uploading to cloud.');
+              await saveCompanies(parsed);
+            } else {
+              setCompanies([]);
+            }
+          } catch (_) {
+            setCompanies([]);
+          }
+        } else {
+          setCompanies([]);
+        }
       }
 
       // Fetch todos
       const { data: tds, error: tdsErr } = await supabase
         .from('todos')
         .select('*')
-        .eq('user_id', uid);
+        .eq('user_id', verifiedUid);
 
       if (tdsErr) {
         console.error('[Supabase Load Todos SELECT Error]:', tdsErr);
@@ -778,7 +816,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         throw tdsErr;
       }
 
-      if (tds) {
+      if (tds && tds.length > 0) {
         const loadedTodos = tds.map(t => ({
           id: t.id,
           title: t.title,
@@ -788,16 +826,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           subtasks: t.subtasks || []
         }));
         setTodos(loadedTodos);
-        localStorage.setItem(`shukatsu_todos_${uid}`, JSON.stringify(loadedTodos));
+        localStorage.setItem(`shukatsu_todos_${verifiedUid}`, JSON.stringify(loadedTodos));
       } else {
-        setTodos([]);
+        const localData = localStorage.getItem(`shukatsu_todos_${verifiedUid}`);
+        if (localData) {
+          try {
+            const parsed = JSON.parse(localData);
+            if (parsed && parsed.length > 0) {
+              console.log('[Supabase Sync] Local todos exist, uploading to cloud.');
+              await saveTodos(parsed);
+            } else {
+              setTodos([]);
+            }
+          } catch (_) {
+            setTodos([]);
+          }
+        } else {
+          setTodos([]);
+        }
       }
 
       // Fetch self analysis
       const { data: sa, error: saErr } = await supabase
         .from('self_analysis')
         .select('*')
-        .eq('user_id', uid)
+        .eq('user_id', verifiedUid)
         .maybeSingle();
 
       if (saErr) {
@@ -814,24 +867,37 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           faqs: sa.faqs || []
         };
         setSelfAnalysis(loadedSA);
-        localStorage.setItem(`shukatsu_self_analysis_${uid}`, JSON.stringify(loadedSA));
+        localStorage.setItem(`shukatsu_self_analysis_${verifiedUid}`, JSON.stringify(loadedSA));
       } else {
-        // No record exists yet, create one
-        console.log('[Supabase Load Self Analysis]: No record found, creating initial template.');
-        const initialSA = {
-          user_id: uid,
-          self_pr: '',
-          gakuchika: '',
-          base_motivations: [],
-          faqs: []
-        };
-        const { error: upsertErr } = await supabase.from('self_analysis').upsert(initialSA);
-        if (upsertErr) {
-          console.error('[Supabase Create Self Analysis Upsert Error]:', upsertErr);
-          // Don't crash loading if creating self-analysis fails, but log it
+        const localSA = localStorage.getItem(`shukatsu_self_analysis_${verifiedUid}`);
+        let uploaded = false;
+        if (localSA) {
+          try {
+            const parsed = JSON.parse(localSA);
+            if (parsed && (parsed.selfPR || parsed.gakuchika || (parsed.baseMotivations && parsed.baseMotivations.length > 0) || (parsed.faqs && parsed.faqs.length > 0))) {
+              console.log('[Supabase Sync] Local self-analysis exists, uploading to cloud.');
+              await saveSelfAnalysis(parsed);
+              uploaded = true;
+            }
+          } catch (_) {}
         }
-        setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
-        localStorage.setItem(`shukatsu_self_analysis_${uid}`, JSON.stringify({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] }));
+        
+        if (!uploaded) {
+          console.log('[Supabase Load Self Analysis]: No record found, creating initial template.');
+          const initialSA = {
+            user_id: verifiedUid,
+            self_pr: '',
+            gakuchika: '',
+            base_motivations: [],
+            faqs: []
+          };
+          const { error: upsertErr } = await supabase.from('self_analysis').upsert(initialSA);
+          if (upsertErr) {
+            console.error('[Supabase Create Self Analysis Upsert Error]:', upsertErr);
+          }
+          setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+          localStorage.setItem(`shukatsu_self_analysis_${verifiedUid}`, JSON.stringify({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] }));
+        }
       }
 
       setSettings({ ...INITIAL_SETTINGS, profileName: name });
