@@ -123,6 +123,7 @@ interface AppContextType {
   saveCompanies: (newCompanies: Company[]) => Promise<void>;
   saveTodos: (newTodos: TodoItem[]) => Promise<void>;
   saveSelfAnalysis: (newAnalysis: SelfAnalysis) => Promise<void>;
+  saveEvents: (newCompanies: Company[]) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -153,6 +154,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [authStatus, setAuthStatus] = useState<AppContextType['authStatus']>('welcome');
   const [syncStatus, setSyncStatus] = useState<AppContextType['syncStatus']>('synced');
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
+
+  const setIsSyncing = (isSyncing: boolean) => {
+    setSyncStatus(isSyncing ? 'syncing' : 'synced');
+  };
 
   // Dynamic light/dark mode tracking
   useEffect(() => {
@@ -417,26 +422,73 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Save to LocalStorage helpers, supporting reactive account databases
-  const saveCompanies = async (newCompanies: Company[]) => {
-    // STEP 1: ローカルStateを即座に更新（UI反映のため先に実行）
-    setCompanies(newCompanies);
-
-    // STEP 2: ユーザーIDを取得（localStorage優先 = 同期的で確実）
-    const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
-    console.log('[🏢 saveCompanies] activeUserId:', activeUserId, '| 件数:', newCompanies.length);
-
-    // STEP 3: localStorageにバックアップ
-    const suffix = activeUserId ? `_${activeUserId}` : '';
-    localStorage.setItem(`shukatsu_companies${suffix}`, JSON.stringify(newCompanies));
-
-    // STEP 4: Supabase同期（ログインしている場合のみ）
-    if (!activeUserId) {
-      console.warn('[saveCompanies] ⚠️ activeUserIdがnull。Supabase同期をスキップします。');
-      return;
-    }
-
-    setSyncStatus('syncing');
+  const saveEvents = async (newCompanies: Company[]) => {
+    setIsSyncing(true);
     try {
+      const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+      if (!activeUserId) {
+        console.warn('[saveEvents] ⚠️ activeUserIdがnull。Supabase同期をスキップします。');
+        return;
+      }
+
+      await supabase.from('events').delete().eq('user_id', activeUserId);
+      const eventsToInsert: any[] = [];
+      for (const company of newCompanies) {
+        const isIntern = company.selectionType === 'intern';
+        if (company.esDeadline) {
+          eventsToInsert.push({
+            user_id: activeUserId,
+            company_id: company.id,
+            company_name: company.name,
+            title: isIntern ? 'インターンES締切' : 'ES締切',
+            event_date: company.esDeadline,
+            type: 'deadline'
+          });
+        }
+        if (company.interviewDate) {
+          eventsToInsert.push({
+            user_id: activeUserId,
+            company_id: company.id,
+            company_name: company.name,
+            title: isIntern ? 'インターン面接' : '面接',
+            event_date: company.interviewDate,
+            type: 'interview'
+          });
+        }
+      }
+      if (eventsToInsert.length > 0) {
+        const { error: evErr } = await supabase.from('events').insert(eventsToInsert);
+        if (evErr) throw new Error('イベントINSERT失敗: ' + evErr.message + ' (code: ' + evErr.code + ')');
+      }
+      console.log('[saveEvents] ✅ 同期完了');
+    } catch (e: any) {
+      console.error('[saveEvents] ❌ 例外:', e);
+      alert('イベントの保存に失敗しました:\n' + (e.message || String(e)));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const saveCompanies = async (newCompanies: Company[]) => {
+    setIsSyncing(true);
+    try {
+      // STEP 1: ローカルStateを即座に更新（UI反映のため先に実行）
+      setCompanies(newCompanies);
+
+      // STEP 2: ユーザーIDを取得（localStorage優先 = 同期的で確実）
+      const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+      console.log('[🏢 saveCompanies] activeUserId:', activeUserId, '| 件数:', newCompanies.length);
+
+      // STEP 3: localStorageにバックアップ
+      const suffix = activeUserId ? `_${activeUserId}` : '';
+      localStorage.setItem(`shukatsu_companies${suffix}`, JSON.stringify(newCompanies));
+
+      // STEP 4: Supabase同期（ログインしている場合のみ）
+      if (!activeUserId) {
+        console.warn('[saveCompanies] ⚠️ activeUserIdがnull。Supabase同期をスキップします。');
+        return;
+      }
+
       // 既存レコードを全削除してから再挿入
       const { error: deleteErr } = await supabase
         .from('companies')
@@ -481,25 +533,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // eventsテーブルも同期
-      await supabase.from('events').delete().eq('user_id', activeUserId);
-      const eventsToInsert: any[] = [];
-      for (const company of newCompanies) {
-        const isIntern = company.selectionType === 'intern';
-        if (company.esDeadline) eventsToInsert.push({ user_id: activeUserId, company_id: company.id, company_name: company.name, title: isIntern ? 'インターンES締切' : 'ES締切', event_date: company.esDeadline, type: 'deadline' });
-        if (company.interviewDate) eventsToInsert.push({ user_id: activeUserId, company_id: company.id, company_name: company.name, title: isIntern ? 'インターン面接' : '面接', event_date: company.interviewDate, type: 'interview' });
-      }
-      if (eventsToInsert.length > 0) {
-        const { error: evErr } = await supabase.from('events').insert(eventsToInsert);
-        if (evErr) console.error('[saveCompanies] eventsテーブルINSERTエラー:', evErr);
-      }
+      await saveEvents(newCompanies);
 
       console.log('[saveCompanies] ✅ 同期完了');
     } catch (e: any) {
       console.error('[saveCompanies] ❌ 例外:', e);
       alert('企業の保存に失敗しました:\n' + (e.message || String(e)));
     } finally {
-      // 成功・失敗どちらの場合も必ずsyncing状態を解除する
-      setSyncStatus('synced');
+      setIsSyncing(false);
     }
   };
 
@@ -510,25 +551,25 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const saveTodos = async (newTodos: TodoItem[]) => {
-    // STEP 1: ローカルStateを即座に更新（UI反映のため先に実行）
-    setTodos(newTodos);
-
-    // STEP 2: ユーザーIDを取得（localStorage優先 = 同期的で確実）
-    const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
-    console.log('[📝 saveTodos] activeUserId:', activeUserId, '| 件数:', newTodos.length);
-
-    // STEP 3: localStorageにバックアップ
-    const suffix = activeUserId ? `_${activeUserId}` : '';
-    localStorage.setItem(`shukatsu_todos${suffix}`, JSON.stringify(newTodos));
-
-    // STEP 4: Supabase同期（ログインしている場合のみ）
-    if (!activeUserId) {
-      console.warn('[saveTodos] ⚠️ activeUserIdがnull。Supabase同期をスキップします。');
-      return;
-    }
-
-    setSyncStatus('syncing');
+    setIsSyncing(true);
     try {
+      // STEP 1: ローカルStateを即座に更新（UI反映のため先に実行）
+      setTodos(newTodos);
+
+      // STEP 2: ユーザーIDを取得（localStorage優先 = 同期的で確実）
+      const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+      console.log('[📝 saveTodos] activeUserId:', activeUserId, '| 件数:', newTodos.length);
+
+      // STEP 3: localStorageにバックアップ
+      const suffix = activeUserId ? `_${activeUserId}` : '';
+      localStorage.setItem(`shukatsu_todos${suffix}`, JSON.stringify(newTodos));
+
+      // STEP 4: Supabase同期（ログインしている場合のみ）
+      if (!activeUserId) {
+        console.warn('[saveTodos] ⚠️ activeUserIdがnull。Supabase同期をスキップします。');
+        return;
+      }
+
       // 既存レコードを全削除してから再挿入
       const { error: deleteErr } = await supabase
         .from('todos')
@@ -562,8 +603,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       console.error('[saveTodos] ❌ 例外:', e);
       alert('Todoの保存に失敗しました:\n' + (e.message || String(e)));
     } finally {
-      // 成功・失敗どちらの場合も必ずsyncing状態を解除する
-      setSyncStatus('synced');
+      setIsSyncing(false);
     }
   };
 
@@ -592,43 +632,39 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const saveSelfAnalysis = async (newAnalysis: SelfAnalysis) => {
-    console.log("saveSelfAnalysisが呼び出されました。データ:", newAnalysis);
-    setSelfAnalysis(newAnalysis);
-
+    setIsSyncing(true);
     try {
-      // IMPORTANT: Read user_id from localStorage FIRST (authoritative, synchronous).
-      // currentUser React state may still be null immediately after login due to async state updates.
+      setSelfAnalysis(newAnalysis);
+
       const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+      console.log('[📊 saveSelfAnalysis] activeUserId:', activeUserId);
+
       const suffix = activeUserId ? `_${activeUserId}` : '';
-      localStorage.setItem(`shukatsu_self_analysis` + suffix, JSON.stringify(newAnalysis));
+      localStorage.setItem(`shukatsu_self_analysis${suffix}`, JSON.stringify(newAnalysis));
 
-      if (activeUserId) {
-        console.log('[Supabase Sync] saveSelfAnalysis: Supabaseと同期します。ユーザーID:', activeUserId);
-        setSyncStatus('syncing');
-
-        const toUpsert = {
-          user_id: activeUserId,
-          self_pr: newAnalysis.selfPR,
-          gakuchika: newAnalysis.gakuchika,
-          base_motivations: newAnalysis.baseMotivations,
-          faqs: newAnalysis.faqs
-        };
-        const { error: upsertErr } = await supabase.from('self_analysis').upsert(toUpsert, { onConflict: 'user_id' });
-        if (upsertErr) {
-          console.error('[Supabase Save Self Analysis Upsert Error]:', upsertErr);
-          alert("データの保存に失敗しました: " + upsertErr.message);
-          throw upsertErr;
-        }
-
-        setSyncStatus('synced');
-        console.log('[Supabase Sync] saveSelfAnalysis: 同期完了。');
-      } else {
-        console.log('[Supabase Sync] saveSelfAnalysis: 未ログインのためSupabase同期はスキップされます。');
+      if (!activeUserId) {
+        console.warn('[saveSelfAnalysis] ⚠️ activeUserIdがnull。Supabase同期をスキップします。');
+        return;
       }
+
+      const toUpsert = {
+        user_id: activeUserId,
+        self_pr: newAnalysis.selfPR,
+        gakuchika: newAnalysis.gakuchika,
+        base_motivations: newAnalysis.baseMotivations,
+        faqs: newAnalysis.faqs
+      };
+      const { error: upsertErr } = await supabase
+        .from('self_analysis')
+        .upsert(toUpsert, { onConflict: 'user_id' });
+      console.log('[saveSelfAnalysis] UPSERT error:', upsertErr);
+      if (upsertErr) throw new Error('UPSERT失敗: ' + upsertErr.message + ' (code: ' + upsertErr.code + ')');
+      console.log('[saveSelfAnalysis] ✅ 同期完了');
     } catch (e: any) {
-      console.error('[saveSelfAnalysis caught exception]:', e);
-      setSyncStatus('error');
-      alert("データの保存に失敗しました: " + (e.message || e));
+      console.error('[saveSelfAnalysis] ❌ 例外:', e);
+      alert('自己分析の保存に失敗しました:\n' + (e.message || String(e)));
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -694,12 +730,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const loadUserDataFromSupabase = async (uid: string, name: string) => {
+    setIsSyncing(true);
     try {
-      setSyncStatus('syncing');
-
       if (!uid) {
         console.error('[loadUserDataFromSupabase] UIDが未指定。処理を中断します。');
-        setSyncStatus('error');
         return;
       }
 
@@ -810,12 +844,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // 設定はリセットしない（ユーザー定義のテーマカラーを保持）
-      setSyncStatus('synced');
       console.log('[loadUserDataFromSupabase] 完了。');
     } catch (e: any) {
       console.error('[loadUserDataFromSupabase] 例外発生:', e);
-      setSyncStatus('error');
-      // エラーはアラートしない（ログイン後にユーザーにアラートを出すがピジを避ける）
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -1578,7 +1611,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         clearNotifications,
         saveCompanies,
         saveTodos,
-        saveSelfAnalysis
+        saveSelfAnalysis,
+        saveEvents
       }}
     >
       {children}

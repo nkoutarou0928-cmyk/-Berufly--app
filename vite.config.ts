@@ -71,7 +71,7 @@ export default defineConfig(({ mode }) => {
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         },
         devOptions: {
-          enabled: true,
+          enabled: false, // SW\u3092dev\u6642\u306f\u7121\u52b9\u5316\uff08\u53e4\u3044\u30ad\u30e3\u30c3\u30b7\u30e5\u3092\u8fd4\u3055\u306a\u3044\u3088\u3046\u306b\uff09
         },
       }),
     ],
