@@ -48,7 +48,8 @@ function WelcomeScreen() {
     loginWithEmail, 
     resetPassword,
     completePasswordReset,
-    settings 
+    settings,
+    fontSize
   } = useApp();
   
   const theme = getTheme(settings.themeColor);
@@ -164,8 +165,10 @@ function WelcomeScreen() {
     }, 700);
   };
 
+  const fontSizeClass = fontSize === 'small' ? 'text-sm' : fontSize === 'large' ? 'text-lg' : 'text-base';
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA] dark:bg-[#0f172a] px-4 py-8 font-sans">
+    <div className={`min-h-screen flex items-center justify-center bg-[#F8F9FA] dark:bg-[#0f172a] px-4 py-8 font-sans ${fontSizeClass}`}>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-sky-400/10 via-transparent to-transparent pointer-events-none" />
       
       <motion.div 
@@ -496,7 +499,8 @@ function AppContent() {
     authStatus, 
     currentUser, 
     syncStatus,
-    logout
+    logout,
+    fontSize
   } = useApp();
   
   const theme = getTheme(settings.themeColor);
@@ -617,8 +621,10 @@ function AppContent() {
     return <WelcomeScreen />;
   }
 
+  const fontSizeClass = fontSize === 'small' ? 'text-sm' : fontSize === 'large' ? 'text-lg' : 'text-base';
+
   return (
-    <div className={`min-h-screen flex flex-col justify-between font-sans transition-colors duration-200 ${
+    <div className={`min-h-screen flex flex-col justify-between font-sans transition-colors duration-200 ${fontSizeClass} ${
       isDark ? 'bg-[#0f172a] text-slate-100' : 'bg-[#F8F9FA] text-gray-900'
     }`}>
       

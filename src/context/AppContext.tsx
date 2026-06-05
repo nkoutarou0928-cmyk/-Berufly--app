@@ -124,6 +124,8 @@ interface AppContextType {
   saveTodos: (newTodos: TodoItem[]) => Promise<void>;
   saveSelfAnalysis: (newAnalysis: SelfAnalysis) => Promise<void>;
   saveEvents: (newCompanies: Company[]) => Promise<void>;
+  fontSize: 'small' | 'medium' | 'large';
+  setFontSize: (size: 'small' | 'medium' | 'large') => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -139,6 +141,32 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isDark, setIsDark] = useState(false);
   const [selfAnalysis, setSelfAnalysis] = useState<SelfAnalysis>(INITIAL_SELF_ANALYSIS);
+  
+  // Font Size state
+  const [fontSize, setFontSizeState] = useState<'small' | 'medium' | 'large'>('medium');
+
+  const setFontSize = (size: 'small' | 'medium' | 'large') => {
+    setFontSizeState(size);
+    const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+    const suffix = activeUserId ? `_${activeUserId}` : '';
+    localStorage.setItem(`shukatsu_font_size${suffix}`, size);
+  };
+
+  useEffect(() => {
+    if (fontSize === 'small') {
+      document.documentElement.classList.add('font-size-small');
+      document.documentElement.classList.remove('font-size-medium', 'font-size-large');
+      document.documentElement.style.fontSize = '14px';
+    } else if (fontSize === 'large') {
+      document.documentElement.classList.add('font-size-large');
+      document.documentElement.classList.remove('font-size-small', 'font-size-medium');
+      document.documentElement.style.fontSize = '18px';
+    } else {
+      document.documentElement.classList.add('font-size-medium');
+      document.documentElement.classList.remove('font-size-small', 'font-size-large');
+      document.documentElement.style.fontSize = '16px';
+    }
+  }, [fontSize]);
   
   // Navigation UI States
   const [activeTab, setActiveTabState] = useState<'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about'>('dashboard');
@@ -313,6 +341,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const onboarded = localStorage.getItem('shukatsu_onboarded');
       if (onboarded !== 'true') {
         setShowOnboarding(true);
+      }
+
+      const storedFontSize = localStorage.getItem(`shukatsu_font_size` + suffix);
+      if (storedFontSize === 'small' || storedFontSize === 'medium' || storedFontSize === 'large') {
+        setFontSizeState(storedFontSize);
+      } else {
+        setFontSizeState('medium');
       }
 
     } catch (e) {
@@ -1790,7 +1825,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         saveCompanies,
         saveTodos,
         saveSelfAnalysis,
-        saveEvents
+        saveEvents,
+        fontSize,
+        setFontSize
       }}
     >
       {children}
