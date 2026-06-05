@@ -179,7 +179,7 @@ function WelcomeScreen() {
             C
           </div>
           <h2 className="text-xl font-black tracking-tight text-gray-900 dark:text-slate-100 font-sans">
-            CareerNavi+
+            CareerNavi++
           </h2>
           <p className="text-xs text-gray-400 dark:text-slate-400">
             就活のES締切・企業選考・自己分析をリアルタイムに自動一元化
@@ -633,7 +633,7 @@ function AppContent() {
             </span>
             <div className="text-left">
               <span className={`text-xs font-black tracking-tight block ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>
-                CareerNavi+
+                CareerNavi++
               </span>
               <span className="text-[9px] text-gray-400 font-bold block -mt-0.5 font-sans">
                 {authStatus === 'guest' ? '👤 ゲストモード（未同期）' : `☁️ 同期: ${currentUser?.name} (${currentUser?.email})`}
