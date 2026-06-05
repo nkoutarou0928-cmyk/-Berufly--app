@@ -24,7 +24,8 @@ import {
   Monitor,
   Smartphone,
   Download,
-  Share
+  Share,
+  Type
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -44,7 +45,9 @@ export default function SettingsView() {
     migrateGuestToAccount,
     logout,
     deleteAccount,
-    setShowOnboarding
+    setShowOnboarding,
+    fontSize,
+    setFontSize
   } = useApp();
   const theme = getTheme(settings.themeColor);
 
@@ -265,6 +268,50 @@ export default function SettingsView() {
         </div>
       </div>
 
+      {/* --- Font Size Selection Section --- */}
+      <div className={`p-5 rounded-3xl border shadow-xs space-y-4 ${
+        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
+      }`}>
+        <h3 className={`text-xs font-bold flex items-center gap-1.5 border-b pb-2.5 ${
+          isDark ? 'text-slate-200 border-slate-800' : 'text-gray-800 border-gray-50'
+        }`}>
+          <Type className={`h-4.5 w-4.5 ${theme.text}`} />
+          文字サイズ（フォントの大きさ）
+        </h3>
+        
+        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          アプリ全体の表示文字サイズを調整できます。スマートフォンの画面サイズや視認性に合わせて調整してください。
+        </p>
+
+        {/* Font Size Selection Buttons Grid */}
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          {[
+            { id: 'small', label: '小', desc: 'text-sm' },
+            { id: 'medium', label: '中 (標準)', desc: 'text-base' },
+            { id: 'large', label: '大', desc: 'text-lg' },
+          ].map(opt => {
+            const isSelected = fontSize === opt.id;
+
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setFontSize(opt.id as any)}
+                className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 py-2.5 px-3 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
+                  isSelected 
+                    ? `border-gray-900 bg-gray-50 ring-2 ring-gray-900/5 ${isDark ? 'border-slate-100 bg-slate-800 ring-white/15' : ''}` 
+                    : `${isDark ? 'border-slate-800 bg-slate-950/40 text-slate-400 hover:text-slate-200' : 'border-gray-100 bg-white text-gray-500 hover:text-gray-950'}`
+                }`}
+              >
+                <span className={opt.id === 'small' ? 'text-xs' : opt.id === 'large' ? 'text-base' : 'text-sm'}>
+                  Aa
+                </span>
+                <span>{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* --- Home Screen / PWA Setup Panel --- */}
       <div className={`p-5 rounded-3xl border shadow-xs space-y-4 ${
