@@ -425,41 +425,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const saveEvents = async (newCompanies: Company[]) => {
     setIsSyncing(true);
     try {
-      const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
-      if (!activeUserId) {
-        console.warn('[saveEvents] ⚠️ activeUserIdがnull。Supabase同期をスキップします。');
-        return;
-      }
-
-      await supabase.from('events').delete().eq('user_id', activeUserId);
-      const eventsToInsert: any[] = [];
-      for (const company of newCompanies) {
-        const isIntern = company.selectionType === 'intern';
-        if (company.esDeadline) {
-          eventsToInsert.push({
-            user_id: activeUserId,
-            title: `${company.name} - ${isIntern ? 'インターンES締切' : 'ES締切'}`,
-            start_date: company.esDeadline,
-            end_date: company.esDeadline
-          });
-        }
-        if (company.interviewDate) {
-          eventsToInsert.push({
-            user_id: activeUserId,
-            title: `${company.name} - ${isIntern ? 'インターン面接' : '面接'}`,
-            start_date: company.interviewDate,
-            end_date: company.interviewDate
-          });
-        }
-      }
-      if (eventsToInsert.length > 0) {
-        const { error: evErr } = await supabase.from('events').insert(eventsToInsert);
-        if (evErr) throw new Error('イベントINSERT失敗: ' + evErr.message + ' (code: ' + evErr.code + ')');
-      }
-      console.log('[saveEvents] ✅ 同期完了');
-    } catch (e: any) {
-      console.error('[saveEvents] ❌ 例外:', e);
-      alert('イベントの保存に失敗しました:\n' + (e.message || String(e)));
+      console.log('[saveEvents] No Supabase table for events in the new schema. Skipping database write.');
     } finally {
       setIsSyncing(false);
     }
@@ -485,10 +451,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // イベントを先に削除（外部キー制約の競合回避）
-      await supabase.from('events').delete().eq('user_id', activeUserId);
+      // 1. 企業詳細メモを先に削除
+      const { error: memoDelErr } = await supabase
+        .from('company_memos')
+        .delete()
+        .eq('user_id', activeUserId);
+      if (memoDelErr) console.error('[saveCompanies] company_memos delete error:', memoDelErr);
 
-      // 既存レコードを全削除してから再挿入
+      // 2. 既存の企業情報を削除
       const { error: deleteErr } = await supabase
         .from('companies')
         .delete()
@@ -496,12 +466,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       console.log('[saveCompanies] DELETE error:', deleteErr);
       if (deleteErr) throw new Error('企業DELETE失敗: ' + deleteErr.message + ' (code: ' + deleteErr.code + ')');
 
+      // 3. 企業情報と詳細メモを再挿入
       if (newCompanies.length > 0) {
-        const toInsert = newCompanies.map(c => ({
+        const companiesToInsert = newCompanies.map(c => ({
           user_id: activeUserId,
           name: c.name,
-          status: c.status,
-          memo: JSON.stringify({
+          status: c.status
+        }));
+
+        const { error: insertErr } = await supabase
+          .from('companies')
+          .insert(companiesToInsert);
+        if (insertErr) throw new Error('企業INSERT失敗: ' + insertErr.message);
+
+        const memosToInsert = newCompanies.map(c => ({
+          user_id: activeUserId,
+          company_name: c.name,
+          content: JSON.stringify({
             id: c.id,
             industry: c.industry,
             preference: c.preference,
@@ -525,16 +506,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           })
         }));
 
-        const { error: insertErr, data: insertData } = await supabase
-          .from('companies')
-          .insert(toInsert)
-          .select('id');
-        console.log('[saveCompanies] INSERT error:', insertErr, '| 成功件数:', insertData?.length);
-        if (insertErr) throw new Error('企業INSERT失敗: ' + insertErr.message + ' (code: ' + insertErr.code + ', details: ' + insertErr.details + ')');
+        const { error: memoInsertErr } = await supabase
+          .from('company_memos')
+          .insert(memosToInsert);
+        if (memoInsertErr) throw new Error('企業詳細メモINSERT失敗: ' + memoInsertErr.message);
       }
-
-      // eventsテーブルも同期
-      await saveEvents(newCompanies);
 
       console.log('[saveCompanies] ✅ 同期完了');
     } catch (e: any) {
@@ -592,13 +568,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           is_completed: t.completed
         }));
 
-        const { error: insertErr, data: insertData } = await supabase
+        const { error: insertErr } = await supabase
           .from('todos')
-          .insert(toInsert)
-          .select('id');
-        console.log('[saveTodos] INSERT error:', insertErr, '| 成功件数:', insertData?.length);
-        if (insertErr) throw new Error('INSERT失敗: ' + insertErr.message + ' (code: ' + insertErr.code + ', details: ' + insertErr.details + ')');
-        console.log('[saveTodos] ✅ INSERT成功！件数:', insertData?.length);
+          .insert(toInsert);
+        if (insertErr) throw new Error('INSERT失敗: ' + insertErr.message + ' (code: ' + insertErr.code + ')');
+        console.log('[saveTodos] ✅ INSERT成功！');
       }
 
       console.log('[saveTodos] ✅ 同期完了');
@@ -657,14 +631,32 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .eq('user_id', activeUserId);
       if (deleteErr) throw new Error('自己分析DELETE失敗: ' + deleteErr.message + ' (code: ' + deleteErr.code + ')');
 
-      const toInsert = {
-        user_id: activeUserId,
-        title: 'main',
-        content: JSON.stringify(newAnalysis)
-      };
+      const toInsert = [
+        {
+          user_id: activeUserId,
+          title: 'self_pr',
+          content: newAnalysis.selfPR
+        },
+        {
+          user_id: activeUserId,
+          title: 'gakuchika',
+          content: newAnalysis.gakuchika
+        },
+        {
+          user_id: activeUserId,
+          title: 'base_motivations',
+          content: JSON.stringify(newAnalysis.baseMotivations)
+        },
+        {
+          user_id: activeUserId,
+          title: 'faqs',
+          content: JSON.stringify(newAnalysis.faqs)
+        }
+      ];
+
       const { error: insertErr } = await supabase
         .from('self_analysis')
-        .insert([toInsert]);
+        .insert(toInsert);
       console.log('[saveSelfAnalysis] INSERT error:', insertErr);
       if (insertErr) throw new Error('自己分析INSERT失敗: ' + insertErr.message + ' (code: ' + insertErr.code + ')');
       console.log('[saveSelfAnalysis] ✅ 同期完了');
@@ -749,50 +741,86 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const verifiedUid = uid;
 
       // ================================================================
-      // companies テーブルを取得（保存はしない）
+      // companies & company_memos テーブルを取得
       // ================================================================
-      const { data: cos, error: cosErr } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('user_id', verifiedUid);
+      let cos: any[] = [];
+      let memos: any[] = [];
 
-      if (cosErr) {
-        console.error('[loadUserDataFromSupabase] companies SELECTエラー:', cosErr);
-      } else if (cos && cos.length > 0) {
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('user_id', verifiedUid);
+        if (error) {
+          console.error('[loadUserDataFromSupabase] companies SELECTエラー:', error);
+        } else if (data) {
+          cos = data;
+        }
+      } catch (err) {
+        console.error('[loadUserDataFromSupabase] companies SELECT例外:', err);
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('company_memos')
+          .select('*')
+          .eq('user_id', verifiedUid);
+        if (error) {
+          console.error('[loadUserDataFromSupabase] company_memos SELECTエラー:', error);
+        } else if (data) {
+          memos = data;
+        }
+      } catch (err) {
+        console.error('[loadUserDataFromSupabase] company_memos SELECT例外:', err);
+      }
+
+      if (cos && cos.length > 0) {
         const loadedCos: Company[] = cos.map(c => {
-          try {
-            const parsed = JSON.parse(c.memo || '');
-            if (parsed && typeof parsed === 'object') {
-              return {
-                id: parsed.id || String(c.id),
-                name: c.name || '',
-                industry: parsed.industry || '',
-                preference: parsed.preference || 3,
-                status: c.status || 'interested',
-                selectionStatusIntern: parsed.selectionStatusIntern,
-                selectionStage: parsed.selectionStage || 'none',
-                esDeadline: parsed.esDeadline || '',
-                interviewDate: parsed.interviewDate || '',
-                esMemos: parsed.esMemos || [],
-                interviewMemos: parsed.interviewMemos || [],
-                notes: parsed.notes || '',
-                headquarters: parsed.headquarters || '',
-                scale: parsed.scale || '',
-                website: parsed.website || '',
-                establishedYear: parsed.establishedYear || '',
-                employeeCount: parsed.employeeCount || '',
-                isForeign: parsed.isForeign || false,
-                category: parsed.category || '',
-                selectionType: parsed.selectionType || 'main',
-                internType: parsed.internType || '1day',
-                internSteps: parsed.internSteps || []
-              };
-            }
-          } catch (_) {}
+          const matchedMemo = memos.find(m => m.company_name === c.name);
+          const memoContent = matchedMemo ? matchedMemo.content : '';
 
-          // Fallback if not JSON
+          let parsed: any = null;
+          if (memoContent) {
+            try {
+              const trimmed = memoContent.trim();
+              if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                parsed = JSON.parse(trimmed);
+              }
+            } catch (err) {
+              console.warn('[loadUserDataFromSupabase] Failed to parse company memo JSON for', c.name, ':', err);
+            }
+          }
+
+          if (parsed && typeof parsed === 'object') {
+            return {
+              id: parsed.id || String(c.id || ''),
+              name: c.name || '',
+              industry: parsed.industry || '',
+              preference: parsed.preference || 3,
+              status: c.status || 'interested',
+              selectionStatusIntern: parsed.selectionStatusIntern,
+              selectionStage: parsed.selectionStage || 'none',
+              esDeadline: parsed.esDeadline || '',
+              interviewDate: parsed.interviewDate || '',
+              esMemos: parsed.esMemos || [],
+              interviewMemos: parsed.interviewMemos || [],
+              notes: parsed.notes || '',
+              headquarters: parsed.headquarters || '',
+              scale: parsed.scale || '',
+              website: parsed.website || '',
+              establishedYear: parsed.establishedYear || '',
+              employeeCount: parsed.employeeCount || '',
+              isForeign: parsed.isForeign || false,
+              category: parsed.category || '',
+              selectionType: parsed.selectionType || 'main',
+              internType: parsed.internType || '1day',
+              internSteps: parsed.internSteps || []
+            };
+          }
+
+          // Fallback: memoContent is plain text (notes)
           return {
-            id: String(c.id),
+            id: String(c.id || ''),
             name: c.name || '',
             industry: '',
             preference: 3,
@@ -803,7 +831,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             interviewDate: '',
             esMemos: [],
             interviewMemos: [],
-            notes: c.memo || '',
+            notes: memoContent || '',
             headquarters: '',
             scale: '',
             website: '',
@@ -820,42 +848,66 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem(`shukatsu_companies_${verifiedUid}`, JSON.stringify(loadedCos));
         console.log('[loadUserDataFromSupabase] companies 取得完了。件数:', loadedCos.length);
       } else {
-        // Supabaseが空ならlocalStorageを使用。保存はしない。
+        // Supabaseが空ならlocalStorageを使用
         const local = localStorage.getItem(`shukatsu_companies_${verifiedUid}`);
-        if (local) { try { setCompanies(JSON.parse(local)); } catch (_) { setCompanies([]); } }
-        else { setCompanies([]); }
+        if (local) {
+          try {
+            setCompanies(JSON.parse(local));
+          } catch (_) {
+            setCompanies([]);
+          }
+        } else {
+          setCompanies([]);
+        }
         console.log('[loadUserDataFromSupabase] companies: Supabaseは空。localStorageを使用。');
       }
 
       // ================================================================
-      // todos テーブルを取得（保存はしない）
+      // todos テーブルを取得
       // ================================================================
-      const { data: tds, error: tdsErr } = await supabase
-        .from('todos')
-        .select('*')
-        .eq('user_id', verifiedUid);
+      let tds: any[] = [];
+      try {
+        const { data, error } = await supabase
+          .from('todos')
+          .select('*')
+          .eq('user_id', verifiedUid);
+        if (error) {
+          console.error('[loadUserDataFromSupabase] todos SELECTエラー:', error);
+        } else if (data) {
+          tds = data;
+        }
+      } catch (err) {
+        console.error('[loadUserDataFromSupabase] todos SELECT例外:', err);
+      }
 
-      if (tdsErr) {
-        console.error('[loadUserDataFromSupabase] todos SELECTエラー:', tdsErr);
-      } else if (tds && tds.length > 0) {
+      if (tds && tds.length > 0) {
         const loadedTodos = tds.map(t => {
-          try {
-            const parsed = JSON.parse(t.task || '');
-            if (parsed && typeof parsed === 'object') {
-              return {
-                id: parsed.id || String(t.id),
-                title: parsed.title || '',
-                completed: t.is_completed || false,
-                scope: parsed.scope || 'today',
-                dueDate: parsed.dueDate || '',
-                subtasks: parsed.subtasks || []
-              };
+          let parsed: any = null;
+          if (t.task) {
+            try {
+              const trimmed = t.task.trim();
+              if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                parsed = JSON.parse(trimmed);
+              }
+            } catch (err) {
+              console.warn('[loadUserDataFromSupabase] Failed to parse todo task JSON:', err);
             }
-          } catch (_) {}
+          }
 
-          // Fallback if not JSON
+          if (parsed && typeof parsed === 'object') {
+            return {
+              id: parsed.id || String(t.id || ''),
+              title: parsed.title || '',
+              completed: t.is_completed || false,
+              scope: parsed.scope || 'today',
+              dueDate: parsed.dueDate || '',
+              subtasks: parsed.subtasks || []
+            };
+          }
+
+          // Fallback: task is plain text (title)
           return {
-            id: String(t.id),
+            id: String(t.id || ''),
             title: t.task || '',
             completed: t.is_completed || false,
             scope: 'today',
@@ -867,39 +919,99 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem(`shukatsu_todos_${verifiedUid}`, JSON.stringify(loadedTodos));
         console.log('[loadUserDataFromSupabase] todos 取得完了。件数:', loadedTodos.length);
       } else {
-        // Supabaseが空ならlocalStorageを使用。保存はしない。
+        // Supabaseが空ならlocalStorageを使用
         const local = localStorage.getItem(`shukatsu_todos_${verifiedUid}`);
-        if (local) { try { setTodos(JSON.parse(local)); } catch (_) { setTodos([]); } }
-        else { setTodos([]); }
+        if (local) {
+          try {
+            setTodos(JSON.parse(local));
+          } catch (_) {
+            setTodos([]);
+          }
+        } else {
+          setTodos([]);
+        }
         console.log('[loadUserDataFromSupabase] todos: Supabaseは空。localStorageを使用。');
       }
 
       // ================================================================
-      // self_analysis テーブルを取得（保存はしない）
+      // self_analysis テーブルを取得
       // ================================================================
-      const { data: sa, error: saErr } = await supabase
-        .from('self_analysis')
-        .select('*')
-        .eq('user_id', verifiedUid);
+      let sa: any[] = [];
+      try {
+        const { data, error } = await supabase
+          .from('self_analysis')
+          .select('*')
+          .eq('user_id', verifiedUid);
+        if (error) {
+          console.error('[loadUserDataFromSupabase] self_analysis SELECTエラー:', error);
+        } else if (data) {
+          sa = data;
+        }
+      } catch (err) {
+        console.error('[loadUserDataFromSupabase] self_analysis SELECT例外:', err);
+      }
 
-      if (saErr) {
-        console.error('[loadUserDataFromSupabase] self_analysis SELECTエラー:', saErr);
-      } else if (sa && sa.length > 0) {
-        const mainRow = sa.find(r => r.title === 'main');
+      if (sa && sa.length > 0) {
         let loadedSA = { selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] };
+
+        // 1. 'main' フォーマット (一括シリアライズ) のチェック (互換性維持のため)
+        const mainRow = sa.find(r => r.title === 'main');
+        let mainParsed: any = null;
         if (mainRow && mainRow.content) {
           try {
-            const parsed = JSON.parse(mainRow.content);
-            if (parsed && typeof parsed === 'object') {
-              loadedSA = {
-                selfPR: parsed.selfPR || '',
-                gakuchika: parsed.gakuchika || '',
-                baseMotivations: parsed.baseMotivations || [],
-                faqs: parsed.faqs || []
-              };
+            const trimmed = mainRow.content.trim();
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+              mainParsed = JSON.parse(trimmed);
             }
-          } catch (_) {}
+          } catch (err) {
+            console.warn('[loadUserDataFromSupabase] Failed to parse self_analysis content JSON (main):', err);
+          }
         }
+
+        if (mainParsed && typeof mainParsed === 'object') {
+          loadedSA = {
+            selfPR: mainParsed.selfPR || '',
+            gakuchika: mainParsed.gakuchika || '',
+            baseMotivations: mainParsed.baseMotivations || [],
+            faqs: mainParsed.faqs || []
+          };
+        } else {
+          // 2. 個別カラム (self_pr, gakuchika, base_motivations, faqs) からのパース
+          const prRow = sa.find(r => r.title === 'self_pr' || r.title === 'selfPR');
+          const gakuRow = sa.find(r => r.title === 'gakuchika');
+          const bmRow = sa.find(r => r.title === 'base_motivations' || r.title === 'baseMotivations');
+          const faqRow = sa.find(r => r.title === 'faqs');
+
+          if (prRow) loadedSA.selfPR = prRow.content || '';
+          if (gakuRow) loadedSA.gakuchika = gakuRow.content || '';
+
+          if (bmRow && bmRow.content) {
+            try {
+              const trimmed = bmRow.content.trim();
+              if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                const parsedBm = JSON.parse(trimmed);
+                loadedSA.baseMotivations = Array.isArray(parsedBm) ? parsedBm : [];
+              } else {
+                loadedSA.baseMotivations = [];
+              }
+            } catch (_) {
+              console.warn('[loadUserDataFromSupabase] Failed to parse baseMotivations JSON');
+              loadedSA.baseMotivations = [];
+            }
+          }
+          if (faqRow && faqRow.content) {
+            try {
+              const trimmed = faqRow.content.trim();
+              if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                const parsedFaq = JSON.parse(trimmed);
+                loadedSA.faqs = Array.isArray(parsedFaq) ? parsedFaq : [];
+              }
+            } catch (_) {
+              console.warn('[loadUserDataFromSupabase] Failed to parse faqs JSON');
+            }
+          }
+        }
+
         setSelfAnalysis(loadedSA);
         localStorage.setItem(`shukatsu_self_analysis_${verifiedUid}`, JSON.stringify(loadedSA));
         console.log('[loadUserDataFromSupabase] self_analysis 取得完了。');
