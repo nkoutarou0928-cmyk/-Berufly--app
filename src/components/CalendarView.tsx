@@ -286,10 +286,10 @@ export default function CalendarView() {
       </div>
 
       {/* Main Calendar Grid / Week view */}
-      <div className="bg-app-card-bg rounded-3xl border border-app-card-border shadow-xs overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-200 dark:border-slate-700 shadow-xs overflow-hidden">
         
         {/* Days of week header */}
-        <div className="grid grid-cols-7 border-b border-app-border bg-app-bg-secondary py-3">
+        <div className="grid grid-cols-7 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[#090A0C] py-3">
           {daysOfWeek.map((day, idx) => (
             <div 
               key={day} 
@@ -314,11 +314,11 @@ export default function CalendarView() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-7 divide-x divide-y divide-app-border border-t border-app-border bg-app-card-bg"
+              className="grid grid-cols-7 divide-x divide-y divide-gray-200 dark:divide-slate-700 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900"
             >
               {daysGrid.map((dateObj, idx) => {
                 if (!dateObj) {
-                  return <div key={`empty-${idx}`} className="bg-app-bg-secondary min-h-[90px]" />;
+                  return <div key={`empty-${idx}`} className="bg-gray-50 dark:bg-[#090A0C] min-h-[90px]" />;
                 }
 
                 const dayNum = dateObj.getDate();
@@ -329,7 +329,7 @@ export default function CalendarView() {
                 return (
                   <div 
                     key={dateObj.toISOString()} 
-                    className={`min-h-[95px] p-1.5 flex flex-col justify-between hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors border-0 relative bg-app-card-bg ${
+                    className={`min-h-[95px] p-1.5 flex flex-col justify-between hover:bg-gray-50 dark:hover:bg-slate-850/50 transition-colors relative bg-white dark:bg-slate-900 ${
                       isCurrentSimulatedToday ? 'ring-2 ring-inset ring-indigo-600 dark:ring-indigo-500' : ''
                     }`}
                   >
@@ -389,7 +389,7 @@ export default function CalendarView() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-7 divide-x divide-app-border min-h-[160px] bg-app-card-bg"
+              className="grid grid-cols-7 divide-x divide-gray-200 dark:divide-slate-700 min-h-[160px] bg-white dark:bg-slate-900"
             >
               {weekDaysGrid.map(dateObj => {
                 const dayNum = dateObj.getDate();
@@ -400,7 +400,7 @@ export default function CalendarView() {
                 return (
                   <div 
                     key={dateObj.toISOString()} 
-                    className={`p-2 flex flex-col hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors bg-app-card-bg border-0 ${
+                    className={`p-2 flex flex-col hover:bg-gray-50 dark:hover:bg-slate-850/50 transition-colors bg-white dark:bg-slate-900 ${
                       isCurrentSimulatedToday ? 'ring-2 ring-inset ring-indigo-600 dark:ring-indigo-500' : ''
                     }`}
                   >
