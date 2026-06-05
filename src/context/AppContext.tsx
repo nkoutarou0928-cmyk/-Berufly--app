@@ -6,7 +6,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Company, TodoItem, AppSettings, NotificationItem, ObVisit, OfferComparison, CompanyStatus, TodoScope, SelfAnalysis, BaseMotivation, FAQItem, ESCategory, ESStatus } from '../types';
 import { INITIAL_COMPANIES, INITIAL_TODOS, INITIAL_SETTINGS, INITIAL_OB_VISITS, INITIAL_OFFER_COMPARISONS, INITIAL_SELF_ANALYSIS } from '../seedData';
-import { supabase } from '../utils/supabaseClient';
+import { supabase, getSupabaseClientStatus } from '../utils/supabaseClient';
 
 interface AppContextType {
   companies: Company[];
@@ -683,6 +683,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUpWithEmail = async (email: string, pass: string, name: string) => {
+    // クライアント設定の事前検証
+    const status = getSupabaseClientStatus();
+    if (!status.isConfigured) {
+      const msg = `【Supabase未設定】\n本番環境の環境変数 (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) がVercel等で正しく適用されていない可能性があります。\n\n現在の設定:\nURL: ${status.url || '未設定'}\nAPIキー: ${status.hasAnonKey ? '存在します' : '存在しません'}`;
+      console.error(msg);
+      alert(msg);
+      throw new Error(msg);
+    }
+
     // パスワード要件チェック (8文字以上・英数字混合)
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
     if (!passwordRegex.test(pass)) {
@@ -691,83 +700,107 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     console.log('[Supabase SignUp]: Attempting signup for email:', email);
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password: pass,
-      options: {
-        data: {
-          name: name
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: pass,
+        options: {
+          data: {
+            name: name
+          }
         }
+      });
+
+      if (error) {
+        console.error('[Supabase SignUp Error]:', error);
+        alert('【新規登録エラー】\n登録に失敗しました: ' + error.message);
+        throw new Error(error.message);
       }
-    });
 
-    if (error) {
-      console.error('[Supabase SignUp Error]:', error);
-      alert('【新規登録エラー】\n登録に失敗しました: ' + error.message);
-      throw new Error(error.message);
+      if (!data.user) {
+        console.error('[Supabase SignUp Error]: User data is empty after signup.');
+        throw new Error('登録中にエラーが発生しました');
+      }
+
+      const uid = data.user.id;
+
+      // Check if email confirmation is required (session is null when email confirm is enabled on Supabase dashboard)
+      if (!data.session) {
+        console.log('[Supabase SignUp]: Account created, waiting for email confirmation.');
+        alert('✨ アカウントの作成に成功しました！\n確認用の認証メールを送信しましたので、メール内の確認リンクをクリックしてアカウントを有効化してからログインを行ってください。');
+        return;
+      }
+
+      console.log('[Supabase SignUp]: Signup completed with immediate session.');
+
+      localStorage.setItem('shukatsu_auth_status', 'authenticated');
+      localStorage.setItem('shukatsu_user_uid', uid);
+      localStorage.setItem('shukatsu_user_email', email);
+      localStorage.setItem('shukatsu_user_name', name);
+
+      setCurrentUser({ uid, email, name, isAnonymous: false });
+      setAuthStatus('authenticated');
+
+      setCompanies([]);
+      setTrashCompanies([]);
+      setTodos([]);
+      setSettings({ ...INITIAL_SETTINGS, profileName: name });
+      setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+
+      alert('✨ 新規登録およびログインが完了しました！');
+    } catch (e: any) {
+      console.error('[signUpWithEmail caught exception]:', e);
+      alert('【新規登録通信エラー】\nSupabaseとの通信中にエラーが発生しました。インターネット接続または環境変数の設定を確認してください。\n詳細: ' + (e.message || e));
+      throw e;
     }
-
-    if (!data.user) {
-      console.error('[Supabase SignUp Error]: User data is empty after signup.');
-      throw new Error('登録中にエラーが発生しました');
-    }
-
-    const uid = data.user.id;
-
-    // Check if email confirmation is required (session is null when email confirm is enabled on Supabase dashboard)
-    if (!data.session) {
-      console.log('[Supabase SignUp]: Account created, waiting for email confirmation.');
-      alert('✨ アカウントの作成に成功しました！\n確認用の認証メールを送信しましたので、メール内の確認リンクをクリックしてアカウントを有効化してからログインを行ってください。');
-      return;
-    }
-
-    console.log('[Supabase SignUp]: Signup completed with immediate session.');
-
-    localStorage.setItem('shukatsu_auth_status', 'authenticated');
-    localStorage.setItem('shukatsu_user_uid', uid);
-    localStorage.setItem('shukatsu_user_email', email);
-    localStorage.setItem('shukatsu_user_name', name);
-
-    setCurrentUser({ uid, email, name, isAnonymous: false });
-    setAuthStatus('authenticated');
-
-    setCompanies([]);
-    setTrashCompanies([]);
-    setTodos([]);
-    setSettings({ ...INITIAL_SETTINGS, profileName: name });
-    setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
-
-    alert('✨ 新規登録およびログインが完了しました！');
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password: pass
-    });
-
-    if (error) {
-      throw new Error(error.message);
+    // クライアント設定の事前検証
+    const status = getSupabaseClientStatus();
+    if (!status.isConfigured) {
+      const msg = `【Supabase未設定】\n本番環境の環境変数 (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) がVercel等で正しく適用されていない可能性があります。\n\n現在の設定:\nURL: ${status.url || '未設定'}\nAPIキー: ${status.hasAnonKey ? '存在します' : '存在しません'}`;
+      console.error(msg);
+      alert(msg);
+      throw new Error(msg);
     }
 
-    if (!data.user) {
-      throw new Error('ログインに失敗しました');
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: pass
+      });
+
+      if (error) {
+        console.error('[Supabase Login Error]:', error);
+        alert('【ログインエラー】\nログインに失敗しました: ' + error.message);
+        throw new Error(error.message);
+      }
+
+      if (!data.user) {
+        throw new Error('ログインに失敗しました');
+      }
+
+      const uid = data.user.id;
+      const name = data.user.user_metadata?.name || email.split('@')[0];
+
+      localStorage.setItem('shukatsu_auth_status', 'authenticated');
+      localStorage.setItem('shukatsu_user_uid', uid);
+      localStorage.setItem('shukatsu_user_email', email);
+      localStorage.setItem('shukatsu_user_name', name);
+
+      setCurrentUser({ uid, email, name, isAnonymous: false });
+      setAuthStatus('authenticated');
+
+      // Fetch user data from Supabase
+      await loadUserDataFromSupabase(uid, name);
+    } catch (e: any) {
+      console.error('[loginWithEmail caught exception]:', e);
+      alert('【ログイン通信エラー】\nSupabaseとの通信中にエラーが発生しました。インターネット接続または環境変数の設定を確認してください。\n詳細: ' + (e.message || e));
+      throw e;
     }
-
-    const uid = data.user.id;
-    const name = data.user.user_metadata?.name || email.split('@')[0];
-
-    localStorage.setItem('shukatsu_auth_status', 'authenticated');
-    localStorage.setItem('shukatsu_user_uid', uid);
-    localStorage.setItem('shukatsu_user_email', email);
-    localStorage.setItem('shukatsu_user_name', name);
-
-    setCurrentUser({ uid, email, name, isAnonymous: false });
-    setAuthStatus('authenticated');
-
-    // Fetch user data from Supabase
-    await loadUserDataFromSupabase(uid, name);
   };
+
 
   const verifyEmailCode = async (email: string, code: string) => {
     // Supabase standard OTP verification could be mapped if needed, keeping mock fallback

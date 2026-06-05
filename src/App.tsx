@@ -69,6 +69,7 @@ function WelcomeScreen() {
   const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log(`[WelcomeScreen submit] ActiveTab: ${activeTab}, Email: ${email}`);
     
     // Brief network latency mockup for premium look and feel
     setTimeout(async () => {
@@ -84,16 +85,21 @@ function WelcomeScreen() {
             setIsLoading(false);
             return;
           }
+          console.log('[WelcomeScreen Action]: Triggering signUpWithEmail...');
           await signUpWithEmail(email, password, name);
+          console.log('[WelcomeScreen Action]: signUpWithEmail resolved successfully.');
         } else if (activeTab === 'login') {
           if (!email || !password) {
             alert('メールアドレスとパスワードを入力してください。');
             setIsLoading(false);
             return;
           }
+          console.log('[WelcomeScreen Action]: Triggering loginWithEmail...');
           await loginWithEmail(email, password);
+          console.log('[WelcomeScreen Action]: loginWithEmail resolved successfully.');
         }
       } catch (err: any) {
+        console.error('[WelcomeScreen Action Error caught]:', err);
         alert(err.message || '認証処理中にエラーが発生しました。再度お試しください。');
       } finally {
         setIsLoading(false);
