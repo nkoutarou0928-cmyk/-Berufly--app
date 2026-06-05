@@ -512,7 +512,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (memoInsertErr) throw new Error('企業詳細メモINSERT失敗: ' + memoInsertErr.message);
       }
 
-      console.log('[saveCompanies] ✅ 同期完了');
+      console.log('[saveCompanies] ✅ 同期完了。最新データをフェッチします。');
+      await loadUserDataFromSupabase(activeUserId, currentUser?.name || '');
     } catch (e: any) {
       console.error('[saveCompanies] ❌ 例外:', e);
       alert('企業の保存に失敗しました:\n' + (e.message || String(e)));
@@ -575,7 +576,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         console.log('[saveTodos] ✅ INSERT成功！');
       }
 
-      console.log('[saveTodos] ✅ 同期完了');
+      console.log('[saveTodos] ✅ 同期完了。最新データをフェッチします。');
+      await loadUserDataFromSupabase(activeUserId, currentUser?.name || '');
     } catch (e: any) {
       console.error('[saveTodos] ❌ 例外:', e);
       alert('Todoの保存に失敗しました:\n' + (e.message || String(e)));
@@ -659,7 +661,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .insert(toInsert);
       console.log('[saveSelfAnalysis] INSERT error:', insertErr);
       if (insertErr) throw new Error('自己分析INSERT失敗: ' + insertErr.message + ' (code: ' + insertErr.code + ')');
-      console.log('[saveSelfAnalysis] ✅ 同期完了');
+      console.log('[saveSelfAnalysis] ✅ 同期完了。最新データをフェッチします。');
+      await loadUserDataFromSupabase(activeUserId, currentUser?.name || '');
     } catch (e: any) {
       console.error('[saveSelfAnalysis] ❌ 例外:', e);
       alert('自己分析の保存に失敗しました:\n' + (e.message || String(e)));
