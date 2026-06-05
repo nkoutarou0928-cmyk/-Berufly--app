@@ -236,20 +236,20 @@ export default function CalendarView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-black dark:text-white tracking-tight">就活カレンダー</h2>
-          <p className="text-xs text-gray-800 dark:text-slate-200 mt-0.5 font-extrabold">締め切り・面接予定・ToDoタスクを自動可視化。タップして詳細を確認できます</p>
+          <p className="text-xs text-[#222222] dark:text-white mt-0.5 font-black">締め切り・面接予定・ToDoタスクを自動可視化。タップして詳細を確認できます</p>
         </div>
         
         {/* Toggle View Mode */}
-        <div className="flex p-0.5 bg-app-bg-secondary rounded-lg text-xs self-start border border-app-border">
+        <div className="flex p-0.5 bg-gray-150 dark:bg-slate-950 rounded-lg text-xs self-start border border-[#CCCCCC] dark:border-slate-700">
           <button 
             onClick={() => setViewMode('month')}
-            className={`py-1.5 px-3 rounded-md font-semibold transition-all cursor-pointer ${viewMode === 'month' ? 'bg-app-card-bg shadow-xs text-app-text-primary' : 'text-app-text-secondary hover:text-app-text-primary'}`}
+            className={`py-1.5 px-3 rounded-md font-black transition-all cursor-pointer ${viewMode === 'month' ? 'bg-white dark:bg-slate-800 shadow-xs text-[#222222] dark:text-white' : 'text-gray-700 dark:text-slate-350 hover:text-black dark:hover:text-white'}`}
           >
             月表示
           </button>
           <button 
             onClick={() => setViewMode('week')}
-            className={`py-1.5 px-3 rounded-md font-semibold transition-all cursor-pointer ${viewMode === 'week' ? 'bg-app-card-bg shadow-xs text-app-text-primary' : 'text-app-text-secondary hover:text-app-text-primary'}`}
+            className={`py-1.5 px-3 rounded-md font-black transition-all cursor-pointer ${viewMode === 'week' ? 'bg-white dark:bg-slate-800 shadow-xs text-[#222222] dark:text-white' : 'text-gray-700 dark:text-slate-350 hover:text-black dark:hover:text-white'}`}
           >
             週表示
           </button>
@@ -257,7 +257,7 @@ export default function CalendarView() {
       </div>
 
       {/* Navigation and Date Title banner */}
-      <div className="flex items-center justify-between bg-app-card-bg px-4 py-3 rounded-2xl border border-app-card-border shadow-xs">
+      <div className="flex items-center justify-between bg-white dark:bg-slate-900 px-4 py-3 rounded-2xl border border-[#CCCCCC] dark:border-slate-700 shadow-xs">
         <h3 className="text-sm font-bold text-black dark:text-white flex items-center gap-1.5">
           <Calendar className={`h-4.5 w-4.5 ${theme.text}`} />
           <span className="font-mono font-black">{year}年 {monthNames[month]}</span>
@@ -266,19 +266,19 @@ export default function CalendarView() {
         <div className="flex items-center gap-1">
           <button
             onClick={viewMode === 'month' ? handlePrevMonth : handlePrevWeek}
-            className="p-1.5 bg-app-button-bg border border-app-button-border rounded-lg hover:bg-app-button-hover transition-colors cursor-pointer text-app-button-text"
+            className="p-1.5 bg-white dark:bg-slate-800 border border-[#CCCCCC] dark:border-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-750 transition-colors cursor-pointer text-[#222222] dark:text-white"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             onClick={() => setCurrentDate(new Date())}
-            className="px-2.5 py-1 text-[10px] font-bold text-app-button-text hover:bg-app-button-hover rounded-lg transition-colors cursor-pointer border border-transparent"
+            className="px-2.5 py-1 text-[10px] font-black text-[#222222] dark:text-white hover:bg-gray-100 dark:hover:bg-slate-750 rounded-lg transition-colors cursor-pointer border border-transparent"
           >
             今月
           </button>
           <button
             onClick={viewMode === 'month' ? handleNextMonth : handleNextWeek}
-            className="p-1.5 bg-app-button-bg border border-app-button-border rounded-lg hover:bg-app-button-hover transition-colors cursor-pointer text-app-button-text"
+            className="p-1.5 bg-white dark:bg-slate-800 border border-[#CCCCCC] dark:border-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-750 transition-colors cursor-pointer text-[#222222] dark:text-white"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -286,10 +286,10 @@ export default function CalendarView() {
       </div>
 
       {/* Main Calendar Grid / Week view */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-gray-200 dark:border-slate-700 shadow-xs overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#CCCCCC] dark:border-slate-700 shadow-xs overflow-hidden">
         
         {/* Days of week header */}
-        <div className="grid grid-cols-7 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-[#090A0C] py-3">
+        <div className="grid grid-cols-7 border-b border-[#CCCCCC] dark:border-slate-700 bg-gray-50 dark:bg-[#090A0C] py-3">
           {daysOfWeek.map((day, idx) => (
             <div 
               key={day} 
@@ -314,7 +314,7 @@ export default function CalendarView() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-7 divide-x divide-y divide-gray-200 dark:divide-slate-700 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+              className="grid grid-cols-7 divide-x divide-y divide-[#CCCCCC] dark:divide-slate-700 border-t border-[#CCCCCC] dark:border-slate-700 bg-white dark:bg-slate-900"
             >
               {daysGrid.map((dateObj, idx) => {
                 if (!dateObj) {
@@ -389,7 +389,7 @@ export default function CalendarView() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid grid-cols-7 divide-x divide-gray-200 dark:divide-slate-700 min-h-[160px] bg-white dark:bg-slate-900"
+              className="grid grid-cols-7 divide-x divide-[#CCCCCC] dark:divide-slate-700 min-h-[160px] bg-white dark:bg-slate-900"
             >
               {weekDaysGrid.map(dateObj => {
                 const dayNum = dateObj.getDate();
@@ -405,7 +405,7 @@ export default function CalendarView() {
                     }`}
                   >
                     <div className="text-center font-mono py-1">
-                      <span className="text-[10px] block text-gray-800 dark:text-gray-200 mb-0.5 font-bold">
+                      <span className="text-[10px] block text-[#222222] dark:text-white mb-0.5 font-black">
                         {daysOfWeek[dateObj.getDay()]}
                       </span>
                       <span 
@@ -463,16 +463,16 @@ export default function CalendarView() {
       </div>
 
       {/* Event Details lists for current selected month */}
-      <div className="bg-app-card-bg p-5 rounded-3xl border border-app-card-border shadow-xs">
-        <h3 className="text-sm font-bold text-black dark:text-white flex items-center gap-1.5 border-b border-app-border pb-3">
+      <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-[#CCCCCC] dark:border-slate-700 shadow-xs">
+        <h3 className="text-sm font-bold text-black dark:text-white flex items-center gap-1.5 border-b border-[#CCCCCC] dark:border-slate-700 pb-3">
           <Calendar className={`h-4.5 w-4.5 ${theme.text}`} />
           <span>今月のスケジュール・締切一覧</span>
-          <span className={`text-xs font-bold font-mono text-black dark:text-white bg-app-bg-secondary px-2 py-0.5 rounded-full ml-1 border border-app-border`}>
+          <span className={`text-xs font-bold font-mono text-black dark:text-white bg-gray-50 dark:bg-slate-950 px-2 py-0.5 rounded-full ml-1 border border-[#CCCCCC] dark:border-slate-700`}>
             {currentMonthEvents.length}件
           </span>
         </h3>
 
-        <div className="mt-4 divide-y divide-app-border">
+        <div className="mt-4 divide-y divide-[#CCCCCC] dark:divide-slate-700">
           {currentMonthEvents.length === 0 ? (
             <div className="py-6 text-center text-xs text-gray-800 dark:text-gray-250">
               今月の予定はありません。企業ディテールから「ES締切日」や「面接予定」を設定してみましょう
@@ -511,7 +511,7 @@ export default function CalendarView() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono font-bold text-black dark:text-white bg-app-bg-secondary px-2.5 py-1 rounded-lg border border-app-border">
+                  <span className="text-xs font-mono font-bold text-black dark:text-white bg-gray-50 dark:bg-slate-950 px-2.5 py-1 rounded-lg border border-[#CCCCCC] dark:border-slate-700">
                     {evt.date}
                   </span>
                   <ChevronRightIcon className="h-4 w-4 text-app-text-secondary group-hover:text-app-text-primary transition-colors" />
