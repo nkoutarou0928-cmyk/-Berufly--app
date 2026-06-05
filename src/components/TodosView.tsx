@@ -26,14 +26,9 @@ export default function TodosView() {
   const { 
     todos, 
     settings, 
-    addTodo, 
-    updateTodo, 
-    deleteTodo, 
-    toggleTodo, 
-    toggleSubtask, 
-    addSubtask, 
-    deleteSubtask,
-    isDark
+    isDark,
+    saveTodos,
+    addNotificationAlarm
   } = useApp();
 
   const theme = getTheme(settings.themeColor);
@@ -50,13 +45,28 @@ export default function TodosView() {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    addTodo({
+    const newTodo: TodoItem = {
+      id: `todo-${Date.now()}`,
       title: newTitle,
       completed: false,
       scope: activeScope,
       dueDate: activeScope !== 'goal' ? newDueDate : undefined,
       subtasks: activeScope === 'goal' ? [] : undefined
-    });
+    };
+
+    const updated = [...todos, newTodo];
+    saveTodos(updated);
+
+    // Schedule a notification if notification timing matches
+    if (newTodo.dueDate && settings.notificationsEnabled) {
+      addNotificationAlarm(
+        'タスクリマインド',
+        `期限間近のタスクがあります: ${newTodo.title} (期日: ${newTodo.dueDate})`,
+        'todo',
+        undefined,
+        newTodo.id
+      );
+    }
 
     setNewTitle('');
   };
@@ -66,8 +76,63 @@ export default function TodosView() {
     const title = newSubtaskInputs[todoId] || '';
     if (!title.trim()) return;
 
-    addSubtask(todoId, title);
+    const updated = todos.map(todo => {
+      if (todo.id === todoId) {
+        const subtasks = todo.subtasks || [];
+        const newSub = { id: `st-${Date.now()}`, title, completed: false };
+        return { ...todo, subtasks: [...subtasks, newSub], completed: false };
+      }
+      return todo;
+    });
+
+    saveTodos(updated);
     setNewSubtaskInputs(prev => ({ ...prev, [todoId]: '' }));
+  };
+
+  const handleToggleTodo = (id: string) => {
+    const updated = todos.map(todo => {
+      if (todo.id === id) {
+        const nextCompleted = !todo.completed;
+        let updatedSubtasks = todo.subtasks;
+        if (todo.subtasks) {
+          updatedSubtasks = todo.subtasks.map(st => ({ ...st, completed: nextCompleted }));
+        }
+        return { ...todo, completed: nextCompleted, subtasks: updatedSubtasks };
+      }
+      return todo;
+    });
+    saveTodos(updated);
+  };
+
+  const handleDeleteTodo = (id: string) => {
+    const updated = todos.filter(todo => todo.id !== id);
+    saveTodos(updated);
+  };
+
+  const handleToggleSubtask = (todoId: string, subtaskId: string) => {
+    const updated = todos.map(todo => {
+      if (todo.id === todoId && todo.subtasks) {
+        const nextSubtasks = todo.subtasks.map(st => 
+          st.id === subtaskId ? { ...st, completed: !st.completed } : st
+        );
+        const allCompleted = nextSubtasks.every(st => st.completed);
+        return { ...todo, subtasks: nextSubtasks, completed: allCompleted };
+      }
+      return todo;
+    });
+    saveTodos(updated);
+  };
+
+  const handleDeleteSubtask = (todoId: string, subtaskId: string) => {
+    const updated = todos.map(todo => {
+      if (todo.id === todoId && todo.subtasks) {
+        const nextSubtasks = todo.subtasks.filter(st => st.id !== subtaskId);
+        const allCompleted = nextSubtasks.length > 0 && nextSubtasks.every(st => st.completed);
+        return { ...todo, subtasks: nextSubtasks, completed: allCompleted };
+      }
+      return todo;
+    });
+    saveTodos(updated);
   };
 
   // Filtered lists
@@ -201,7 +266,7 @@ export default function TodosView() {
                     <div className="flex items-start gap-2.5">
                       {/* Checkbox */}
                       <button 
-                        onClick={() => toggleTodo(todo.id)}
+                        onClick={() => handleToggleTodo(todo.id)}
                         className={`mt-0.5 flex-shrink-0 cursor-pointer text-gray-400 hover:${theme.text} transition-colors`}
                       >
                         {todo.completed ? (
@@ -229,7 +294,7 @@ export default function TodosView() {
                     </div>
 
                     <button
-                      onClick={() => deleteTodo(todo.id)}
+                      onClick={() => handleDeleteTodo(todo.id)}
                       className="p-1 px-1.5 text-gray-300 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-all cursor-pointer"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -268,7 +333,7 @@ export default function TodosView() {
                               <input 
                                 type="checkbox"
                                 checked={st.completed}
-                                onChange={() => toggleSubtask(todo.id, st.id)}
+                                onChange={() => handleToggleSubtask(todo.id, st.id)}
                                 className={`rounded-sm text-${settings.themeColor}-655 focus:ring-0 cursor-pointer ${theme.accent}`}
                               />
                               <span className={`truncate ${st.completed ? 'text-gray-400 line-through' : 'text-gray-700 font-medium'}`}>
@@ -277,7 +342,7 @@ export default function TodosView() {
                             </label>
                             
                             <button
-                              onClick={() => deleteSubtask(todo.id, st.id)}
+                              onClick={() => handleDeleteSubtask(todo.id, st.id)}
                               className="text-gray-300 hover:text-rose-500 transition-colors p-0.5 rounded-lg opacity-0 group-hover:opacity-100 cursor-pointer"
                             >
                               <Trash2 className="h-3.5 w-3.5" />

@@ -69,6 +69,7 @@ function WelcomeScreen() {
   const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log(`[WelcomeScreen submit] ActiveTab: ${activeTab}, Email: ${email}`);
     
     // Brief network latency mockup for premium look and feel
     setTimeout(async () => {
@@ -84,16 +85,21 @@ function WelcomeScreen() {
             setIsLoading(false);
             return;
           }
+          console.log('[WelcomeScreen Action]: Triggering signUpWithEmail...');
           await signUpWithEmail(email, password, name);
+          console.log('[WelcomeScreen Action]: signUpWithEmail resolved successfully.');
         } else if (activeTab === 'login') {
           if (!email || !password) {
             alert('メールアドレスとパスワードを入力してください。');
             setIsLoading(false);
             return;
           }
+          console.log('[WelcomeScreen Action]: Triggering loginWithEmail...');
           await loginWithEmail(email, password);
+          console.log('[WelcomeScreen Action]: loginWithEmail resolved successfully.');
         }
       } catch (err: any) {
+        console.error('[WelcomeScreen Action Error caught]:', err);
         alert(err.message || '認証処理中にエラーが発生しました。再度お試しください。');
       } finally {
         setIsLoading(false);
@@ -489,7 +495,8 @@ function AppContent() {
     isDark, 
     authStatus, 
     currentUser, 
-    syncStatus 
+    syncStatus,
+    logout
   } = useApp();
   
   const theme = getTheme(settings.themeColor);
@@ -628,23 +635,33 @@ function AppContent() {
               <span className={`text-xs font-black tracking-tight block ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>
                 CareerNavi+
               </span>
-              <span className="text-[9px] text-gray-400 font-bold block -mt-0.5">
-                {authStatus === 'guest' ? '👤 ゲストモード（未同期）' : `☁️ 同期アカウント: ${currentUser?.name}`}
+              <span className="text-[9px] text-gray-400 font-bold block -mt-0.5 font-sans">
+                {authStatus === 'guest' ? '👤 ゲストモード（未同期）' : `☁️ 同期: ${currentUser?.name} (${currentUser?.email})`}
               </span>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
-            <span className={`text-[10px] inline-flex items-center gap-1 font-bold border px-2.5 py-0.5 rounded-full font-mono transition-all ${
-              syncStatus === 'offline' 
-                ? 'bg-rose-50 border-rose-200 text-rose-500' 
-                : syncStatus === 'syncing'
-                  ? 'bg-amber-50 border-amber-200 text-amber-500 animate-pulse'
-                  : 'bg-emerald-50 border-emerald-100 text-emerald-500 dark:bg-emerald-950/20 dark:border-emerald-800/40 dark:text-emerald-400'
-            }`}>
-              <CornerDownRight className={`h-3 w-3 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-              {syncStatus === 'offline' ? 'OFFLINE' : syncStatus === 'syncing' ? 'SYNCING...' : 'ONLINE SYNCED'}
-            </span>
+            {syncStatus !== 'synced' && (
+              <span className={`text-[10px] inline-flex items-center gap-1 font-bold border px-2.5 py-0.5 rounded-full font-mono transition-all ${
+                syncStatus === 'offline' 
+                  ? 'bg-rose-50 border-rose-200 text-rose-500' 
+                  : syncStatus === 'syncing'
+                    ? 'bg-amber-50 border-amber-200 text-amber-500 animate-pulse'
+                    : 'bg-rose-50 border-rose-200 text-rose-500 dark:bg-rose-950/20 dark:border-rose-800/40 dark:text-rose-400'
+              }`}>
+                <CornerDownRight className={`h-3 w-3 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+                {syncStatus === 'offline' ? 'OFFLINE' : syncStatus === 'syncing' ? 'SYNCING...' : 'ERROR'}
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={logout}
+              className="text-[10px] font-bold text-rose-500 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 px-2.5 py-1 rounded-full transition-colors cursor-pointer border border-rose-100 dark:border-rose-900/40 shrink-0 font-sans"
+            >
+              ログアウト
+            </button>
           </div>
         </div>
       </header>

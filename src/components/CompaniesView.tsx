@@ -39,6 +39,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Company, CompanyStatus, SelectionStage, ESQuestionMemo, InterviewMemo, ESCategory, ESStatus, InternStatus, InternType, InternStep } from '../types';
 import { MASTER_COMPANIES } from '../constants/companies';
+import { supabase } from '../utils/supabaseClient';
 
 export default function CompaniesView() {
   const { 
@@ -66,7 +67,8 @@ export default function CompaniesView() {
     addOfferComparison,
     deleteOfferComparison,
     isDark,
-    selfAnalysis
+    selfAnalysis,
+    saveCompanies
   } = useApp();
 
   const theme = getTheme(settings.themeColor);
@@ -452,48 +454,81 @@ export default function CompaniesView() {
       return;
     }
 
-    // Direct local search against MASTER_COMPANIES
-    const scored = MASTER_COMPANIES.map(comp => {
-      let score = 0;
-      const compNameNorm = normalize(comp.name);
-      
-      // Exact match
-      if (compNameNorm === normQ) {
-        score += 100;
-      }
-      // Starts with
-      else if (compNameNorm.startsWith(normQ)) {
-        score += 50;
-      }
-      // Contains
-      else if (compNameNorm.includes(normQ)) {
-        score += 30;
+    const fetchSuggestions = async () => {
+      try {
+        // Query Supabase for companies where user_id is null and name contains the input (case-insensitive)
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*')
+          .is('user_id', null)
+          .ilike('name', `%${q}%`)
+          .limit(10);
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map(item => ({
+            name: item.name,
+            industry: item.industry || '',
+            headquarters: item.headquarters || '',
+            scale: item.scale || '',
+            website: item.website || '',
+            establishedYear: item.established_year || '',
+            employeeCount: item.employee_count || '',
+            isForeign: item.is_foreign || false,
+            category: item.category || '',
+            lastUpdated: item.last_updated || '',
+            corporateNumber: item.corporate_number || ''
+          }));
+          setSuggestions(mapped);
+          return;
+        }
+      } catch (err) {
+        console.error('Error fetching master companies from Supabase:', err);
       }
 
-      // Check website
-      const websiteLower = (comp.website || "").toLowerCase();
-      if (websiteLower.includes(q.toLowerCase())) {
-        score += 20;
-      }
+      // Offline / Error / Empty result fallback: Search against local MASTER_COMPANIES
+      const scored = MASTER_COMPANIES.map(comp => {
+        let score = 0;
+        const compNameNorm = normalize(comp.name);
+        
+        // Exact match
+        if (compNameNorm === normQ) {
+          score += 100;
+        }
+        // Starts with
+        else if (compNameNorm.startsWith(normQ)) {
+          score += 50;
+        }
+        // Contains
+        else if (compNameNorm.includes(normQ)) {
+          score += 30;
+        }
 
-      // Check industry & category
-      const indNorm = normalize(comp.industry);
-      const catNorm = normalize(comp.category || "");
-      if (indNorm.includes(normQ) || catNorm.includes(normQ)) {
-        score += 10;
-      }
+        // Check website
+        const websiteLower = (comp.website || "").toLowerCase();
+        if (websiteLower.includes(q.toLowerCase())) {
+          score += 20;
+        }
 
-      return { comp, score };
-    });
+        // Check industry & category
+        const indNorm = normalize(comp.industry);
+        const catNorm = normalize(comp.category || "");
+        if (indNorm.includes(normQ) || catNorm.includes(normQ)) {
+          score += 10;
+        }
 
-    // Filter out zero-score matches, sort by score descending, then take top 10
-    const matches = scored
-      .filter(item => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .map(item => item.comp)
-      .slice(0, 10);
+        return { comp, score };
+      });
 
-    setSuggestions(matches);
+      const matches = scored
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .map(item => item.comp)
+        .slice(0, 10);
+
+      setSuggestions(matches);
+    };
+
+    fetchSuggestions();
   }, [newName]);
 
   // ES copy tool helper states
@@ -643,7 +678,9 @@ export default function CompaniesView() {
     e.preventDefault();
     if (!newName.trim() || !newIndustry.trim()) return;
 
-    const newId = addCompany({
+    const newId = `co-${Date.now()}`;
+    const newCompany: Company = {
+      id: newId,
       name: newName,
       industry: newIndustry,
       preference: newPreference,
@@ -663,8 +700,13 @@ export default function CompaniesView() {
       employeeCount: newEmployeeCount,
       isForeign: newIsForeign,
       category: newCategory,
-      lastUpdated: newLastUpdated || new Date().toISOString().split('T')[0]
-    });
+      lastUpdated: newLastUpdated || new Date().toISOString().split('T')[0],
+      esMemos: [],
+      interviewMemos: []
+    };
+
+    const updated = [...companies, newCompany];
+    saveCompanies(updated);
 
     // Dynamically post search registration to server shared corpus for auto-incremental database lookup
     fetch('/api/company/add', {
@@ -1342,7 +1384,7 @@ export default function CompaniesView() {
                   exit={{ scale: 0.9, opacity: 0 }}
                   className="bg-white text-gray-900 rounded-3xl p-6 w-full max-w-md shadow-2xl relative border border-gray-100 z-10 space-y-4"
                 >
-                  <div className="flex justify-between items-center sm:pb-2">
+                  <div className="flex justify-between items-center sm:pb-1">
                     <h3 className="text-sm font-black text-gray-900">🏢 新しい企業を登録</h3>
                     <button 
                       onClick={() => setShowAddCompanyModal(false)}
@@ -1353,369 +1395,49 @@ export default function CompaniesView() {
                   </div>
 
                   <form onSubmit={handleCreateCompany} className="space-y-3.5 text-xs text-left">
-                    {/* URL Automatic extraction widget */}
-                    <div className="p-3 bg-gradient-to-tr from-sky-50 to-indigo-55 border border-sky-100 rounded-2xl space-y-1.5 dark:from-slate-900 dark:to-slate-950 dark:border-slate-800">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-black text-sky-800 dark:text-sky-400 flex items-center gap-1">
-                          <Sparkles className="h-3 w-3 text-sky-500 animate-pulse" />
-                          <span>AI求人URL自動入力（情報一括補完）</span>
-                        </span>
-                        {isExtracting && <span className="text-[9px] text-gray-400 animate-pulse">AI解析中...</span>}
-                      </div>
-                      <div className="flex gap-1.5">
-                        <input 
-                          type="url"
-                          id="auto-url-input"
-                          placeholder="Mynavi、RikunabiなどのURL"
-                          className="w-full p-2 bg-white border border-sky-200/50 rounded-xl text-[10px] text-gray-800 focus:outline-hidden"
-                        />
-                        <button
-                          type="button"
-                          disabled={isExtracting}
-                          onClick={async () => {
-                            const urlEl = document.getElementById('auto-url-input') as HTMLInputElement;
-                            const urlVal = urlEl?.value?.trim();
-                            if (!urlVal) {
-                              alert('求人サイトや企業のホームページURLを入力してください。');
-                              return;
-                            }
-                            setIsExtracting(true);
-                            try {
-                              const res = await fetch('/api/company/parse-url', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ url: urlVal })
-                              });
-                              if (!res.ok) throw new Error();
-                              const data = await res.json();
-                              
-                              if (data.name) setNewName(data.name);
-                              if (data.industry) setNewIndustry(data.industry);
-                              if (data.headquarters) setNewHeadquarters(data.headquarters);
-                              if (data.scale) setNewScale(data.scale);
-                              if (data.website) setNewWebsite(data.website);
-                              if (data.establishedYear) setNewEstablishedYear(data.establishedYear);
-                              if (data.employeeCount) setNewEmployeeCount(data.employeeCount);
-
-                              alert('✨ AI自動抽出が完了しました！業界、所在地、企業規模、URL、設立年、従業員数を自動入力しました。');
-                            } catch (e) {
-                              try {
-                                const domain = new URL(urlVal).hostname.replace('www.', '');
-                                const guessed = domain.split('.')[0];
-                                setNewName(guessed.charAt(0).toUpperCase() + guessed.slice(1) + '（仮）');
-                                setNewIndustry('IT・通信');
-                                setNewWebsite(urlVal);
-                                alert('⚠️ クラウドが混雑中、またはオフラインのため、ドメイン解析(Alternative Fallback)でホームページURLと仮名を自動入力しました。');
-                              } catch (_) {
-                                alert('URLの形式が正しくありません。');
-                              }
-                            } finally {
-                              setIsExtracting(false);
-                            }
-                          }}
-                          className="py-1 px-3 bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-bold rounded-lg transition hover:opacity-90 disabled:opacity-50 text-[10px] whitespace-nowrap leading-none flex items-center justify-center cursor-pointer"
-                        >
-                          {isExtracting ? '抽出中' : 'AI抽出'}
-                        </button>
-                      </div>
-                    </div>
-
                     <div>
                       <label className="block font-bold text-gray-700 mb-1">企業名</label>
-                      <div className="relative">
-                        <input 
-                          type="text"
-                          required
-                          value={newName}
-                          onChange={e => setNewName(e.target.value)}
-                          onFocus={() => setIsInputFocused(true)}
-                          onBlur={() => {
-                            // Delay dismissal slightly to permit clicks to register before autocomplete collapses
-                            setTimeout(() => setIsInputFocused(false), 200);
-                          }}
-                          placeholder="（例）株式会社未来テクノロジー"
-                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800"
-                        />
-                        {(isInputFocused && (suggestions.length > 0 || recentlySearched.length > 0 || newName.trim().length > 0)) && (
-                          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-[340px] overflow-y-auto divide-y divide-gray-100">
-                            {/* Recently Searched History Section */}
-                            {recentlySearched.length > 0 && (
-                              <div>
-                                <div className="bg-gray-50/80 px-2.5 py-1.5 text-[10px] font-bold text-gray-500 flex items-center justify-between">
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3 text-indigo-500" />
-                                    最近検索した企業
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onMouseDown={(e) => {
-                                      // Prevent blur from closing dropdown before action completes
-                                      e.preventDefault();
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      clearRecentlySearched();
-                                    }}
-                                    className="text-[9px] text-red-500 hover:text-red-700 hover:underline cursor-pointer bg-transparent border-0 font-bold"
-                                  >
-                                    すべてクリア
-                                  </button>
-                                </div>
-                                <div className="divide-y divide-gray-50">
-                                  {recentlySearched.map((s, index) => (
-                                    <div
-                                      key={`recent-${index}`}
-                                      className="w-full flex items-center justify-between p-2 hover:bg-indigo-50/40 text-[11px] text-gray-800 transition-colors group cursor-pointer"
-                                      onMouseDown={(e) => {
-                                        // Bulletproof click registration by preventing input blur event
-                                        e.preventDefault();
-                                      }}
-                                      onClick={() => {
-                                        setNewName(s.name);
-                                        setNewIndustry(s.industry);
-                                        setNewHeadquarters(s.headquarters);
-                                        setNewScale(s.scale);
-                                        setNewWebsite(s.website);
-                                        setNewEstablishedYear(s.establishedYear || '');
-                                        setNewEmployeeCount(s.employeeCount || '');
-                                        setNewIsForeign(!!s.isForeign);
-                                        setNewCategory(s.category || '');
-                                        setNewLastUpdated(s.lastUpdated || '');
-                                        setSuggestions([]);
-                                        addToRecentlySearched(s); // Bump current item to top
-                                      }}
-                                    >
-                                      <div className="flex-1 min-w-0 pr-2">
-                                        <span className="font-bold block text-gray-900 truncate">
-                                          {s.name}
-                                        </span>
-                                        <span className="text-[9px] text-gray-400 block truncate leading-none mt-0.5">
-                                          {s.industry} | {s.headquarters || "所在地未設定"}
-                                        </span>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onMouseDown={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                        }}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          e.preventDefault();
-                                          removeFromRecentlySearched(s.name);
-                                        }}
-                                        className="p-1 hover:bg-red-50 text-gray-300 hover:text-red-500 rounded-lg transition-colors focus:outline-hidden cursor-pointer"
-                                        title="履歴から削除"
-                                      >
-                                        <X className="h-3.5 w-3.5" />
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Suggestions matched results section */}
-                            {suggestions.filter(s => !recentlySearched.some(r => r.name.toLowerCase() === s.name.toLowerCase())).length > 0 && (
-                              <div>
-                                <div className="bg-gray-100/70 text-slate-700 px-2.5 py-1.5 text-[10px] font-bold flex items-center gap-1 border-t border-gray-100">
-                                  <Sparkles className="h-3 w-3 text-amber-500 animate-pulse" />
-                                  統合リアルタイム企業検索（最優先マッチ表示中）
-                                </div>
-                                <div className="divide-y divide-gray-50 max-h-60 overflow-y-auto">
-                                  {suggestions
-                                    .filter(s => !recentlySearched.some(r => r.name.toLowerCase() === s.name.toLowerCase()))
-                                    .map((s, index) => (
-                                      <button
-                                        key={`suggest-${index}`}
-                                        type="button"
-                                        onMouseDown={(e) => {
-                                          // Prevent input blur event
-                                          e.preventDefault();
-                                        }}
-                                        onClick={() => {
-                                          setNewName(s.name);
-                                          setNewIndustry(s.industry);
-                                          setNewHeadquarters(s.headquarters);
-                                          setNewScale(s.scale);
-                                          setNewWebsite(s.website);
-                                          setNewEstablishedYear(s.establishedYear || '');
-                                          setNewEmployeeCount(s.employeeCount || '');
-                                          setNewIsForeign(!!s.isForeign);
-                                          setNewCategory(s.category || '');
-                                          setNewLastUpdated(s.lastUpdated || '');
-                                          setSuggestions([]);
-                                          addToRecentlySearched(s);
-                                        }}
-                                        className="w-full text-left p-2.5 hover:bg-sky-50 text-[11px] block text-gray-800 focus:outline-hidden transition-colors border-0 border-b border-gray-100"
-                                      >
-                                        <div className="flex justify-between items-start">
-                                          <span className="font-bold block text-gray-900 text-[12px]">{s.name}</span>
-                                          {s.corporateNumber && (
-                                            <span className="text-[9px] text-gray-400 font-mono scale-95 origin-right">
-                                              {s.corporateNumber.startsWith("T") ? s.corporateNumber : `法人番号: ${s.corporateNumber}`}
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                          <span className="text-[10px] text-gray-500">{s.industry} | {s.headquarters}</span>
-                                          {s.isForeign ? (
-                                            <span className="text-[9px] text-amber-700 bg-amber-55 border border-amber-200 rounded px-1 scale-90 font-bold">
-                                              外資系
-                                            </span>
-                                          ) : (
-                                            <span className="text-[9px] text-sky-700 bg-sky-55 border border-sky-200 rounded px-1 scale-90 font-bold">
-                                              日系
-                                            </span>
-                                          )}
-                                          {s.category && (
-                                            <span className="text-[9px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded px-1 scale-90 font-medium">
-                                              {s.category}
-                                            </span>
-                                          )}
-                                          {s.lastUpdated && (
-                                            <span className="text-[9px] text-gray-400 font-mono scale-90">
-                                              🔄 {s.lastUpdated}
-                                            </span>
-                                          )}
-                                          {s.source && (
-                                            <span className="text-[9px] text-indigo-700 bg-indigo-50 rounded px-1 scale-90 font-medium">
-                                              検索元: {s.source}
-                                            </span>
-                                          )}
-                                          {s.source && (s.source.includes("国税庁") || s.source.includes("NTA")) && (
-                                            <span className="text-[9px] text-red-600 bg-red-50 border border-red-100 rounded px-1 scale-90 font-bold">
-                                              ※情報が正確でない場合があります (国税庁)
-                                            </span>
-                                          )}
-                                        </div>
-                                      </button>
-                                    ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* 手動登録誘導（8位へのフォールバック） */}
-                            {newName.trim().length > 0 && (
-                              <div className="p-3 text-center bg-indigo-50/50 border-t border-indigo-100 flex flex-col items-center justify-center gap-2">
-                                {suggestions.length === 0 ? (
-                                  <>
-                                    <p className="text-xs text-slate-500 font-medium">お探しの企業データが見つかりませんでした。</p>
-                                    <button
-                                      type="button"
-                                      onMouseDown={(e) => {
-                                        // Prevents input blur
-                                        e.preventDefault();
-                                      }}
-                                      onClick={() => {
-                                        setSuggestions([]);
-                                        if (!newIndustry) setNewIndustry("IT・サービス");
-                                        if (!newHeadquarters) setNewHeadquarters("東京都");
-                                        if (!newScale) setNewScale("ベンチャー・中小企業");
-                                      }}
-                                      className="w-full inline-flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-colors shadow-md cursor-pointer animate-pulse"
-                                    >
-                                      <PlusCircle className="h-4 w-4" />
-                                      この企業を手動で登録する
-                                    </button>
-                                  </>
-                                ) : (
-                                  <div className="w-full flex items-center justify-between gap-2">
-                                    <span className="text-[10px] text-slate-500">お探しの企業がありませんか？</span>
-                                    <button
-                                      type="button"
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                      }}
-                                      onClick={() => {
-                                        setSuggestions([]);
-                                        if (!newIndustry) setNewIndustry("IT・サービス");
-                                        if (!newHeadquarters) setNewHeadquarters("東京都");
-                                        if (!newScale) setNewScale("ベンチャー・中小企業");
-                                      }}
-                                      className="inline-flex items-center gap-1 bg-gray-200 hover:bg-indigo-600 hover:text-white text-gray-700 font-bold py-1 px-2.5 rounded-lg text-[10px] transition-colors cursor-pointer"
-                                    >
-                                      この企業を手動で登録する
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                      <input 
+                        type="text"
+                        required
+                        value={newName}
+                        onChange={e => setNewName(e.target.value)}
+                        placeholder="（例）株式会社未来テクノロジー"
+                        className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-hidden focus:ring-1 focus:ring-indigo-400"
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block font-bold text-gray-700 mb-1">業界</label>
-                        <input 
-                          type="text"
+                        <select
                           required
                           value={newIndustry}
                           onChange={e => setNewIndustry(e.target.value)}
-                          placeholder="（例）IT・通信"
-                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800"
-                        />
+                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-hidden focus:ring-1 focus:ring-indigo-400"
+                        >
+                          <option value="">選択してください</option>
+                          <option value="メーカー（素材・食品・医薬品・自動車・電子機器など）">メーカー（素材・食品・医薬品・自動車・電子機器など）</option>
+                          <option value="商社（総合商社・専門商社）">商社（総合商社・専門商社）</option>
+                          <option value="金融（銀行・証券・保険・カードなど）">金融（銀行・証券・保険・カードなど）</option>
+                          <option value="小売・流通（百貨店・スーパー・コンビニ・専門専門店など）">小売・流通（百貨店・スーパー・コンビニ・専門専門店など）</option>
+                          <option value="サービス・インフラ（鉄道・航空・エネルギー・旅行・ホテルなど）">サービス・インフラ（鉄道・航空・エネルギー・旅行・ホテルなど）</option>
+                          <option value="ソフトウェア・通信（IT・通信・インターネット・ゲームなど）">ソフトウェア・通信（IT・通信・インターネット・ゲームなど）</option>
+                          <option value="マスコミ・メディア（テレビ・新聞・出版・広告など）">マスコミ・メディア（テレビ・新聞・出版・広告など）</option>
+                          <option value="官公庁・公社・団体">官公庁・公社・団体</option>
+                        </select>
                       </div>
 
                       <div>
-                        <label className="block font-bold text-gray-700 mb-1">本社所在地</label>
-                        <input 
-                          type="text"
-                          value={newHeadquarters}
-                          onChange={e => setNewHeadquarters(e.target.value)}
-                          placeholder="（例）東京都港区"
-                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block font-bold text-gray-700 mb-1">企業規模</label>
-                        <input 
-                          type="text"
-                          value={newScale}
-                          onChange={e => setNewScale(e.target.value)}
-                          placeholder="（例）150名 / 大手"
-                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-gray-700 mb-1">ホームページURL</label>
-                        <input 
-                          type="url"
-                          value={newWebsite}
-                          onChange={e => setNewWebsite(e.target.value)}
-                          placeholder="https://example.com"
-                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-[11px] font-mono"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block font-bold text-gray-700 mb-1">設立年 / 創業年</label>
-                        <input 
-                          type="text"
-                          value={newEstablishedYear}
-                          onChange={e => setNewEstablishedYear(e.target.value)}
-                          placeholder="（例）1937年"
-                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block font-bold text-gray-700 mb-1">従業員数</label>
-                        <input 
-                          type="text"
-                          value={newEmployeeCount}
-                          onChange={e => setNewEmployeeCount(e.target.value)}
-                          placeholder="（例）約375,000人"
-                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-[11px]"
-                        />
+                        <label className="block font-bold text-gray-700 mb-1">企業出自</label>
+                        <select
+                          value={newIsForeign ? 'foreign' : 'domestic'}
+                          onChange={e => setNewIsForeign(e.target.value === 'foreign')}
+                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 focus:outline-hidden focus:ring-1 focus:ring-indigo-400 font-bold"
+                        >
+                          <option value="domestic">日系企業</option>
+                          <option value="foreign">外資系企業</option>
+                        </select>
                       </div>
                     </div>
 
@@ -1755,7 +1477,7 @@ export default function CompaniesView() {
                           <select
                             value={newStatus}
                             onChange={e => setNewStatus(e.target.value as CompanyStatus)}
-                            className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl font-bold"
+                            className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:outline-hidden focus:ring-1 focus:ring-indigo-400"
                           >
                             <option value="interested">興味あり</option>
                             <option value="es_planned">ES作成予定</option>
@@ -1771,7 +1493,7 @@ export default function CompaniesView() {
                           <select
                             value={newSelectionStage}
                             onChange={e => setNewSelectionStage(e.target.value as any)}
-                            className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl"
+                            className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-hidden focus:ring-1 focus:ring-indigo-400"
                           >
                             <option value="none">未設定（初期段階）</option>
                             <option value="applied">書類作成中 / 応募完了</option>
@@ -1790,7 +1512,7 @@ export default function CompaniesView() {
                           <select
                             value={newInternType}
                             onChange={e => setNewInternType(e.target.value as InternType)}
-                            className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl font-bold"
+                            className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:outline-hidden focus:ring-1 focus:ring-indigo-400"
                           >
                             <option value="1day">1day</option>
                             <option value="multi_day">複数日</option>
@@ -1803,7 +1525,7 @@ export default function CompaniesView() {
                           <select
                             value={newInternStatus}
                             onChange={e => setNewInternStatus(e.target.value as InternStatus)}
-                            className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl font-bold"
+                            className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl font-bold focus:outline-hidden focus:ring-1 focus:ring-indigo-400"
                           >
                             <option value="entry_done">エントリー済み</option>
                             <option value="es_submitted">ES提出済み</option>
@@ -1818,7 +1540,7 @@ export default function CompaniesView() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block font-bold text-gray-700 mb-1">志望度</label>
-                        <div className="flex gap-1.5 h-10 items-center pl-1 bg-gray-50 border border-gray-200 rounded-xl">
+                        <div className="flex gap-1.5 h-10 items-center pl-1.5 bg-gray-50 border border-gray-200 rounded-xl">
                           {[1, 2, 3, 4, 5].map(star => (
                             <button
                               key={star}
@@ -1838,7 +1560,7 @@ export default function CompaniesView() {
                           type="date"
                           value={newEsDeadline}
                           onChange={e => setNewEsDeadline(e.target.value)}
-                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl font-mono text-gray-700"
+                          className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl font-mono text-gray-700 focus:outline-hidden focus:ring-1 focus:ring-indigo-400"
                         />
                       </div>
                     </div>
@@ -1849,7 +1571,7 @@ export default function CompaniesView() {
                         type="date"
                         value={newInterviewDate}
                         onChange={e => setNewInterviewDate(e.target.value)}
-                        className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl font-mono text-gray-700"
+                        className="w-full p-2 bg-gray-50 border border-gray-200 rounded-xl font-mono text-gray-700 focus:outline-hidden focus:ring-1 focus:ring-indigo-400"
                       />
                     </div>
 

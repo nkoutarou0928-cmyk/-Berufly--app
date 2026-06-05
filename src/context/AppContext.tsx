@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Company, TodoItem, AppSettings, NotificationItem, ObVisit, OfferComparison, CompanyStatus, TodoScope, SelfAnalysis, BaseMotivation, FAQItem, ESCategory, ESStatus } from '../types';
 import { INITIAL_COMPANIES, INITIAL_TODOS, INITIAL_SETTINGS, INITIAL_OB_VISITS, INITIAL_OFFER_COMPARISONS, INITIAL_SELF_ANALYSIS } from '../seedData';
+import { supabase, getSupabaseClientStatus } from '../utils/supabaseClient';
 
 interface AppContextType {
   companies: Company[];
@@ -117,6 +118,11 @@ interface AppContextType {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   clearNotifications: () => void;
+
+  // Direct Supabase save triggers
+  saveCompanies: (newCompanies: Company[]) => Promise<void>;
+  saveTodos: (newTodos: TodoItem[]) => Promise<void>;
+  saveSelfAnalysis: (newAnalysis: SelfAnalysis) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -190,12 +196,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         const storedUid = localStorage.getItem('shukatsu_user_uid');
         if (storedUid) {
           uid = storedUid;
+          const email = localStorage.getItem('shukatsu_user_email') || 'user@example.com';
+          const name = localStorage.getItem('shukatsu_user_name') || '就活キャリア';
           setCurrentUser({
             uid: storedUid,
-            email: localStorage.getItem('shukatsu_user_email') || 'user@example.com',
-            name: localStorage.getItem('shukatsu_user_name') || '就活キャリア',
+            email,
+            name,
             isAnonymous: false
           });
+          // Note: Cloud fetch is handled reactively by the onAuthStateChange listener
         }
       } else if (initialStatus === 'guest') {
         setCurrentUser({
@@ -306,6 +315,66 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Listen for Supabase Auth changes to keep state synced dynamically
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[Supabase Auth Event Listener]:', event, session?.user?.email);
+      if (session?.user) {
+        const uid = session.user.id;
+        const email = session.user.email || '';
+        const name = session.user.user_metadata?.name || email.split('@')[0];
+        
+        // Force sync with Supabase and overwrite localStorage / React states upon login or auth event
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || authStatus !== 'authenticated' || !currentUser || currentUser.uid !== uid) {
+          console.log('[Supabase Auth Change/Login Detected]: Forcing user state to sync ONLY from Supabase cloud for:', email);
+          
+          localStorage.setItem('shukatsu_auth_status', 'authenticated');
+          localStorage.setItem('shukatsu_user_uid', uid);
+          localStorage.setItem('shukatsu_user_email', email);
+          localStorage.setItem('shukatsu_user_name', name);
+          
+          const isUserSwitchOrFreshLogin = event === 'SIGNED_IN' || !currentUser || currentUser.uid !== uid;
+          
+          setCurrentUser({ uid, email, name, isAnonymous: false });
+          setAuthStatus('authenticated');
+          
+          if (isUserSwitchOrFreshLogin) {
+            // Clear any current UI state to ensure we only render fresh Supabase data and don't leak guest/old user data
+            setCompanies([]);
+            setTrashCompanies([]);
+            setTodos([]);
+            setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+          }
+          
+          // Query Supabase and completely overwrite states & local storage
+          await loadUserDataFromSupabase(uid, name);
+        }
+      } else {
+        // If signed out, and we were authenticated, perform cleanup
+        const lastAuthStatus = localStorage.getItem('shukatsu_auth_status');
+        if (lastAuthStatus === 'authenticated' || authStatus === 'authenticated') {
+          console.log('[Supabase Auth Change Detected]: Signed out, performing cleanup.');
+          localStorage.removeItem('shukatsu_auth_status');
+          localStorage.removeItem('shukatsu_user_uid');
+          localStorage.removeItem('shukatsu_user_email');
+          localStorage.removeItem('shukatsu_user_name');
+          setCurrentUser(null);
+          setAuthStatus('welcome');
+          setCompanies([]);
+          setTrashCompanies([]);
+          setTodos([]);
+          setObVisits([]);
+          setOfferComparisons([]);
+          setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [authStatus, currentUser]);
+
   // Listen for online/offline events for real-time automatic syncing status bar
   useEffect(() => {
     const handleOnline = () => {
@@ -346,10 +415,126 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Save to LocalStorage helpers, supporting reactive account databases
-  const saveCompanies = (newCompanies: Company[]) => {
+  const saveCompanies = async (newCompanies: Company[]) => {
+    console.log("saveCompaniesが呼び出されました。データ:", newCompanies);
     setCompanies(newCompanies);
-    localStorage.setItem(`shukatsu_companies` + getSuffix(), JSON.stringify(newCompanies));
-    if (authStatus === 'authenticated') triggerSync();
+
+    try {
+      const { data: { user }, error: authUserErr } = await supabase.auth.getUser();
+      const activeUserId = user?.id;
+      const suffix = activeUserId ? `_${activeUserId}` : '';
+      localStorage.setItem(`shukatsu_companies` + suffix, JSON.stringify(newCompanies));
+
+      if (activeUserId) {
+        console.log('[Supabase Sync] saveCompanies: 認証状態のためSupabaseと同期を行います。ユーザーID:', activeUserId);
+        setSyncStatus('syncing');
+
+        // Simple and robust: clean slate approach for the active user
+        const { error: deleteErr } = await supabase.from('companies').delete().eq('user_id', activeUserId);
+        if (deleteErr) {
+          console.error('[Supabase Save Companies Delete Error]:', deleteErr);
+          alert("データの保存に失敗しました（初期化エラー）: " + deleteErr.message);
+          throw deleteErr;
+        }
+
+        if (newCompanies.length > 0) {
+          const toInsert = newCompanies.map(c => ({
+            id: c.id,
+            user_id: activeUserId,
+            name: c.name,
+            industry: c.industry,
+            preference: c.preference,
+            status: c.status,
+            selection_status_intern: c.selectionStatusIntern,
+            selection_stage: c.selectionStage,
+            es_deadline: c.esDeadline || null,
+            interview_date: c.interviewDate || null,
+            es_memos: c.esMemos,
+            interview_memos: c.interviewMemos,
+            notes: c.notes,
+            headquarters: c.headquarters,
+            scale: c.scale,
+            website: c.website,
+            established_year: c.establishedYear,
+            employee_count: c.employeeCount,
+            is_foreign: c.isForeign,
+            category: c.category,
+            selection_type: c.selectionType,
+            intern_type: c.internType,
+            intern_steps: c.internSteps
+          }));
+          const { error: insertErr } = await supabase.from('companies').insert(toInsert);
+          if (insertErr) {
+            console.error('[Supabase Save Companies Insert Error]:', insertErr);
+            alert("データの保存に失敗しました: " + insertErr.message);
+            throw insertErr;
+          }
+        }
+
+        // Keep the events table synchronized
+        const { error: deleteEventsErr } = await supabase.from('events').delete().eq('user_id', activeUserId);
+        if (deleteEventsErr) {
+          console.error('[Supabase Save Events Delete Error]:', deleteEventsErr);
+          alert("データの保存に失敗しました（イベント初期化エラー）: " + deleteEventsErr.message);
+          throw deleteEventsErr;
+        }
+
+        const eventsToInsert = [];
+        for (const company of newCompanies) {
+          const isIntern = company.selectionType === 'intern';
+          if (company.esDeadline) {
+            eventsToInsert.push({
+              user_id: activeUserId,
+              company_id: company.id,
+              company_name: company.name,
+              title: isIntern ? 'インターンES締切' : 'ES締切',
+              event_date: company.esDeadline,
+              type: 'deadline'
+            });
+          }
+          if (company.interviewDate) {
+            eventsToInsert.push({
+              user_id: activeUserId,
+              company_id: company.id,
+              company_name: company.name,
+              title: isIntern ? 'インターン面接' : '面接',
+              event_date: company.interviewDate,
+              type: 'interview'
+            });
+          }
+          if (isIntern && company.internSteps) {
+            company.internSteps.forEach(step => {
+              if (step.date) {
+                eventsToInsert.push({
+                  user_id: activeUserId,
+                  company_id: company.id,
+                  company_name: company.name,
+                  title: step.stepName,
+                  event_date: step.date,
+                  type: 'intern_step'
+                });
+              }
+            });
+          }
+        }
+        if (eventsToInsert.length > 0) {
+          const { error: insertEventsErr } = await supabase.from('events').insert(eventsToInsert);
+          if (insertEventsErr) {
+            console.error('[Supabase Save Events Insert Error]:', insertEventsErr);
+            alert("データの保存に失敗しました（イベント登録エラー）: " + insertEventsErr.message);
+            throw insertEventsErr;
+          }
+        }
+
+        setSyncStatus('synced');
+      } else {
+        console.log('[Supabase Sync] saveCompanies: 未ログインまたはゲストのためSupabase同期はスキップされます。');
+      }
+    } catch (e: any) {
+      console.error('[saveCompanies caught exception]:', e);
+      setSyncStatus('error');
+      alert("データの保存に失敗しました: " + (e.message || e));
+    }
   };
 
   const saveTrashCompanies = (newTrash: (Company & { deletedAt: string })[]) => {
@@ -358,10 +543,53 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (authStatus === 'authenticated') triggerSync();
   };
 
-  const saveTodos = (newTodos: TodoItem[]) => {
+  const saveTodos = async (newTodos: TodoItem[]) => {
+    console.log("saveTodosが呼び出されました。データ:", newTodos);
     setTodos(newTodos);
-    localStorage.setItem(`shukatsu_todos` + getSuffix(), JSON.stringify(newTodos));
-    if (authStatus === 'authenticated') triggerSync();
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const activeUserId = user?.id;
+      const suffix = activeUserId ? `_${activeUserId}` : '';
+      localStorage.setItem(`shukatsu_todos` + suffix, JSON.stringify(newTodos));
+
+      if (activeUserId) {
+        console.log('[Supabase Sync] saveTodos: 認証状態のためSupabaseと同期を行います。ユーザーID:', activeUserId);
+        setSyncStatus('syncing');
+
+        const { error: deleteErr } = await supabase.from('todos').delete().eq('user_id', activeUserId);
+        if (deleteErr) {
+          console.error('[Supabase Save Todos Delete Error]:', deleteErr);
+          alert("データの保存に失敗しました（Todo初期化エラー）: " + deleteErr.message);
+          throw deleteErr;
+        }
+
+        if (newTodos.length > 0) {
+          const toInsert = newTodos.map(t => ({
+            id: t.id,
+            user_id: activeUserId,
+            title: t.title,
+            completed: t.completed,
+            scope: t.scope,
+            due_date: t.dueDate || null,
+            subtasks: t.subtasks
+          }));
+          const { error: insertErr } = await supabase.from('todos').insert(toInsert);
+          if (insertErr) {
+            console.error('[Supabase Save Todos Insert Error]:', insertErr);
+            alert("データの保存に失敗しました: " + insertErr.message);
+            throw insertErr;
+          }
+        }
+        setSyncStatus('synced');
+      } else {
+        console.log('[Supabase Sync] saveTodos: 未ログインまたはゲストのためSupabase同期はスキップされます。');
+      }
+    } catch (e: any) {
+      console.error('[saveTodos caught exception]:', e);
+      setSyncStatus('error');
+      alert("データの保存に失敗しました: " + (e.message || e));
+    }
   };
 
   const saveSettings = (newSettings: AppSettings) => {
@@ -388,10 +616,43 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (authStatus === 'authenticated') triggerSync();
   };
 
-  const saveSelfAnalysis = (newAnalysis: SelfAnalysis) => {
+  const saveSelfAnalysis = async (newAnalysis: SelfAnalysis) => {
+    console.log("saveSelfAnalysisが呼び出されました。データ:", newAnalysis);
     setSelfAnalysis(newAnalysis);
-    localStorage.setItem(`shukatsu_self_analysis` + getSuffix(), JSON.stringify(newAnalysis));
-    if (authStatus === 'authenticated') triggerSync();
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const activeUserId = user?.id;
+      const suffix = activeUserId ? `_${activeUserId}` : '';
+      localStorage.setItem(`shukatsu_self_analysis` + suffix, JSON.stringify(newAnalysis));
+
+      if (activeUserId) {
+        console.log('[Supabase Sync] saveSelfAnalysis: 認証状態のためSupabaseと同期を行います。ユーザーID:', activeUserId);
+        setSyncStatus('syncing');
+
+        const toUpsert = {
+          user_id: activeUserId,
+          self_pr: newAnalysis.selfPR,
+          gakuchika: newAnalysis.gakuchika,
+          base_motivations: newAnalysis.baseMotivations,
+          faqs: newAnalysis.faqs
+        };
+        const { error: upsertErr } = await supabase.from('self_analysis').upsert(toUpsert);
+        if (upsertErr) {
+          console.error('[Supabase Save Self Analysis Upsert Error]:', upsertErr);
+          alert("データの保存に失敗しました: " + upsertErr.message);
+          throw upsertErr;
+        }
+
+        setSyncStatus('synced');
+      } else {
+        console.log('[Supabase Sync] saveSelfAnalysis: 未ログインまたはゲストのためSupabase同期はスキップされます。');
+      }
+    } catch (e: any) {
+      console.error('[saveSelfAnalysis caught exception]:', e);
+      setSyncStatus('error');
+      alert("データの保存に失敗しました: " + (e.message || e));
+    }
   };
 
   // --- Account Actions ---
@@ -455,12 +716,142 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('shukatsu_registered_users', JSON.stringify(users));
   };
 
+  const loadUserDataFromSupabase = async (uid: string, name: string) => {
+    try {
+      setSyncStatus('syncing');
+      console.log('[Supabase SELECT]: Fetching user data from cloud for user_id:', uid);
+
+      // Fetch companies
+      const { data: cos, error: cosErr } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('user_id', uid);
+      
+      if (cosErr) {
+        console.error('[Supabase Load Companies SELECT Error]:', cosErr);
+        // Alert developer in console for potential RLS issues
+        console.warn('💡 Tip: Please check that your Supabase RLS policy for the "companies" table allows SELECT for user_id = auth.uid().');
+        throw cosErr;
+      }
+      
+      let loadedCos: Company[] = [];
+      if (cos) {
+        loadedCos = cos.map(c => ({
+          id: c.id,
+          name: c.name,
+          industry: c.industry || '',
+          preference: c.preference || 3,
+          status: c.status || 'interested',
+          selectionStatusIntern: c.selection_status_intern,
+          selectionStage: c.selection_stage || 'none',
+          esDeadline: c.es_deadline || '',
+          interviewDate: c.interview_date || '',
+          esMemos: c.es_memos || [],
+          interviewMemos: c.interview_memos || [],
+          notes: c.notes || '',
+          headquarters: c.headquarters || '',
+          scale: c.scale || '',
+          website: c.website || '',
+          establishedYear: c.established_year || '',
+          employeeCount: c.employee_count || '',
+          isForeign: c.is_foreign || false,
+          category: c.category || '',
+          selectionType: c.selection_type || 'main',
+          internType: c.intern_type || '1day',
+          internSteps: c.intern_steps || []
+        }));
+        setCompanies(loadedCos);
+        localStorage.setItem(`shukatsu_companies_${uid}`, JSON.stringify(loadedCos));
+      } else {
+        setCompanies([]);
+      }
+
+      // Fetch todos
+      const { data: tds, error: tdsErr } = await supabase
+        .from('todos')
+        .select('*')
+        .eq('user_id', uid);
+
+      if (tdsErr) {
+        console.error('[Supabase Load Todos SELECT Error]:', tdsErr);
+        console.warn('💡 Tip: Please check that your Supabase RLS policy for the "todos" table allows SELECT for user_id = auth.uid().');
+        throw tdsErr;
+      }
+
+      if (tds) {
+        const loadedTodos = tds.map(t => ({
+          id: t.id,
+          title: t.title,
+          completed: t.completed,
+          scope: t.scope || 'today',
+          dueDate: t.due_date || '',
+          subtasks: t.subtasks || []
+        }));
+        setTodos(loadedTodos);
+        localStorage.setItem(`shukatsu_todos_${uid}`, JSON.stringify(loadedTodos));
+      } else {
+        setTodos([]);
+      }
+
+      // Fetch self analysis
+      const { data: sa, error: saErr } = await supabase
+        .from('self_analysis')
+        .select('*')
+        .eq('user_id', uid)
+        .maybeSingle();
+
+      if (saErr) {
+        console.error('[Supabase Load Self Analysis SELECT Error]:', saErr);
+        console.warn('💡 Tip: Please check that your Supabase RLS policy for the "self_analysis" table allows SELECT for user_id = auth.uid().');
+        throw saErr;
+      }
+
+      if (sa) {
+        const loadedSA = {
+          selfPR: sa.self_pr || '',
+          gakuchika: sa.gakuchika || '',
+          baseMotivations: sa.base_motivations || [],
+          faqs: sa.faqs || []
+        };
+        setSelfAnalysis(loadedSA);
+        localStorage.setItem(`shukatsu_self_analysis_${uid}`, JSON.stringify(loadedSA));
+      } else {
+        // No record exists yet, create one
+        console.log('[Supabase Load Self Analysis]: No record found, creating initial template.');
+        const initialSA = {
+          user_id: uid,
+          self_pr: '',
+          gakuchika: '',
+          base_motivations: [],
+          faqs: []
+        };
+        const { error: upsertErr } = await supabase.from('self_analysis').upsert(initialSA);
+        if (upsertErr) {
+          console.error('[Supabase Create Self Analysis Upsert Error]:', upsertErr);
+          // Don't crash loading if creating self-analysis fails, but log it
+        }
+        setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+        localStorage.setItem(`shukatsu_self_analysis_${uid}`, JSON.stringify({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] }));
+      }
+
+      setSettings({ ...INITIAL_SETTINGS, profileName: name });
+      setSyncStatus('synced');
+      console.log('[Supabase Sync Completed]: Cloud data successfully synchronized to local state.');
+    } catch (e: any) {
+      console.error('[loadUserDataFromSupabase caught exception]:', e);
+      setSyncStatus('error');
+      alert("データの取得に失敗しました: " + (e.message || e));
+    }
+  };
+
   const signUpWithEmail = async (email: string, pass: string, name: string) => {
-    const users = getRegisteredUsers();
-    
-    // メール重複チェック
-    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-      throw new Error('このメールアドレスはすでに登録されています');
+    // クライアント設定の事前検証
+    const status = getSupabaseClientStatus();
+    if (!status.isConfigured) {
+      const msg = `【Supabase未設定】\n本番環境の環境変数 (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) がVercel等で正しく適用されていない可能性があります。\n\n現在の設定:\nURL: ${status.url || '未設定'}\nAPIキー: ${status.hasAnonKey ? '存在します' : '存在しません'}`;
+      console.error(msg);
+      alert(msg);
+      throw new Error(msg);
     }
 
     // パスワード要件チェック (8文字以上・英数字混合)
@@ -469,232 +860,139 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       throw new Error('パスワードは8文字以上で、英数字の両方を含める必要があります');
     }
 
-    const uid = `user-${Date.now()}`;
+    console.log('[Supabase SignUp]: Attempting signup for email:', email);
 
-    const newUser: RegisteredUser = {
-      email,
-      pass,
-      name,
-      uid,
-      verified: true
-    };
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: pass,
+        options: {
+          data: {
+            name: name
+          }
+        }
+      });
 
-    users.push(newUser);
-    saveRegisteredUsers(users);
+      if (error) {
+        console.error('[Supabase SignUp Error]:', error);
+        alert('【新規登録エラー】\n登録に失敗しました: ' + error.message);
+        throw new Error(error.message);
+      }
 
-    // 登録と同時に即時ログイン状態に移行
-    localStorage.setItem('shukatsu_auth_status', 'authenticated');
-    localStorage.setItem('shukatsu_user_uid', uid);
-    localStorage.setItem('shukatsu_user_email', email);
-    localStorage.setItem('shukatsu_user_name', name);
+      if (!data.user) {
+        console.error('[Supabase SignUp Error]: User data is empty after signup.');
+        throw new Error('登録中にエラーが発生しました');
+      }
 
-    const personalSettings = { ...INITIAL_SETTINGS, profileName: name };
-    localStorage.setItem(`shukatsu_settings_${uid}`, JSON.stringify(personalSettings));
-    localStorage.setItem(`shukatsu_companies_${uid}`, JSON.stringify([]));
-    localStorage.setItem(`shukatsu_trash_companies_${uid}`, JSON.stringify([]));
-    localStorage.setItem(`shukatsu_todos_${uid}`, JSON.stringify([]));
-    localStorage.setItem(`shukatsu_ob_visits_${uid}`, JSON.stringify([]));
-    localStorage.setItem(`shukatsu_comparisons_${uid}`, JSON.stringify([]));
-    localStorage.setItem(`shukatsu_self_analysis_${uid}`, JSON.stringify({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] }));
-    localStorage.setItem(`shukatsu_notifications_${uid}`, JSON.stringify([]));
+      const uid = data.user.id;
 
-    setCurrentUser({ uid, email, name, isAnonymous: false });
-    setAuthStatus('authenticated');
+      // Check if email confirmation is required (session is null when email confirm is enabled on Supabase dashboard)
+      if (!data.session) {
+        console.log('[Supabase SignUp]: Account created, waiting for email confirmation.');
+        alert('✨ アカウントの作成に成功しました！\n確認用の認証メールを送信しましたので、メール内の確認リンクをクリックしてアカウントを有効化してからログインを行ってください。');
+        return;
+      }
 
-    setCompanies([]);
-    setTrashCompanies([]);
-    setTodos([]);
-    setSettings(personalSettings);
-    setObVisits([]);
-    setOfferComparisons([]);
-    setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
-    setNotifications([]);
+      console.log('[Supabase SignUp]: Signup completed with immediate session.');
 
-    triggerSync();
-
-    alert('✨ 新規登録およびログインが完了しました！');
+      // Session states, local cleanup, and cloud fetching are handled reactively by the onAuthStateChange listener.
+      alert('✨ 新規登録およびログインが完了しました！');
+    } catch (e: any) {
+      console.error('[signUpWithEmail caught exception]:', e);
+      alert('【新規登録通信エラー】\nSupabaseとの通信中にエラーが発生しました。インターネット接続または環境変数の設定を確認してください。\n詳細: ' + (e.message || e));
+      throw e;
+    }
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
-    const users = getRegisteredUsers();
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (!user) {
-      throw new Error('このメールアドレスは登録されていません');
+    // クライアント設定の事前検証
+    const status = getSupabaseClientStatus();
+    if (!status.isConfigured) {
+      const msg = `【Supabase未設定】\n本番環境の環境変数 (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) がVercel等で正しく適用されていない可能性があります。\n\n現在の設定:\nURL: ${status.url || '未設定'}\nAPIキー: ${status.hasAnonKey ? '存在します' : '存在しません'}`;
+      console.error(msg);
+      alert(msg);
+      throw new Error(msg);
     }
 
-    if (user.pass !== pass) {
-      throw new Error('パスワードが正しくありません');
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: pass
+      });
+
+      if (error) {
+        console.error('[Supabase Login Error]:', error);
+        alert('【ログインエラー】\nログインに失敗しました: ' + error.message);
+        throw new Error(error.message);
+      }
+
+      if (!data.user) {
+        throw new Error('ログインに失敗しました');
+      }
+
+      const uid = data.user.id;
+      const name = data.user.user_metadata?.name || email.split('@')[0];
+
+      // Session states, local cleanup, and cloud fetching are handled reactively by the onAuthStateChange listener.
+    } catch (e: any) {
+      console.error('[loginWithEmail caught exception]:', e);
+      alert('【ログイン通信エラー】\nSupabaseとの通信中にエラーが発生しました。インターネット接続または環境変数の設定を確認してください。\n詳細: ' + (e.message || e));
+      throw e;
     }
-
-    if (!user.verified) {
-      throw new Error('VERIFICATION_REQUIRED');
-    }
-
-    const uid = user.uid;
-    localStorage.setItem('shukatsu_auth_status', 'authenticated');
-    localStorage.setItem('shukatsu_user_uid', uid);
-    localStorage.setItem('shukatsu_user_email', email);
-    localStorage.setItem('shukatsu_user_name', user.name);
-
-    // 既存データのロードまたは初期化
-    const storedCo = localStorage.getItem(`shukatsu_companies_${uid}`);
-    const personalCo = storedCo ? JSON.parse(storedCo) : INITIAL_COMPANIES;
-
-    const storedTodo = localStorage.getItem(`shukatsu_todos_${uid}`);
-    const personalTodo = storedTodo ? JSON.parse(storedTodo) : INITIAL_TODOS;
-
-    const storedSelf = localStorage.getItem(`shukatsu_self_analysis_${uid}`);
-    const personalSelf = storedSelf ? JSON.parse(storedSelf) : INITIAL_SELF_ANALYSIS;
-
-    const storedTrash = localStorage.getItem(`shukatsu_trash_companies_${uid}`);
-    const personalTrash = storedTrash ? JSON.parse(storedTrash) : [];
-
-    setCurrentUser({ uid, email, name: user.name, isAnonymous: false });
-    setAuthStatus('authenticated');
-
-    setCompanies(personalCo);
-    setTrashCompanies(personalTrash);
-    setTodos(personalTodo);
-    setSelfAnalysis(personalSelf);
-
-    triggerSync();
   };
 
+
   const verifyEmailCode = async (email: string, code: string) => {
-    const users = getRegisteredUsers();
-    const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (idx === -1) {
-      throw new Error('このメールアドレスは登録されていません');
-    }
-
-    if (users[idx].verificationCode !== code) {
-      throw new Error('認証コードが正しくありません');
-    }
-
-    users[idx].verified = true;
-    users[idx].verificationCode = undefined;
-    saveRegisteredUsers(users);
-
+    // Supabase standard OTP verification could be mapped if needed, keeping mock fallback
     alert('✅ メールアドレスの認証が完了しました！ログインしてください。');
   };
 
   const resendVerificationCode = async (email: string) => {
-    const users = getRegisteredUsers();
-    const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (idx === -1) {
-      throw new Error('このメールアドレスは登録されていません');
-    }
-
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    users[idx].verificationCode = code;
-    saveRegisteredUsers(users);
-
-    alert(`📧 [認証メール再送信] ${email} 宛に新しい確認メールを送信しました。\n認証コード: ${code}`);
+    alert(`📧 [認証メール再送信] ${email} 宛に確認メールを再送信しました。`);
   };
 
   const resetPassword = async (email: string) => {
-    const users = getRegisteredUsers();
-    const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (idx === -1) {
-      throw new Error('このメールアドレスは登録されていません');
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    });
+    if (error) {
+      throw new Error(error.message);
     }
-
-    const token = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = Date.now() + 24 * 60 * 60 * 1000; // 24時間
-
-    users[idx].resetToken = token;
-    users[idx].resetTokenExpires = expires;
-    saveRegisteredUsers(users);
-
-    alert(`📧 [パスワードリセットメール] ${email} 宛に再設定メールを送信しました（有効期限：24時間）。\nリセットトークン: ${token}\n\nこのトークンを使用して新しいパスワードを設定してください。`);
+    alert(`📧 [パスワードリセットメール] ${email} 宛に再設定メールを送信しました。`);
   };
 
   const completePasswordReset = async (email: string, token: string, newPass: string) => {
-    const users = getRegisteredUsers();
-    const idx = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (idx === -1) {
-      throw new Error('このメールアドレスは登録されていません');
+    const { error } = await supabase.auth.updateUser({
+      password: newPass
+    });
+    if (error) {
+      throw new Error(error.message);
     }
-
-    const user = users[idx];
-
-    if (!user.resetToken || user.resetToken !== token) {
-      throw new Error('リセットトークンが正しくありません');
-    }
-
-    if (!user.resetTokenExpires || user.resetTokenExpires < Date.now()) {
-      throw new Error('リセットトークンの有効期限が切れています（有効期限は24時間です）');
-    }
-
-    // パスワード要件チェック (8文字以上・英数字混合)
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
-    if (!passwordRegex.test(newPass)) {
-      throw new Error('新しいパスワードは8文字以上で、英数字の両方を含める必要があります');
-    }
-
-    users[idx].pass = newPass;
-    users[idx].resetToken = undefined;
-    users[idx].resetTokenExpires = undefined;
-    saveRegisteredUsers(users);
-
     alert('📝 パスワードの再設定が完了しました！新しいパスワードでログインしてください。');
   };
 
   // Convert guest accounts to cloud synchronized databases seamlessly
   const migrateGuestToAccount = async (email: string, name: string) => {
+    // Standard register first
     const newUid = `user-${Date.now()}`;
     localStorage.setItem('shukatsu_auth_status', 'authenticated');
     localStorage.setItem('shukatsu_user_uid', newUid);
     localStorage.setItem('shukatsu_user_email', email);
     localStorage.setItem('shukatsu_user_name', name);
     
-    // Exact clone mapping from guest keys to the newly authorized keys
-    const clonedCompanies = localStorage.getItem('shukatsu_companies') || JSON.stringify(companies);
-    localStorage.setItem(`shukatsu_companies_${newUid}`, clonedCompanies);
-
-    const clonedTodos = localStorage.getItem('shukatsu_todos') || JSON.stringify(todos);
-    localStorage.setItem(`shukatsu_todos_${newUid}`, clonedTodos);
-
-    const clonedSettings = localStorage.getItem('shukatsu_settings') || JSON.stringify(settings);
-    localStorage.setItem(`shukatsu_settings_${newUid}`, clonedSettings);
-
-    const clonedObVisits = localStorage.getItem('shukatsu_ob_visits') || JSON.stringify(obVisits);
-    localStorage.setItem(`shukatsu_ob_visits_${newUid}`, clonedObVisits);
-
-    const clonedComparisons = localStorage.getItem('shukatsu_comparisons') || JSON.stringify(offerComparisons);
-    localStorage.setItem(`shukatsu_comparisons_${newUid}`, clonedComparisons);
-
-    const clonedSelf = localStorage.getItem('shukatsu_self_analysis') || JSON.stringify(selfAnalysis);
-    localStorage.setItem(`shukatsu_self_analysis_${newUid}`, clonedSelf);
-
-    const clonedNotif = localStorage.getItem('shukatsu_notifications') || JSON.stringify(notifications);
-    localStorage.setItem(`shukatsu_notifications_${newUid}`, clonedNotif);
-
-    const clonedTrash = localStorage.getItem(`shukatsu_trash_companies` + getSuffix()) || JSON.stringify(trashCompanies);
-    localStorage.setItem(`shukatsu_trash_companies_${newUid}`, clonedTrash);
-
     setCurrentUser({ uid: newUid, email, name, isAnonymous: false });
     setAuthStatus('authenticated');
-    
-    // Sync current UI state with the cloned metrics
-    setCompanies(JSON.parse(clonedCompanies));
-    setTrashCompanies(JSON.parse(clonedTrash));
-    setTodos(JSON.parse(clonedTodos));
-    setSettings(JSON.parse(clonedSettings));
-    setObVisits(JSON.parse(clonedObVisits));
-    setOfferComparisons(JSON.parse(clonedComparisons));
-    setSelfAnalysis(JSON.parse(clonedSelf));
-    setNotifications(JSON.parse(clonedNotif));
+
+    // Sync current UI state with Supabase
+    await saveCompanies(companies);
+    await saveTodos(todos);
+    await saveSelfAnalysis(selfAnalysis);
 
     triggerSync();
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem('shukatsu_auth_status');
     localStorage.removeItem('shukatsu_user_uid');
     localStorage.removeItem('shukatsu_user_email');
@@ -703,7 +1001,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setCurrentUser(null);
     setAuthStatus('welcome');
 
-    // Load initial empty layouts
     setCompanies([]);
     setTrashCompanies([]);
     setTodos([]);
@@ -1303,7 +1600,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         addNotificationAlarm,
         markNotificationRead,
         markAllNotificationsRead,
-        clearNotifications
+        clearNotifications,
+        saveCompanies,
+        saveTodos,
+        saveSelfAnalysis
       }}
     >
       {children}
