@@ -10,16 +10,12 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Calendar,
-  AlertCircle,
-  Clock,
-  Briefcase,
-  Flag,
-  Sparkles
+  ChevronRight as ChevronRightIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function CalendarView() {
-  const { companies, settings, navigateToCompany } = useApp();
+  const { companies, todos, settings, navigateToCompany, setActiveTab } = useApp();
   const theme = getTheme(settings.themeColor);
 
   // States
@@ -77,9 +73,16 @@ export default function CalendarView() {
     setCurrentDate(new Date(year, month + 1, 1));
   };
 
-  // Check if dates match any events
+  // Check if dates match any events (including Todo tasks)
   const getEventsForDate = (date: Date) => {
-    const events: { id: string; type: 'deadline' | 'interview' | 'intern_step'; title: string; companyName: string; companyId: string }[] = [];
+    const events: { 
+      id: string; 
+      type: 'deadline' | 'interview' | 'intern_step' | 'todo'; 
+      title: string; 
+      companyName?: string; 
+      companyId?: string;
+      completed?: boolean;
+    }[] = [];
     const dateStr = date.toISOString().split('T')[0];
 
     companies.forEach(company => {
@@ -118,6 +121,18 @@ export default function CalendarView() {
       }
     });
 
+    // Add matching ToDo items
+    todos.forEach(todo => {
+      if (todo.dueDate === dateStr) {
+        events.push({
+          id: `todo-${todo.id}`,
+          type: 'todo',
+          title: todo.title,
+          completed: todo.completed
+        });
+      }
+    });
+
     return events;
   };
 
@@ -147,63 +162,80 @@ export default function CalendarView() {
   };
 
   // All events compiled in chronological order in current month to show as list beneath of calendar
-  const currentMonthEvents = companies.flatMap(co => {
-    const res = [];
-    const isIntern = co.selectionType === 'intern';
-    const labelPrefix = isIntern ? '【インターン】' : '';
-    
-    if (co.esDeadline) {
-      const d = new Date(co.esDeadline);
-      if (d.getFullYear() === year && d.getMonth() === month) {
-        res.push({
-          id: `dl-${co.id}`,
-          date: co.esDeadline,
-          type: 'deadline' as const,
-          companyId: co.id,
-          companyName: co.name,
-          title: `${labelPrefix}ES募集締切日`
-        });
-      }
-    }
-    if (co.interviewDate) {
-      const d = new Date(co.interviewDate);
-      if (d.getFullYear() === year && d.getMonth() === month) {
-        res.push({
-          id: `int-${co.id}`,
-          date: co.interviewDate,
-          type: 'interview' as const,
-          companyId: co.id,
-          companyName: co.name,
-          title: `${labelPrefix}選考・面接日程`
-        });
-      }
-    }
-    if (isIntern && co.internSteps) {
-      co.internSteps.forEach(step => {
-        if (step.date) {
-          const d = new Date(step.date);
-          if (d.getFullYear() === year && d.getMonth() === month) {
-            res.push({
-              id: `step-${step.id}`,
-              date: step.date,
-              type: 'intern_step' as const,
-              companyId: co.id,
-              companyName: co.name,
-              title: `【インターン選考】${step.stepName}`
-            });
-          }
+  const currentMonthEvents = [
+    ...companies.flatMap(co => {
+      const res = [];
+      const isIntern = co.selectionType === 'intern';
+      const labelPrefix = isIntern ? '【インターン】' : '';
+      
+      if (co.esDeadline) {
+        const d = new Date(co.esDeadline);
+        if (d.getFullYear() === year && d.getMonth() === month) {
+          res.push({
+            id: `dl-${co.id}`,
+            date: co.esDeadline,
+            type: 'deadline' as const,
+            companyId: co.id,
+            companyName: co.name,
+            title: `${labelPrefix}ES募集締切日`
+          });
         }
-      });
-    }
-    return res;
-  }).sort((a, b) => a.date.localeCompare(b.date));
+      }
+      if (co.interviewDate) {
+        const d = new Date(co.interviewDate);
+        if (d.getFullYear() === year && d.getMonth() === month) {
+          res.push({
+            id: `int-${co.id}`,
+            date: co.interviewDate,
+            type: 'interview' as const,
+            companyId: co.id,
+            companyName: co.name,
+            title: `${labelPrefix}選考・面接日程`
+          });
+        }
+      }
+      if (isIntern && co.internSteps) {
+        co.internSteps.forEach(step => {
+          if (step.date) {
+            const d = new Date(step.date);
+            if (d.getFullYear() === year && d.getMonth() === month) {
+              res.push({
+                id: `step-${step.id}`,
+                date: step.date,
+                type: 'intern_step' as const,
+                companyId: co.id,
+                companyName: co.name,
+                title: `【インターン選考】${step.stepName}`
+              });
+            }
+          }
+        });
+      }
+      return res;
+    }),
+    ...todos.flatMap(todo => {
+      if (todo.dueDate) {
+        const d = new Date(todo.dueDate);
+        if (d.getFullYear() === year && d.getMonth() === month) {
+          return [{
+            id: `todo-${todo.id}`,
+            date: todo.dueDate,
+            type: 'todo' as const,
+            title: todo.title,
+            completed: todo.completed
+          }];
+        }
+      }
+      return [];
+    })
+  ].sort((a, b) => a.date.localeCompare(b.date));
 
   return (
     <div className="space-y-6 pb-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-app-text-primary tracking-tight">就活カレンダー</h2>
-          <p className="text-xs text-app-text-secondary mt-0.5">締め切りと面接日程を自動可視化。タップして詳細を編集できます</p>
+          <p className="text-xs text-app-text-secondary mt-0.5">締め切り・面接予定・ToDoタスクを自動可視化。タップして詳細を確認できます</p>
         </div>
         
         {/* Toggle View Mode */}
@@ -256,12 +288,16 @@ export default function CalendarView() {
       <div className="bg-app-card-bg rounded-3xl border border-app-card-border shadow-xs overflow-hidden">
         
         {/* Days of week header */}
-        <div className="grid grid-cols-7 border-b border-app-border bg-app-bg-secondary py-2.5">
+        <div className="grid grid-cols-7 border-b border-app-border bg-app-bg-secondary py-3">
           {daysOfWeek.map((day, idx) => (
             <div 
               key={day} 
-              className={`text-center text-[10px] font-bold ${
-                idx === 0 ? 'text-rose-500' : idx === 6 ? 'text-blue-500' : 'text-app-text-secondary'
+              className={`text-center text-xs font-black tracking-wider ${
+                idx === 0 
+                  ? 'text-rose-600 dark:text-rose-400' 
+                  : idx === 6 
+                    ? 'text-blue-600 dark:text-blue-400' 
+                    : 'text-gray-900 dark:text-slate-100'
               }`}
             >
               {day}
@@ -298,14 +334,14 @@ export default function CalendarView() {
                   >
                     <div className="flex items-center justify-between">
                       <span 
-                        className={`text-xs font-bold font-mono h-5 w-5 flex items-center justify-center rounded-full ${
+                        className={`text-sm font-extrabold font-mono h-6 w-6 flex items-center justify-center rounded-full ${
                           isCurrentSimulatedToday 
-                            ? 'bg-app-calendar-selected-bg text-app-calendar-selected-text font-semibold' 
+                            ? 'bg-app-calendar-selected-bg text-white font-black shadow-xs' 
                             : dateObj.getDay() === 0 
-                              ? 'text-rose-500' 
+                              ? 'text-rose-600 dark:text-rose-400' 
                               : dateObj.getDay() === 6 
-                                ? 'text-blue-500' 
-                                : 'text-app-text-primary'
+                                ? 'text-blue-600 dark:text-blue-400' 
+                                : 'text-gray-900 dark:text-slate-100'
                         }`}
                       >
                         {dayNum}
@@ -317,17 +353,28 @@ export default function CalendarView() {
                       {matchedEvents.map(evt => (
                         <div
                           key={evt.id}
-                          onClick={() => navigateToCompany(evt.companyId, evt.type === 'deadline' ? 'es' : 'interview')}
-                          className={`text-[9px] px-1.5 py-0.5 rounded-md font-sans truncate font-bold shadow-2xs hover:scale-[1.02] transform transition-all cursor-pointer block border ${
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (evt.type === 'todo') {
+                              setActiveTab('todos');
+                            } else if (evt.companyId) {
+                              navigateToCompany(evt.companyId, evt.type === 'deadline' ? 'es' : 'interview');
+                            }
+                          }}
+                          className={`text-[10px] px-1.5 py-0.5 rounded-md font-sans truncate font-extrabold shadow-2xs hover:scale-[1.02] transform transition-all cursor-pointer block border ${
                             evt.type === 'deadline'
-                              ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-900/50'
+                              ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 border-rose-200 dark:border-rose-900/60 hover:bg-rose-200 dark:hover:bg-rose-900/70'
                               : evt.type === 'intern_step'
-                                ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-100 dark:border-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/50'
-                                : 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                                ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-900/60 hover:bg-amber-200 dark:hover:bg-amber-900/70'
+                                : evt.type === 'todo'
+                                  ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-900/60 hover:bg-purple-200 dark:hover:bg-purple-900/70'
+                                  : 'bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-900/60 hover:bg-blue-200 dark:hover:bg-blue-900/70'
                           }`}
-                          title={`${evt.companyName} (${evt.title})`}
+                          title={evt.type === 'todo' ? `ToDo: ${evt.title}` : `${evt.companyName} (${evt.title})`}
                         >
-                          {evt.type === 'deadline' ? '🚨' : evt.type === 'intern_step' ? '🎖️' : '💬'} {evt.companyName}
+                          {evt.type === 'todo' 
+                            ? `${evt.completed ? '✅' : '◽️'} ${evt.title}` 
+                            : `${evt.type === 'deadline' ? '🚨' : evt.type === 'intern_step' ? '🎖️' : '💬'} ${evt.companyName}`}
                         </div>
                       ))}
                     </div>
@@ -361,14 +408,14 @@ export default function CalendarView() {
                         {daysOfWeek[dateObj.getDay()]}
                       </span>
                       <span 
-                        className={`inline-block text-xs font-black h-5.5 w-5.5 rounded-full ${
+                        className={`inline-block text-sm font-extrabold h-6 w-6 rounded-full ${
                           isCurrentSimulatedToday 
-                            ? 'bg-app-calendar-selected-bg text-app-calendar-selected-text flex items-center justify-center mx-auto font-semibold' 
+                            ? 'bg-app-calendar-selected-bg text-white flex items-center justify-center mx-auto font-black shadow-xs' 
                             : dateObj.getDay() === 0
-                              ? 'text-rose-500'
+                              ? 'text-rose-600 dark:text-rose-400 font-extrabold'
                               : dateObj.getDay() === 6
-                                ? 'text-blue-500'
-                                : 'text-app-text-primary'
+                                ? 'text-blue-600 dark:text-blue-400 font-extrabold'
+                                : 'text-gray-900 dark:text-slate-100 font-extrabold'
                         }`}
                       >
                         {dayNum}
@@ -379,18 +426,29 @@ export default function CalendarView() {
                       {matchedEvents.map(evt => (
                         <div
                           key={evt.id}
-                          onClick={() => navigateToCompany(evt.companyId, evt.type === 'deadline' ? 'es' : 'interview')}
-                          className={`text-[9px] p-1.5 rounded-lg font-bold shadow-2xs hover:scale-102 transform transition-all cursor-pointer block border text-left ${
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (evt.type === 'todo') {
+                              setActiveTab('todos');
+                            } else if (evt.companyId) {
+                              navigateToCompany(evt.companyId, evt.type === 'deadline' ? 'es' : 'interview');
+                            }
+                          }}
+                          className={`text-[10px] p-1.5 rounded-lg font-extrabold shadow-2xs hover:scale-102 transform transition-all cursor-pointer block border text-left ${
                             evt.type === 'deadline'
-                              ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-900/50'
+                              ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 border-rose-200 dark:border-rose-900/60 hover:bg-rose-200 dark:hover:bg-rose-900/70'
                               : evt.type === 'intern_step'
-                                ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border-amber-100 dark:border-amber-900/40 hover:bg-amber-100 dark:hover:bg-amber-900/50'
-                                : 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                                ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-900/60 hover:bg-amber-200 dark:hover:bg-amber-900/70'
+                                : evt.type === 'todo'
+                                  ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-900/60 hover:bg-purple-200 dark:hover:bg-purple-900/70'
+                                  : 'bg-blue-100 dark:bg-blue-950/60 text-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-900/60 hover:bg-blue-200 dark:hover:bg-blue-900/70'
                           }`}
                         >
-                          <div className="font-sans truncate">{evt.companyName}</div>
-                          <span className="text-[8px] opacity-70 font-sans block mt-0.5 text-app-text-secondary">
-                            {evt.type === 'deadline' ? '書類締切' : evt.type === 'intern_step' ? 'インターン' : '面接面談'}
+                          <div className="font-sans truncate">
+                            {evt.type === 'todo' ? `${evt.completed ? '✅' : '◽️'} ${evt.title}` : evt.companyName}
+                          </div>
+                          <span className="text-[8px] opacity-85 font-sans font-extrabold block mt-0.5 text-gray-700 dark:text-slate-350">
+                            {evt.type === 'todo' ? 'タスク' : evt.type === 'deadline' ? '書類締切' : evt.type === 'intern_step' ? 'インターン' : '面接面談'}
                           </span>
                         </div>
                       ))}
@@ -422,28 +480,40 @@ export default function CalendarView() {
             currentMonthEvents.map(evt => (
               <div 
                 key={evt.id}
-                onClick={() => navigateToCompany(evt.companyId, evt.type === 'deadline' ? 'es' : 'interview')}
+                onClick={() => {
+                  if (evt.type === 'todo') {
+                    setActiveTab('todos');
+                  } else if (evt.companyId) {
+                    navigateToCompany(evt.companyId, evt.type === 'deadline' ? 'es' : 'interview');
+                  }
+                }}
                 className="py-3 flex items-center justify-between hover:bg-app-button-hover rounded-xl px-2 transition-all cursor-pointer group"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-lg">
-                    {evt.type === 'deadline' ? '🚨' : evt.type === 'intern_step' ? '🎖️' : '💬'}
+                  <span className="text-lg leading-none shrink-0">
+                    {evt.type === 'todo' 
+                      ? (evt.completed ? '✅' : '◽️') 
+                      : evt.type === 'deadline' 
+                        ? '🚨' 
+                        : evt.type === 'intern_step' 
+                          ? '🎖️' 
+                          : '💬'}
                   </span>
                   <div className="min-w-0">
-                    <p className={`text-xs font-bold text-app-text-primary group-hover:${theme.text} transition-colors`}>
-                      {evt.companyName}
+                    <p className={`text-xs font-extrabold text-gray-900 dark:text-slate-100 group-hover:${theme.text} transition-colors`}>
+                      {evt.type === 'todo' ? evt.title : evt.companyName}
                     </p>
-                    <p className="text-[10px] text-app-text-secondary mt-0.5">
-                      {evt.title}
+                    <p className="text-[10px] text-gray-500 dark:text-slate-400 font-extrabold mt-0.5">
+                      {evt.type === 'todo' ? 'ToDoタスク' : evt.title}
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono font-bold text-app-button-text bg-app-bg-secondary px-2.5 py-1 rounded-lg border border-app-border">
+                  <span className="text-xs font-mono font-bold text-gray-800 dark:text-slate-200 bg-app-bg-secondary px-2.5 py-1 rounded-lg border border-app-border">
                     {evt.date}
                   </span>
-                  <ChevronRight className="h-4 w-4 text-app-text-secondary group-hover:text-app-text-primary transition-colors" />
+                  <ChevronRightIcon className="h-4 w-4 text-app-text-secondary group-hover:text-app-text-primary transition-colors" />
                 </div>
               </div>
             ))
