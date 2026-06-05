@@ -11,9 +11,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     define: {
-      'process.env.NEXT_PUBLIC_SUPABASE_URL': JSON.stringify(supabaseUrl),
-      'process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
-      'process.env': {}, // Browser safety net to prevent 'process is not defined' runtime exceptions
+      // IMPORTANT: 'process.env' must come BEFORE individual keys.
+      // If it comes after, it overwrites all specific env vars with an empty object.
+      'process.env': {
+        NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey,
+      },
     },
     plugins: [
       react(),
