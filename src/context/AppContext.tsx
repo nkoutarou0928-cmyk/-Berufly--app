@@ -697,33 +697,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     try {
       setSyncStatus('syncing');
 
-      // Use the uid passed in directly from the onAuthStateChange session.
-      // This avoids unnecessary auth.getUser() network round-trips that can cause UI freezes.
       if (!uid) {
-        console.error('[Supabase Load Error]: No UID provided to loadUserDataFromSupabase.');
+        console.error('[loadUserDataFromSupabase] UIDが未指定。処理を中断します。');
         setSyncStatus('error');
         return;
       }
 
+      console.log('[loadUserDataFromSupabase] データ取得開始。UID:', uid);
       const verifiedUid = uid;
-      console.log("Supabaseからデータ取得を開始します。対象UID:", verifiedUid);
 
-      // Fetch companies
+      // ================================================================
+      // companies テーブルを取得（保存はしない）
+      // ================================================================
       const { data: cos, error: cosErr } = await supabase
         .from('companies')
         .select('*')
         .eq('user_id', verifiedUid);
-      
+
       if (cosErr) {
-        console.error('[Supabase Load Companies SELECT Error]:', cosErr);
-        // Alert developer in console for potential RLS issues
-        console.warn('💡 Tip: Please check that your Supabase RLS policy for the "companies" table allows SELECT for user_id = auth.uid().');
-        throw cosErr;
-      }
-      
-      let loadedCos: Company[] = [];
-      if (cos && cos.length > 0) {
-        loadedCos = cos.map(c => ({
+        console.error('[loadUserDataFromSupabase] companies SELECTエラー:', cosErr);
+      } else if (cos && cos.length > 0) {
+        const loadedCos: Company[] = cos.map(c => ({
           id: c.id,
           name: c.name,
           industry: c.industry || '',
@@ -749,38 +743,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }));
         setCompanies(loadedCos);
         localStorage.setItem(`shukatsu_companies_${verifiedUid}`, JSON.stringify(loadedCos));
+        console.log('[loadUserDataFromSupabase] companies 取得完了。件数:', loadedCos.length);
       } else {
-        const localData = localStorage.getItem(`shukatsu_companies_${verifiedUid}`);
-        if (localData) {
-          try {
-            const parsed = JSON.parse(localData);
-            if (parsed && parsed.length > 0) {
-              console.log('[Supabase Sync] Local companies exist, uploading to cloud.');
-              await saveCompanies(parsed);
-            } else {
-              setCompanies([]);
-            }
-          } catch (_) {
-            setCompanies([]);
-          }
-        } else {
-          setCompanies([]);
-        }
+        // Supabaseが空ならlocalStorageを使用。保存はしない。
+        const local = localStorage.getItem(`shukatsu_companies_${verifiedUid}`);
+        if (local) { try { setCompanies(JSON.parse(local)); } catch (_) { setCompanies([]); } }
+        else { setCompanies([]); }
+        console.log('[loadUserDataFromSupabase] companies: Supabaseは空。localStorageを使用。');
       }
 
-      // Fetch todos
+      // ================================================================
+      // todos テーブルを取得（保存はしない）
+      // ================================================================
       const { data: tds, error: tdsErr } = await supabase
         .from('todos')
         .select('*')
         .eq('user_id', verifiedUid);
 
       if (tdsErr) {
-        console.error('[Supabase Load Todos SELECT Error]:', tdsErr);
-        console.warn('💡 Tip: Please check that your Supabase RLS policy for the "todos" table allows SELECT for user_id = auth.uid().');
-        throw tdsErr;
-      }
-
-      if (tds && tds.length > 0) {
+        console.error('[loadUserDataFromSupabase] todos SELECTエラー:', tdsErr);
+      } else if (tds && tds.length > 0) {
         const loadedTodos = tds.map(t => ({
           id: t.id,
           title: t.title,
@@ -791,26 +773,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }));
         setTodos(loadedTodos);
         localStorage.setItem(`shukatsu_todos_${verifiedUid}`, JSON.stringify(loadedTodos));
+        console.log('[loadUserDataFromSupabase] todos 取得完了。件数:', loadedTodos.length);
       } else {
-        const localData = localStorage.getItem(`shukatsu_todos_${verifiedUid}`);
-        if (localData) {
-          try {
-            const parsed = JSON.parse(localData);
-            if (parsed && parsed.length > 0) {
-              console.log('[Supabase Sync] Local todos exist, uploading to cloud.');
-              await saveTodos(parsed);
-            } else {
-              setTodos([]);
-            }
-          } catch (_) {
-            setTodos([]);
-          }
-        } else {
-          setTodos([]);
-        }
+        // Supabaseが空ならlocalStorageを使用。保存はしない。
+        const local = localStorage.getItem(`shukatsu_todos_${verifiedUid}`);
+        if (local) { try { setTodos(JSON.parse(local)); } catch (_) { setTodos([]); } }
+        else { setTodos([]); }
+        console.log('[loadUserDataFromSupabase] todos: Supabaseは空。localStorageを使用。');
       }
 
-      // Fetch self analysis
+      // ================================================================
+      // self_analysis テーブルを取得（保存はしない）
+      // ================================================================
       const { data: sa, error: saErr } = await supabase
         .from('self_analysis')
         .select('*')
@@ -818,12 +792,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (saErr) {
-        console.error('[Supabase Load Self Analysis SELECT Error]:', saErr);
-        console.warn('💡 Tip: Please check that your Supabase RLS policy for the "self_analysis" table allows SELECT for user_id = auth.uid().');
-        throw saErr;
-      }
-
-      if (sa) {
+        console.error('[loadUserDataFromSupabase] self_analysis SELECTエラー:', saErr);
+      } else if (sa) {
         const loadedSA = {
           selfPR: sa.self_pr || '',
           gakuchika: sa.gakuchika || '',
@@ -832,45 +802,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         };
         setSelfAnalysis(loadedSA);
         localStorage.setItem(`shukatsu_self_analysis_${verifiedUid}`, JSON.stringify(loadedSA));
+        console.log('[loadUserDataFromSupabase] self_analysis 取得完了。');
       } else {
-        const localSA = localStorage.getItem(`shukatsu_self_analysis_${verifiedUid}`);
-        let uploaded = false;
-        if (localSA) {
-          try {
-            const parsed = JSON.parse(localSA);
-            if (parsed && (parsed.selfPR || parsed.gakuchika || (parsed.baseMotivations && parsed.baseMotivations.length > 0) || (parsed.faqs && parsed.faqs.length > 0))) {
-              console.log('[Supabase Sync] Local self-analysis exists, uploading to cloud.');
-              await saveSelfAnalysis(parsed);
-              uploaded = true;
-            }
-          } catch (_) {}
-        }
-        
-        if (!uploaded) {
-          console.log('[Supabase Load Self Analysis]: No record found, creating initial template.');
-          const initialSA = {
-            user_id: verifiedUid,
-            self_pr: '',
-            gakuchika: '',
-            base_motivations: [],
-            faqs: []
-          };
-          const { error: upsertErr } = await supabase.from('self_analysis').upsert(initialSA);
-          if (upsertErr) {
-            console.error('[Supabase Create Self Analysis Upsert Error]:', upsertErr);
-          }
-          setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
-          localStorage.setItem(`shukatsu_self_analysis_${verifiedUid}`, JSON.stringify({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] }));
-        }
+        const local = localStorage.getItem(`shukatsu_self_analysis_${verifiedUid}`);
+        if (local) { try { setSelfAnalysis(JSON.parse(local)); } catch (_) {} }
+        console.log('[loadUserDataFromSupabase] self_analysis: Supabaseは空。localStorageを使用。');
       }
 
-      setSettings({ ...INITIAL_SETTINGS, profileName: name });
+      // 設定はリセットしない（ユーザー定義のテーマカラーを保持）
       setSyncStatus('synced');
-      console.log('[Supabase Sync Completed]: Cloud data successfully synchronized to local state.');
+      console.log('[loadUserDataFromSupabase] 完了。');
     } catch (e: any) {
-      console.error('[loadUserDataFromSupabase caught exception]:', e);
+      console.error('[loadUserDataFromSupabase] 例外発生:', e);
       setSyncStatus('error');
-      alert("データの取得に失敗しました: " + (e.message || e));
+      // エラーはアラートしない（ログイン後にユーザーにアラートを出すがピジを避ける）
     }
   };
 
