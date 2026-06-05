@@ -295,10 +295,10 @@ export default function CalendarView() {
               key={day} 
               className={`text-center text-xs font-black tracking-wider ${
                 idx === 0 
-                  ? 'text-rose-950 dark:text-rose-50' 
+                  ? 'text-rose-600 dark:text-rose-400' 
                   : idx === 6 
-                    ? 'text-blue-950 dark:text-blue-50' 
-                    : 'text-black dark:text-white'
+                    ? 'text-blue-600 dark:text-blue-400' 
+                    : 'text-[#222222] dark:text-white'
               }`}
             >
               {day}
@@ -339,10 +339,10 @@ export default function CalendarView() {
                           isCurrentSimulatedToday 
                             ? 'bg-indigo-600 text-white font-black shadow-xs dark:bg-indigo-500' 
                             : dateObj.getDay() === 0 
-                              ? 'text-rose-950 dark:text-rose-50 font-black' 
+                              ? 'text-rose-600 dark:text-rose-400 font-black' 
                               : dateObj.getDay() === 6 
-                                ? 'text-blue-950 dark:text-blue-50 font-black' 
-                                : 'text-black dark:text-white'
+                                ? 'text-blue-600 dark:text-blue-400 font-black' 
+                                : 'text-[#222222] dark:text-white'
                         }`}
                       >
                         {dayNum}
@@ -413,10 +413,10 @@ export default function CalendarView() {
                           isCurrentSimulatedToday 
                             ? 'bg-indigo-600 text-white flex items-center justify-center mx-auto font-black shadow-xs dark:bg-indigo-500' 
                             : dateObj.getDay() === 0
-                              ? 'text-rose-950 dark:text-rose-50 font-black'
+                              ? 'text-rose-600 dark:text-rose-400 font-black'
                               : dateObj.getDay() === 6
-                                ? 'text-blue-950 dark:text-blue-50 font-black'
-                                : 'text-black dark:text-white font-black'
+                                ? 'text-blue-600 dark:text-blue-400 font-black'
+                                : 'text-[#222222] dark:text-white font-black'
                         }`}
                       >
                         {dayNum}

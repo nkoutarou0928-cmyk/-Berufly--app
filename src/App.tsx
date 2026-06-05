@@ -642,16 +642,18 @@ function AppContent() {
           </div>
           
           <div className="flex items-center gap-2">
-            <span className={`text-[10px] inline-flex items-center gap-1 font-bold border px-2.5 py-0.5 rounded-full font-mono transition-all ${
-              syncStatus === 'offline' 
-                ? 'bg-rose-50 border-rose-200 text-rose-500' 
-                : syncStatus === 'syncing'
-                  ? 'bg-amber-50 border-amber-200 text-amber-500 animate-pulse'
-                  : 'bg-emerald-50 border-emerald-100 text-emerald-500 dark:bg-emerald-950/20 dark:border-emerald-800/40 dark:text-emerald-400'
-            }`}>
-              <CornerDownRight className={`h-3 w-3 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-              {syncStatus === 'offline' ? 'OFFLINE' : syncStatus === 'syncing' ? 'SYNCING...' : 'ONLINE SYNCED'}
-            </span>
+            {syncStatus !== 'synced' && (
+              <span className={`text-[10px] inline-flex items-center gap-1 font-bold border px-2.5 py-0.5 rounded-full font-mono transition-all ${
+                syncStatus === 'offline' 
+                  ? 'bg-rose-50 border-rose-200 text-rose-500' 
+                  : syncStatus === 'syncing'
+                    ? 'bg-amber-50 border-amber-200 text-amber-500 animate-pulse'
+                    : 'bg-rose-50 border-rose-200 text-rose-500 dark:bg-rose-950/20 dark:border-rose-800/40 dark:text-rose-400'
+              }`}>
+                <CornerDownRight className={`h-3 w-3 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+                {syncStatus === 'offline' ? 'OFFLINE' : syncStatus === 'syncing' ? 'SYNCING...' : 'ERROR'}
+              </span>
+            )}
 
             <button
               type="button"
