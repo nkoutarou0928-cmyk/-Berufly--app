@@ -438,21 +438,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (company.esDeadline) {
           eventsToInsert.push({
             user_id: activeUserId,
-            company_id: company.id,
-            company_name: company.name,
-            title: isIntern ? 'インターンES締切' : 'ES締切',
-            event_date: company.esDeadline,
-            type: 'deadline'
+            title: `${company.name} - ${isIntern ? 'インターンES締切' : 'ES締切'}`,
+            start_date: company.esDeadline,
+            end_date: company.esDeadline
           });
         }
         if (company.interviewDate) {
           eventsToInsert.push({
             user_id: activeUserId,
-            company_id: company.id,
-            company_name: company.name,
-            title: isIntern ? 'インターン面接' : '面接',
-            event_date: company.interviewDate,
-            type: 'interview'
+            title: `${company.name} - ${isIntern ? 'インターン面接' : '面接'}`,
+            start_date: company.interviewDate,
+            end_date: company.interviewDate
           });
         }
       }
@@ -489,6 +485,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // イベントを先に削除（外部キー制約の競合回避）
+      await supabase.from('events').delete().eq('user_id', activeUserId);
+
       // 既存レコードを全削除してから再挿入
       const { error: deleteErr } = await supabase
         .from('companies')
@@ -499,29 +498,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       if (newCompanies.length > 0) {
         const toInsert = newCompanies.map(c => ({
-          id: c.id,
           user_id: activeUserId,
           name: c.name,
-          industry: c.industry,
-          preference: c.preference,
           status: c.status,
-          selection_status_intern: c.selectionStatusIntern ?? null,
-          selection_stage: c.selectionStage,
-          es_deadline: c.esDeadline || null,
-          interview_date: c.interviewDate || null,
-          es_memos: c.esMemos,
-          interview_memos: c.interviewMemos,
-          notes: c.notes,
-          headquarters: c.headquarters ?? null,
-          scale: c.scale ?? null,
-          website: c.website ?? null,
-          established_year: c.establishedYear ?? null,
-          employee_count: c.employeeCount ?? null,
-          is_foreign: c.isForeign ?? false,
-          category: c.category ?? null,
-          selection_type: c.selectionType ?? 'main',
-          intern_type: c.internType ?? null,
-          intern_steps: c.internSteps ?? []
+          memo: JSON.stringify({
+            id: c.id,
+            industry: c.industry,
+            preference: c.preference,
+            selectionStatusIntern: c.selectionStatusIntern,
+            selectionStage: c.selectionStage,
+            esDeadline: c.esDeadline,
+            interviewDate: c.interviewDate,
+            esMemos: c.esMemos,
+            interviewMemos: c.interviewMemos,
+            notes: c.notes,
+            headquarters: c.headquarters,
+            scale: c.scale,
+            website: c.website,
+            establishedYear: c.establishedYear,
+            employeeCount: c.employeeCount,
+            isForeign: c.isForeign,
+            category: c.category,
+            selectionType: c.selectionType,
+            internType: c.internType,
+            internSteps: c.internSteps
+          })
         }));
 
         const { error: insertErr, data: insertData } = await supabase
@@ -580,13 +581,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
       if (newTodos.length > 0) {
         const toInsert = newTodos.map(t => ({
-          id: t.id,
           user_id: activeUserId,
-          title: t.title,
-          completed: t.completed,
-          scope: t.scope,
-          due_date: t.dueDate || null,
-          subtasks: t.subtasks ?? []
+          task: JSON.stringify({
+            id: t.id,
+            title: t.title,
+            scope: t.scope,
+            dueDate: t.dueDate,
+            subtasks: t.subtasks
+          }),
+          is_completed: t.completed
         }));
 
         const { error: insertErr, data: insertData } = await supabase
@@ -647,18 +650,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      const toUpsert = {
-        user_id: activeUserId,
-        self_pr: newAnalysis.selfPR,
-        gakuchika: newAnalysis.gakuchika,
-        base_motivations: newAnalysis.baseMotivations,
-        faqs: newAnalysis.faqs
-      };
-      const { error: upsertErr } = await supabase
+      // 既存レコードを全削除してから挿入
+      const { error: deleteErr } = await supabase
         .from('self_analysis')
-        .upsert(toUpsert, { onConflict: 'user_id' });
-      console.log('[saveSelfAnalysis] UPSERT error:', upsertErr);
-      if (upsertErr) throw new Error('UPSERT失敗: ' + upsertErr.message + ' (code: ' + upsertErr.code + ')');
+        .delete()
+        .eq('user_id', activeUserId);
+      if (deleteErr) throw new Error('自己分析DELETE失敗: ' + deleteErr.message + ' (code: ' + deleteErr.code + ')');
+
+      const toInsert = {
+        user_id: activeUserId,
+        title: 'main',
+        content: JSON.stringify(newAnalysis)
+      };
+      const { error: insertErr } = await supabase
+        .from('self_analysis')
+        .insert([toInsert]);
+      console.log('[saveSelfAnalysis] INSERT error:', insertErr);
+      if (insertErr) throw new Error('自己分析INSERT失敗: ' + insertErr.message + ' (code: ' + insertErr.code + ')');
       console.log('[saveSelfAnalysis] ✅ 同期完了');
     } catch (e: any) {
       console.error('[saveSelfAnalysis] ❌ 例外:', e);
@@ -751,30 +759,63 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (cosErr) {
         console.error('[loadUserDataFromSupabase] companies SELECTエラー:', cosErr);
       } else if (cos && cos.length > 0) {
-        const loadedCos: Company[] = cos.map(c => ({
-          id: c.id,
-          name: c.name,
-          industry: c.industry || '',
-          preference: c.preference || 3,
-          status: c.status || 'interested',
-          selectionStatusIntern: c.selection_status_intern,
-          selectionStage: c.selection_stage || 'none',
-          esDeadline: c.es_deadline || '',
-          interviewDate: c.interview_date || '',
-          esMemos: c.es_memos || [],
-          interviewMemos: c.interview_memos || [],
-          notes: c.notes || '',
-          headquarters: c.headquarters || '',
-          scale: c.scale || '',
-          website: c.website || '',
-          establishedYear: c.established_year || '',
-          employeeCount: c.employee_count || '',
-          isForeign: c.is_foreign || false,
-          category: c.category || '',
-          selectionType: c.selection_type || 'main',
-          internType: c.intern_type || '1day',
-          internSteps: c.intern_steps || []
-        }));
+        const loadedCos: Company[] = cos.map(c => {
+          try {
+            const parsed = JSON.parse(c.memo || '');
+            if (parsed && typeof parsed === 'object') {
+              return {
+                id: parsed.id || String(c.id),
+                name: c.name || '',
+                industry: parsed.industry || '',
+                preference: parsed.preference || 3,
+                status: c.status || 'interested',
+                selectionStatusIntern: parsed.selectionStatusIntern,
+                selectionStage: parsed.selectionStage || 'none',
+                esDeadline: parsed.esDeadline || '',
+                interviewDate: parsed.interviewDate || '',
+                esMemos: parsed.esMemos || [],
+                interviewMemos: parsed.interviewMemos || [],
+                notes: parsed.notes || '',
+                headquarters: parsed.headquarters || '',
+                scale: parsed.scale || '',
+                website: parsed.website || '',
+                establishedYear: parsed.establishedYear || '',
+                employeeCount: parsed.employeeCount || '',
+                isForeign: parsed.isForeign || false,
+                category: parsed.category || '',
+                selectionType: parsed.selectionType || 'main',
+                internType: parsed.internType || '1day',
+                internSteps: parsed.internSteps || []
+              };
+            }
+          } catch (_) {}
+
+          // Fallback if not JSON
+          return {
+            id: String(c.id),
+            name: c.name || '',
+            industry: '',
+            preference: 3,
+            status: c.status || 'interested',
+            selectionStatusIntern: undefined,
+            selectionStage: 'none',
+            esDeadline: '',
+            interviewDate: '',
+            esMemos: [],
+            interviewMemos: [],
+            notes: c.memo || '',
+            headquarters: '',
+            scale: '',
+            website: '',
+            establishedYear: '',
+            employeeCount: '',
+            isForeign: false,
+            category: '',
+            selectionType: 'main',
+            internType: '1day',
+            internSteps: []
+          };
+        });
         setCompanies(loadedCos);
         localStorage.setItem(`shukatsu_companies_${verifiedUid}`, JSON.stringify(loadedCos));
         console.log('[loadUserDataFromSupabase] companies 取得完了。件数:', loadedCos.length);
@@ -797,14 +838,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (tdsErr) {
         console.error('[loadUserDataFromSupabase] todos SELECTエラー:', tdsErr);
       } else if (tds && tds.length > 0) {
-        const loadedTodos = tds.map(t => ({
-          id: t.id,
-          title: t.title,
-          completed: t.completed,
-          scope: t.scope || 'today',
-          dueDate: t.due_date || '',
-          subtasks: t.subtasks || []
-        }));
+        const loadedTodos = tds.map(t => {
+          try {
+            const parsed = JSON.parse(t.task || '');
+            if (parsed && typeof parsed === 'object') {
+              return {
+                id: parsed.id || String(t.id),
+                title: parsed.title || '',
+                completed: t.is_completed || false,
+                scope: parsed.scope || 'today',
+                dueDate: parsed.dueDate || '',
+                subtasks: parsed.subtasks || []
+              };
+            }
+          } catch (_) {}
+
+          // Fallback if not JSON
+          return {
+            id: String(t.id),
+            title: t.task || '',
+            completed: t.is_completed || false,
+            scope: 'today',
+            dueDate: '',
+            subtasks: []
+          };
+        });
         setTodos(loadedTodos);
         localStorage.setItem(`shukatsu_todos_${verifiedUid}`, JSON.stringify(loadedTodos));
         console.log('[loadUserDataFromSupabase] todos 取得完了。件数:', loadedTodos.length);
@@ -822,18 +880,26 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const { data: sa, error: saErr } = await supabase
         .from('self_analysis')
         .select('*')
-        .eq('user_id', verifiedUid)
-        .maybeSingle();
+        .eq('user_id', verifiedUid);
 
       if (saErr) {
         console.error('[loadUserDataFromSupabase] self_analysis SELECTエラー:', saErr);
-      } else if (sa) {
-        const loadedSA = {
-          selfPR: sa.self_pr || '',
-          gakuchika: sa.gakuchika || '',
-          baseMotivations: sa.base_motivations || [],
-          faqs: sa.faqs || []
-        };
+      } else if (sa && sa.length > 0) {
+        const mainRow = sa.find(r => r.title === 'main');
+        let loadedSA = { selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] };
+        if (mainRow && mainRow.content) {
+          try {
+            const parsed = JSON.parse(mainRow.content);
+            if (parsed && typeof parsed === 'object') {
+              loadedSA = {
+                selfPR: parsed.selfPR || '',
+                gakuchika: parsed.gakuchika || '',
+                baseMotivations: parsed.baseMotivations || [],
+                faqs: parsed.faqs || []
+              };
+            }
+          } catch (_) {}
+        }
         setSelfAnalysis(loadedSA);
         localStorage.setItem(`shukatsu_self_analysis_${verifiedUid}`, JSON.stringify(loadedSA));
         console.log('[loadUserDataFromSupabase] self_analysis 取得完了。');
