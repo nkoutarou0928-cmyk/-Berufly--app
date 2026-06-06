@@ -25,8 +25,8 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['icon-512x512.png', 'icon-192x192.png', 'apple-touch-icon.png'],
         manifest: {
-          name: 'CareerNavi++',
-          short_name: 'CareerNavi++',
+          name: 'Berufly',
+          short_name: 'Berufly',
           description: '就活を一元管理するキャリアナビゲーションアプリ',
           theme_color: '#0f172a',
           background_color: '#0f172a',

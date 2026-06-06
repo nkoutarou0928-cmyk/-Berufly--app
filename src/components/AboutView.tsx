@@ -12,9 +12,9 @@ export default function AboutView() {
     <div className="space-y-6 pb-20 text-left max-w-2xl mx-auto">
       <div>
         <h2 className={`text-xl font-black tracking-tight font-sans ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>
-          CareerNavi について
+          Berufly について
         </h2>
-        <p className="text-xs text-gray-400 mt-0.5">就活一元管理アプリ「CareerNavi」の開発目的、機能紹介、およびメリットについて</p>
+        <p className="text-xs text-gray-400 mt-0.5">就活一元管理アプリ「Berufly」の開発目的、機能紹介、およびメリットについて</p>
       </div>
 
       <motion.div
@@ -37,7 +37,7 @@ export default function AboutView() {
             多くの就活生が「ESの提出期限をうっかり忘れてしまった」「面接スケジュールが重なってしまった」「過去にどの企業でどんな志望動機を話したか混乱してしまった」といった進行管理ミスや情報散乱に直面しています。
           </p>
           <p>
-            「CareerNavi」は、そうした就活生の悩みを解決し、**「就活の進行管理と情報蓄積を一つのダッシュボードで完結させること」**を目的に開発されました。私たちは、就活生が管理作業の負担から解放され、自己分析や面接の準備といった本質的な選考対策に集中できる環境を提供することを目指しています。
+            「Berufly」は、そうした就活生の悩みを解決し、**「就活の進行管理と情報蓄積を一つのダッシュボードで完結させること」**を目的に開発されました。私たちは、就活生が管理作業の負担から解放され、自己分析や面接の準備といった本質的な選考対策に集中できる環境を提供することを目指しています。
           </p>
         </section>
 
@@ -48,7 +48,7 @@ export default function AboutView() {
             2. 主な機能と使い方
           </h3>
           <p>
-            CareerNaviには、就活を一元管理するための多角的な機能が搭載されています。
+            Beruflyには、就活を一元管理するための多角的な機能が搭載されています。
           </p>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
@@ -124,7 +124,7 @@ export default function AboutView() {
           </h3>
           <p>
             就職活動は、自身の人生における大きな転換点であり、多くの課題や不安に立ち向かう旅でもあります。
-            私たちは、CareerNaviがあなたのパートナーとなり、就職活動という重要な挑戦を強力に支えることができる存在になることを心より祈っております。
+            私たちは、Beruflyがあなたのパートナーとなり、就職活動という重要な挑戦を強力に支えることができる存在になることを心より祈っております。
           </p>
         </section>
       </motion.div>

@@ -1,5 +1,5 @@
 {
-  "name": "CareerNavi+",
+  "name": "Berufly",
   "description": "就職活動の企業管理、スケジュール、タスク(Todo)、進捗状況をスマートに一元管理できる就活支援モバイルアプリ。",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

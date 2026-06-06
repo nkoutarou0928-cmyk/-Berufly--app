@@ -49,7 +49,7 @@ const SmartphoneScreen: React.FC<SmartphoneScreenProps> = ({
 
           {/* Miniature App Header */}
           <div className="flex items-center justify-between mb-2">
-            <span className={`text-[10px] font-black tracking-wider ${theme.text}`}>CareerNavi+</span>
+            <span className={`text-[10px] font-black tracking-wider ${theme.text}`}>Berufly</span>
             <span className="text-[7px] bg-emerald-500/15 text-emerald-500 font-bold px-1 py-0.2 rounded">就活24日目</span>
           </div>
 
@@ -357,7 +357,7 @@ const SmartphoneScreen: React.FC<SmartphoneScreenProps> = ({
             </div>
             
             <div className="text-[6px] uppercase tracking-wider text-indigo-500 font-extrabold animate-pulse pt-2.5">
-              CareerNavi+を起動しましょう！ 👇
+              Beruflyを起動しましょう！ 👇
             </div>
           </div>
         </div>
@@ -379,10 +379,10 @@ export const OnboardingModal: React.FC = () => {
 
   const slides = [
     {
-      title: 'CareerNavi+で就活を一元管理しよう',
-      description: 'CareerNavi+はあなたの就職活動を全力でサポートする一元管理アプリです。複雑な選考状況やES締め切り、日々のタスクをたった一つでスマートに整頓します。',
+      title: 'Beruflyで就活を一元管理しよう',
+      description: 'Beruflyはあなたの就職活動を全力でサポートする一元管理アプリです。複雑な選考状況やES締め切り、日々のタスクをたった一つでスマートに整頓します。',
       color: 'from-indigo-500/10 to-blue-500/10',
-      tag: '就活サポーター CareerNavi+',
+      tag: '就活サポーター Berufly',
       screenId: 'dashboard'
     },
     {
@@ -408,9 +408,9 @@ export const OnboardingModal: React.FC = () => {
     },
     {
       title: 'さっそく始めよう！',
-      description: '準備はすべて整いました。CareerNavi+を起動して、あなたの就職活動をスマートに進めましょう。',
+      description: '準備はすべて整いました。Beruflyを起動して、あなたの就職活動をスマートに進めましょう。',
       color: 'from-purple-500/10 to-indigo-500/10',
-      tag: 'CareerNavi+ を起動する',
+      tag: 'Berufly を起動する',
       screenId: 'account-select'
     }
   ];
@@ -504,7 +504,7 @@ export const OnboardingModal: React.FC = () => {
                 onClick={handleCompleteOnboarding}
                 className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
               >
-                <span>CareerNavi+を始める</span>
+                <span>Beruflyを始める</span>
                 <ArrowRight className="h-4.5 w-4.5" />
               </button>
             </div>

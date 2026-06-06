@@ -179,10 +179,10 @@ function WelcomeScreen() {
       >
         <div className="text-center space-y-2 mb-6">
           <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-black text-xl shadow-md">
-            C
+            B
           </div>
           <h2 className="text-xl font-black tracking-tight text-gray-900 dark:text-slate-100 font-sans">
-            CareerNavi++
+            Berufly
           </h2>
           <p className="text-xs text-gray-400 dark:text-slate-400">
             就活のES締切・企業選考・自己分析をリアルタイムに自動一元化
@@ -512,7 +512,7 @@ function AppContent() {
   const [showA2HSBanner, setShowA2HSBanner] = useState(false);
 
   useEffect(() => {
-    const isDismissed = localStorage.getItem('careernavi_a2hs_dismissed') === 'true';
+    const isDismissed = localStorage.getItem('berufly_a2hs_dismissed') === 'true';
 
     const handleBeforePrompt = (e: Event) => {
       e.preventDefault();
@@ -525,9 +525,9 @@ function AppContent() {
     window.addEventListener('beforeinstallprompt', handleBeforePrompt);
 
     // If first time accessing and not dismissed, show the prompt as dynamic banner after short delay
-    const isFirstAccess = !localStorage.getItem('careernavi_has_visited');
+    const isFirstAccess = !localStorage.getItem('berufly_has_visited');
     if (isFirstAccess) {
-      localStorage.setItem('careernavi_has_visited', 'true');
+      localStorage.setItem('berufly_has_visited', 'true');
       if (!isDismissed) {
         const timer = setTimeout(() => {
           setShowA2HSBanner(true);
@@ -560,12 +560,12 @@ function AppContent() {
       );
     }
     setShowA2HSBanner(false);
-    localStorage.setItem('careernavi_a2hs_dismissed', 'true');
+    localStorage.setItem('berufly_a2hs_dismissed', 'true');
   };
 
   const handleA2HSDismiss = () => {
     setShowA2HSBanner(false);
-    localStorage.setItem('careernavi_a2hs_dismissed', 'true');
+    localStorage.setItem('berufly_a2hs_dismissed', 'true');
   };
 
   // Router for tabs with Suspense fallback loader
@@ -635,11 +635,11 @@ function AppContent() {
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className={`h-8 w-8 rounded-xl flex items-center justify-center text-white font-black shadow-xs transition-colors ${theme.bg}`}>
-              C
+              B
             </span>
             <div className="text-left">
               <span className={`text-xs font-black tracking-tight block ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>
-                CareerNavi++
+                Berufly
               </span>
               <span className="text-[9px] text-gray-400 font-bold block -mt-0.5 font-sans">
                 {authStatus === 'guest' ? '👤 ゲストモード（未同期）' : `☁️ 同期: ${currentUser?.name} (${currentUser?.email})`}
@@ -722,7 +722,7 @@ function AppContent() {
             </button>
           </div>
           <p className="text-[9px] font-medium tracking-wide">
-            &copy; 2026 CareerNavi. All Rights Reserved.
+            &copy; 2026 Berufly. All Rights Reserved.
           </p>
         </footer>
       </main>

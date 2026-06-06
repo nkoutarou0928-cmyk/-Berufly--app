@@ -1,9 +1,9 @@
 /**
- * CareerNavi+ Service Worker
+ * Berufly Service Worker
  * Cash First strategy for static assets, Network First for API requests.
  */
 
-const CACHE_NAME = 'careernavi-cache-v1';
+const CACHE_NAME = 'berufly-cache-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -110,13 +110,13 @@ self.addEventListener('fetch', (event) => {
 // Push notification listener (Web Push API)
 self.addEventListener('push', (event) => {
   console.log('[Service Worker] Push Received.');
-  let data = { title: 'CareerNavi+', body: '新しいお知らせが届きました！' };
+  let data = { title: 'Berufly', body: '新しいお知らせが届きました！' };
 
   if (event.data) {
     try {
       data = event.data.json();
     } catch (e) {
-      data = { title: 'CareerNavi+', body: event.data.text() };
+      data = { title: 'Berufly', body: event.data.text() };
     }
   }
 
