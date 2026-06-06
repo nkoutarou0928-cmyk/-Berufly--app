@@ -31,7 +31,7 @@ export default function PrivacyView() {
             1. 個人情報の収集について
           </h3>
           <p>
-            当アプリ「CareerNavi」では、ユーザー登録の際にお名前（ニックネーム）、メールアドレスを収集する場合があります。
+            当アプリ「Berufly」では、ユーザー登録の際にお名前（ニックネーム）、メールアドレスを収集する場合があります。
             これらの個人情報は、ユーザーの認証、クラウドでのデータ同期、およびお問い合わせに対する回答や必要な情報を電子メール等でご連絡する場合にのみ利用し、目的外の利用は行いません。
           </p>
         </section>
@@ -93,7 +93,7 @@ export default function PrivacyView() {
             5. 著作権について
           </h3>
           <p>
-            当アプリ内に掲載されているすべての文章、画像、デザイン、プログラム等の著作権は「CareerNavi」の運営者または正当な権利者に帰属します。
+            当アプリ内に掲載されているすべての文章、画像、デザイン、プログラム等の著作権は「Berufly」の運営者または正当な権利者に帰属します。
             これらについて、法律で認められた私的使用の範囲を超えて、無断で転載、複製、配布、改変を行う行為を一切禁止いたします。
           </p>
         </section>
@@ -112,7 +112,7 @@ export default function PrivacyView() {
 
         <div className="pt-4 border-t border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 dark:text-slate-500 font-sans flex justify-between">
           <span>改定日：2026年5月31日</span>
-          <span>© 2026 CareerNavi</span>
+          <span>© 2026 Berufly</span>
         </div>
       </motion.div>
     </div>

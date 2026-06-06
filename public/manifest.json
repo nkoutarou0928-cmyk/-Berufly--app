@@ -1,6 +1,6 @@
 {
-  "name": "CareerNavi++",
-  "short_name": "CareerNavi++",
+  "name": "Berufly",
+  "short_name": "Berufly",
   "description": "就職活動の企業管理、スケジュール、タスク(Todo)、進捗状況をスマートに一元管理できる就活支援モバイルアプリ。",
   "start_url": "/",
   "display": "standalone",

@@ -325,7 +325,7 @@ export default function SettingsView() {
         </h3>
         
         <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-          CareerNavi+ をスマートフォンのホーム画面やPCのデスクトップにインストールすることで、ブラウザのアドレスバー等を非表示にし、ネイティブアプリのようにスムーズに就活管理が可能です。
+          Berufly をスマートフォンのホーム画面やPCのデスクトップにインストールすることで、ブラウザのアドレスバー等を非表示にし、ネイティブアプリのようにスムーズに就活管理が可能です。
         </p>
 
         {isInstalled ? (
