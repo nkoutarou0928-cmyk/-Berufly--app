@@ -23,10 +23,10 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon-512x512.png', 'icon-192x192.png'],
+        includeAssets: ['icon-512x512.png', 'icon-192x192.png', 'apple-touch-icon.png'],
         manifest: {
-          name: 'CareerNavi+',
-          short_name: 'CareerNavi+',
+          name: 'CareerNavi++',
+          short_name: 'CareerNavi++',
           description: '就活を一元管理するキャリアナビゲーションアプリ',
           theme_color: '#0f172a',
           background_color: '#0f172a',
@@ -48,6 +48,12 @@ export default defineConfig(({ mode }) => {
               type: 'image/png',
               purpose: 'any maskable',
             },
+            {
+              src: '/apple-touch-icon.png',
+              sizes: '180x180',
+              type: 'image/png',
+              purpose: 'any',
+            }
           ],
         },
         workbox: {
