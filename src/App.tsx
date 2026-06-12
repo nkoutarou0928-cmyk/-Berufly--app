@@ -20,7 +20,6 @@ const AboutView = lazy(() => import('./components/AboutView'));
 
 import { OnboardingModal } from './components/OnboardingModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
-import BeruSidebar from './components/BeruSidebar';
 
 import { 
   Home, 
@@ -38,8 +37,7 @@ import {
   ShieldAlert,
   Smartphone,
   RefreshCw,
-  Clock,
-  Bell
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -483,7 +481,6 @@ function AppContent() {
   } = useApp();
   
   const theme = getTheme(settings.themeColor);
-  const [isBeruOpen, setIsBeruOpen] = useState(false);
 
 
 
@@ -621,38 +618,13 @@ function AppContent() {
               <span className={`text-xs font-black tracking-tight block ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>
                 Berufly
               </span>
+              <span className="text-[9px] text-gray-400 font-bold block -mt-0.5 font-sans">
+                {`☁️ 同期: ${currentUser?.name} (${currentUser?.email})`}
+              </span>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            {/* 🔔 BERUに相談 ボタン */}
-            <button
-              onClick={() => setIsBeruOpen(true)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer hover:scale-102 active:scale-98 border shadow-3xs hover:shadow-2xs select-none ${
-                isDark 
-                  ? 'border-purple-900 bg-purple-950/40 text-purple-400 hover:bg-purple-950/60 hover:text-purple-300' 
-                  : 'border-purple-205 bg-purple-50/60 text-purple-600 hover:bg-purple-100/60'
-              }`}
-            >
-              <Bell className="h-3.5 w-3.5 fill-purple-500/20" />
-              <span>🔔 BERUに相談</span>
-            </button>
-
-            {/* 同期・ユーザー情報 */}
-            <div className="flex items-center gap-2 border-l border-gray-150 dark:border-slate-800 pl-3">
-              <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center text-[10px] font-black text-white shadow-xs">
-                {currentUser?.name?.slice(0, 1).toUpperCase() || 'U'}
-              </div>
-              <div className="text-left hidden xs:block">
-                <span className={`text-[10px] font-black block leading-none ${isDark ? 'text-slate-205' : 'text-gray-800'}`}>
-                  {currentUser?.name || 'ユーザー'}
-                </span>
-                <span className="text-[8px] text-gray-400 font-bold block leading-none mt-0.5">
-                  {currentUser?.email || 'user@example.com'}
-                </span>
-              </div>
-            </div>
-
+          <div className="flex items-center gap-2">
             {syncStatus === 'offline' && (
               <span className="text-[10px] inline-flex items-center gap-1 font-bold border px-2.5 py-0.5 rounded-full font-mono transition-all bg-rose-50 border-rose-200 text-rose-500 dark:bg-rose-950/20 dark:border-rose-800/40 dark:text-rose-400">
                 <CornerDownRight className="h-3 w-3" />
@@ -812,13 +784,6 @@ function AppContent() {
 
       {/* PWA Install Invitation Banner */}
       <PWAInstallPrompt />
-
-      {/* BERU AI Drawer Panel */}
-      <AnimatePresence>
-        {isBeruOpen && (
-          <BeruSidebar isOpen={isBeruOpen} onClose={() => setIsBeruOpen(false)} />
-        )}
-      </AnimatePresence>
     </div>
   );
 }
