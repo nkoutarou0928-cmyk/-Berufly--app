@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import beruChatRouter from "./beru/chat";
 
 dotenv.config();
+dotenv.config({ path: '.env.local', override: false });
 
 // Helper functions for fuzzy, Kana and Zenkaku-Hankaku normalized matches
 function normalizeString(str: string): string {
