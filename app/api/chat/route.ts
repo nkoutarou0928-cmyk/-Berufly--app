@@ -1,4 +1,5 @@
 // @ts-nocheck
+// BERU AI Chat API Route utilizing Gemini 1.5 Flash
 import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 
