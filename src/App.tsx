@@ -20,6 +20,7 @@ const AboutView = lazy(() => import('./components/AboutView'));
 
 import { OnboardingModal } from './components/OnboardingModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import BeruSidebar from './components/BeruSidebar';
 
 import { 
   Home, 
@@ -37,7 +38,8 @@ import {
   ShieldAlert,
   Smartphone,
   RefreshCw,
-  Clock
+  Clock,
+  Bell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -481,6 +483,7 @@ function AppContent() {
   } = useApp();
   
   const theme = getTheme(settings.themeColor);
+  const [isBeruOpen, setIsBeruOpen] = useState(false);
 
 
 
@@ -624,7 +627,20 @@ function AppContent() {
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
+            {/* 🔔 BERUに相談 ボタン */}
+            <button
+              onClick={() => setIsBeruOpen(true)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer hover:scale-102 active:scale-98 border shadow-3xs ${
+                isDark 
+                  ? 'border-slate-800 bg-slate-900 text-slate-200 hover:bg-slate-800' 
+                  : `${theme.border} ${theme.lightBg} ${theme.text} hover:opacity-90`
+              }`}
+            >
+              <Bell className="h-3.5 w-3.5" />
+              <span>BERUに相談</span>
+            </button>
+
             {syncStatus === 'offline' && (
               <span className="text-[10px] inline-flex items-center gap-1 font-bold border px-2.5 py-0.5 rounded-full font-mono transition-all bg-rose-50 border-rose-200 text-rose-500 dark:bg-rose-950/20 dark:border-rose-800/40 dark:text-rose-400">
                 <CornerDownRight className="h-3 w-3" />
@@ -784,6 +800,13 @@ function AppContent() {
 
       {/* PWA Install Invitation Banner */}
       <PWAInstallPrompt />
+
+      {/* BERU AI Drawer Panel */}
+      <AnimatePresence>
+        {isBeruOpen && (
+          <BeruSidebar isOpen={isBeruOpen} onClose={() => setIsBeruOpen(false)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

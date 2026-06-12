@@ -218,8 +218,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Load from localStorage depending on active account state
   useEffect(() => {
     try {
-      const lastAuthStatus = localStorage.getItem('shukatsu_auth_status') as AppContextType['authStatus'];
-      const initialStatus = lastAuthStatus === 'guest' ? 'welcome' : (lastAuthStatus || 'welcome');
+      const lastAuthStatus = localStorage.getItem('shukatsu_auth_status');
+      const initialStatus = lastAuthStatus === 'guest' ? 'welcome' : ((lastAuthStatus as AppContextType['authStatus']) || 'welcome');
       setAuthStatus(initialStatus);
 
       let uid = '';
