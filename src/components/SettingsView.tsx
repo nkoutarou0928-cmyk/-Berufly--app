@@ -43,7 +43,6 @@ export default function SettingsView() {
     syncStatus,
     isBiometricEnabled,
     setBiometrics,
-    migrateGuestToAccount,
     logout,
     deleteAccount,
     setShowOnboarding,
@@ -538,142 +537,58 @@ export default function SettingsView() {
             <CloudLightning className={`h-4.5 w-4.5 ${theme.text}`} />
             <span>就職クラウドアカウント ＆ データ同期設定</span>
           </div>
-          {authStatus === 'authenticated' && (
-            <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full ${
-              syncStatus === 'syncing' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' :
-              syncStatus === 'offline' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400' :
-              'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-450'
-            }`}>
-              <RotateCcw className={`h-2.5 w-2.5 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-              {syncStatus === 'syncing' ? '同期中...' : syncStatus === 'offline' ? 'オフライン' : '同期済み'}
-            </span>
-          )}
+          <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full ${
+            syncStatus === 'syncing' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' :
+            syncStatus === 'offline' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400' :
+            'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-450'
+          }`}>
+            <RotateCcw className={`h-2.5 w-2.5 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+            {syncStatus === 'syncing' ? '同期中...' : syncStatus === 'offline' ? 'オフライン' : '同期済み'}
+          </span>
         </h3>
 
         <div className="space-y-4 text-xs">
-          {authStatus === 'guest' ? (
-            <div className="space-y-3.5">
-              <div className="p-3 bg-blue-50/50 rounded-2xl border border-blue-100 text-[11px] leading-relaxed dark:bg-slate-850/40 dark:border-slate-800">
-                <p className="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1">
-                  <span>👤 ゲストモードで利用中</span>
-                </p>
-                <p className="text-gray-550 dark:text-gray-400 mt-1">
-                  現在は通信・保存をローカル環境（localStorage）のみで行っています。クラウド同期を有効にすると、同じメールアドレスとパスワードでログインするだけで複数端末からいつでも同一データ（企業メモ、ES履歴、活動スケジュール）をリアルタイムに同期・共有できるようになります。
-                </p>
+          <div className="space-y-4">
+            <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 text-[11px] leading-relaxed dark:bg-emerald-950/10 dark:border-emerald-900/30">
+              <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-550 animate-pulse" />
+                <span>クラウド同期システム稼働中（SSL暗号化）</span>
               </div>
-
-              {/* Guest to Account migration form */}
-              <div className="space-y-3 p-4 rounded-2xl bg-gray-50 border border-gray-200/60 dark:bg-slate-950/35 dark:border-slate-800/60">
-                <h4 className="text-[11px] font-bold text-gray-800 dark:text-gray-200">
-                  アカウントを作成して同期する（移行手続き）
-                </h4>
-                <div className="space-y-2.5">
-                  <div>
-                    <label className="block text-[10px] text-gray-400">お名前</label>
-                    <input 
-                      type="text" 
-                      id="mig-name"
-                      placeholder="例: キャリア太郎"
-                      defaultValue={settings.profileName}
-                      className={`w-full p-2.5 text-xs rounded-xl border focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 ${
-                        isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-250 text-gray-800'
-                      }`}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] text-gray-400">メールアドレス</label>
-                      <input 
-                        type="email" 
-                        id="mig-email"
-                        placeholder="example@career.com"
-                        className={`w-full p-2.5 text-xs rounded-xl border focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 ${
-                          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-250 text-gray-800'
-                        }`}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-gray-400">パスワード（新規設定）</label>
-                      <input 
-                        type="password" 
-                        id="mig-pass"
-                        placeholder="6文字以上の英数字"
-                        className={`w-full p-2.5 text-xs rounded-xl border focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 ${
-                          isDark ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-gray-250'
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const name = (document.getElementById('mig-name') as HTMLInputElement)?.value || settings.profileName;
-                      const email = (document.getElementById('mig-email') as HTMLInputElement)?.value;
-                      const pass = (document.getElementById('mig-pass') as HTMLInputElement)?.value;
-                      
-                      if (!email || !pass) {
-                        alert('メールアドレスとパスワードを入力してください。');
-                        return;
-                      }
-                      if (pass.length < 6) {
-                        alert('セキュリティのため、パスワードは6文字以上で入力してください。');
-                        return;
-                      }
-                      
-                      migrateGuestToAccount(email, name);
-                      alert('アカウント登録が完了しました！ゲストデータをクラウドに完全同期しました。');
-                    }}
-                    className={`w-full font-black py-2.5 rounded-xl text-white cursor-pointer ${theme.bg} ${theme.hover} shadow-sm active:scale-98 transition-all text-xs`}
-                  >
-                    🚀 ゲストデータを移行してクラウド同期を開始
-                  </button>
-                </div>
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-gray-600 dark:text-gray-400 font-mono text-[10px]">
+                <div>アカウントID: <span className="font-bold text-gray-900 dark:text-white">{currentUser?.uid}</span></div>
+                <div>接続メール: <span className="font-bold text-gray-900 dark:text-white">{currentUser?.email}</span></div>
+                <div>同期状況: <span className="font-bold text-emerald-600 dark:text-emerald-400">{syncStatus === 'synced' ? '最新（自動・リアルタイム）' : '同期中'}</span></div>
               </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 text-[11px] leading-relaxed dark:bg-emerald-950/10 dark:border-emerald-900/30">
-                <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-550 animate-pulse" />
-                  <span>クラウド同期システム稼働中（SSL暗号化）</span>
-                </div>
-                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-gray-600 dark:text-gray-400 font-mono text-[10px]">
-                  <div>アカウントID: <span className="font-bold text-gray-900 dark:text-white">{currentUser?.uid}</span></div>
-                  <div>接続メール: <span className="font-bold text-gray-900 dark:text-white">{currentUser?.email}</span></div>
-                  <div>同期状況: <span className="font-bold text-emerald-600 dark:text-emerald-400">{syncStatus === 'synced' ? '最新（自動・リアルタイム）' : '同期中'}</span></div>
-                </div>
+
+            {/* Simulated biometric login logic */}
+            <div className="flex items-center justify-between p-3.5 bg-gray-50/50 border rounded-2xl dark:bg-slate-900/40 dark:border-slate-800">
+              <div>
+                <span className={`font-bold text-xs block ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
+                  Touch ID / Face ID 生体認証連携
+                </span>
+                <span className="text-[10px] text-gray-400 block mt-0.5">起動時のパスコード認証やログインをかんたん生体認証化</span>
               </div>
 
-              {/* Simulated biometric login logic */}
-              <div className="flex items-center justify-between p-3.5 bg-gray-50/50 border rounded-2xl dark:bg-slate-900/40 dark:border-slate-800">
-                <div>
-                  <span className={`font-bold text-xs block ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
-                    Touch ID / Face ID 生体認証連携
-                  </span>
-                  <span className="text-[10px] text-gray-400 block mt-0.5">起動時のパスコード認証やログインをかんたん生体認証化</span>
-                </div>
-
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={isBiometricEnabled}
-                    onChange={(e) => {
-                      const enabled = e.target.checked;
-                      if (enabled) {
-                        alert('🔐 端末側の Touch ID / Face ID 認証要求を受け付けました。\nシステム認証を通りました。これでログイン時の生体認証が有効になります。');
-                        setBiometrics(true);
-                      } else {
-                        setBiometrics(false);
-                      }
-                    }}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:height-5 after:width-5 after:transition-all ${isBiometricEnabled ? theme.bg : 'bg-gray-200'}`} />
-                </label>
-              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={isBiometricEnabled}
+                  onChange={(e) => {
+                    const enabled = e.target.checked;
+                    if (enabled) {
+                      alert('🔐 端末側の Touch ID / Face ID 認証要求を受け付けました。\nシステム認証を通りました。これでログイン時の生体認証が有効になります。');
+                      setBiometrics(true);
+                    } else {
+                      setBiometrics(false);
+                    }
+                  }}
+                  className="sr-only peer"
+                />
+                <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:height-5 after:width-5 after:transition-all ${isBiometricEnabled ? theme.bg : 'bg-gray-200'}`} />
+              </label>
             </div>
-          )}
+          </div>
 
           {/* Local statistics diagnostics */}
           <div className={`p-3 rounded-2xl grid grid-cols-3 gap-2 text-center font-mono ${
@@ -682,13 +597,13 @@ export default function SettingsView() {
             <div className="p-1">
               <span className="block text-[10px] text-gray-400">登録企業数</span>
               <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
-                {authStatus === 'authenticated' && cloudCompaniesCount !== null ? `${cloudCompaniesCount} 社` : `${companies.length} 社`}
+                {cloudCompaniesCount !== null ? `${cloudCompaniesCount} 社` : `${companies.length} 社`}
               </span>
             </div>
             <div className={`p-1 border-x ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
               <span className="block text-[10px] text-gray-400">タスク総数</span>
               <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
-                {authStatus === 'authenticated' && cloudTodosCount !== null ? `${cloudTodosCount} 件` : `${todos.length} 件`}
+                {cloudTodosCount !== null ? `${cloudTodosCount} 件` : `${todos.length} 件`}
               </span>
             </div>
             <div className="p-1">
@@ -739,48 +654,46 @@ export default function SettingsView() {
       </div>
 
       {/* --- Account Actions / Operations Section --- */}
-      {authStatus === 'authenticated' && (
-        <div className={`p-5 rounded-3xl border shadow-xs space-y-4 ${
-          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
+      <div className={`p-5 rounded-3xl border shadow-xs space-y-4 ${
+        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
+      }`}>
+        <h3 className={`text-xs font-bold flex items-center gap-1.5 border-b pb-2.5 ${
+          isDark ? 'text-slate-200 border-slate-800' : 'text-gray-800 border-gray-50'
         }`}>
-          <h3 className={`text-xs font-bold flex items-center gap-1.5 border-b pb-2.5 ${
-            isDark ? 'text-slate-200 border-slate-800' : 'text-gray-800 border-gray-50'
-          }`}>
-            <UserCheck className={`h-4.5 w-4.5 ${theme.text}`} />
-            アカウント連携・操作
-          </h3>
-          
-          <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-            クラウドとの連携解除やアカウント全体の物理削除操作を行うことができます。ログアウトすると、クラウドとの自動同期が一時的に停止します。
-          </p>
+          <UserCheck className={`h-4.5 w-4.5 ${theme.text}`} />
+          アカウント連携・操作
+        </h3>
+        
+        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          クラウドとの連携解除やアカウント全体の物理削除操作を行うことができます。ログアウトすると、クラウドとの自動同期が一時的に停止します。
+        </p>
 
-          <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-            <button
-              type="button"
-              onClick={() => {
-                if (confirm('ログアウトしてセッションを終了しますか？\n（次回のログインで再度本クラウドデータに同期可能です。）')) {
-                  logout();
-                }
-              }}
-              className="w-full sm:w-auto py-2.5 px-4 text-center border border-gray-200 text-gray-700 hover:bg-gray-100 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5"
-            >
-              🚪 クラウドからログアウト
-            </button>
+        <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+          <button
+            type="button"
+            onClick={() => {
+              if (confirm('ログアウトしてセッションを終了しますか？\n（次回のログインで再度本クラウドデータに同期可能です。）')) {
+                logout();
+              }
+            }}
+            className="w-full sm:w-auto py-2.5 px-4 text-center border border-gray-200 text-gray-700 hover:bg-gray-100 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5"
+          >
+            🚪 クラウドからログアウト
+          </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                if (confirm('⚠️ 警告：アカウント消去\n本アカウントに紐づくすべてのクラウド履歴および同期データベースをサーバー（クラウド・ローカル双方）から物理消去します。この操作は復旧できません。本当に消去しますか？')) {
-                  deleteAccount();
-                }
-              }}
-              className="w-full sm:w-auto py-2.5 px-4 text-center bg-red-50 text-red-650 hover:bg-red-100/70 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:bg-rose-950/20 dark:text-rose-455 flex items-center justify-center gap-1.5"
-            >
-              ⚠️ アカウント情報の物理削除
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (confirm('⚠️ 警告：アカウント消去\n本アカウントに紐づくすべてのクラウド履歴および同期データベースをサーバー（クラウド・ローカル双方）から物理消去します。この操作は復旧できません。本当に消去しますか？')) {
+                deleteAccount();
+              }
+            }}
+            className="w-full sm:w-auto py-2.5 px-4 text-center bg-red-50 text-red-650 hover:bg-red-100/70 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:bg-rose-950/20 dark:text-rose-455 flex items-center justify-center gap-1.5"
+          >
+            ⚠️ アカウント情報の物理削除
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }

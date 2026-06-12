@@ -25,19 +25,17 @@ interface AppContextType {
 
   // Account and sync states
   currentUser: { uid: string; email: string; name: string; isAnonymous: boolean } | null;
-  authStatus: 'welcome' | 'unauthenticated' | 'authenticated' | 'guest';
+  authStatus: 'welcome' | 'unauthenticated' | 'authenticated';
   syncStatus: 'synced' | 'syncing' | 'offline' | 'error';
   isBiometricEnabled: boolean;
 
   // Account actions
-  startAsGuest: () => void;
   signUpWithEmail: (email: string, pass: string, name: string) => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
   verifyEmailCode: (email: string, code: string) => Promise<void>;
   resendVerificationCode: (email: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   completePasswordReset: (email: string, token: string, newPass: string) => Promise<void>;
-  migrateGuestToAccount: (email: string, name: string) => Promise<void>;
   logout: () => void;
   deleteAccount: () => void;
   setBiometrics: (enabled: boolean) => void;
@@ -221,7 +219,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     try {
       const lastAuthStatus = localStorage.getItem('shukatsu_auth_status') as AppContextType['authStatus'];
-      const initialStatus = lastAuthStatus || 'welcome';
+      const initialStatus = lastAuthStatus === 'guest' ? 'welcome' : (lastAuthStatus || 'welcome');
       setAuthStatus(initialStatus);
 
       let uid = '';
@@ -237,104 +235,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             name,
             isAnonymous: false
           });
-          // Note: Cloud fetch is handled reactively by the onAuthStateChange listener
         }
-      } else if (initialStatus === 'guest') {
-        setCurrentUser({
-          uid: 'guest-uid',
-          email: 'guest@example.com',
-          name: 'ゲストユーザー',
-          isAnonymous: true
-        });
       }
 
-      const suffix = uid ? `_${uid}` : '';
+      // Default all business data states to empty for safety (data loads from Supabase reactively)
+      setCompanies([]);
+      setTrashCompanies([]);
+      setTodos([]);
+      setObVisits([]);
+      setOfferComparisons([]);
+      setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+      setNotifications([]);
 
-      const storedCompanies = localStorage.getItem(`shukatsu_companies` + suffix);
-      if (storedCompanies) {
-        setCompanies(JSON.parse(storedCompanies));
-      } else {
-        // If they are regular authenticated but have no data, start empty, otherwise load defaults
-        const initial = initialStatus === 'authenticated' ? [] : INITIAL_COMPANIES;
-        setCompanies(initial);
-        localStorage.setItem(`shukatsu_companies` + suffix, JSON.stringify(initial));
-      }
-
-      const storedTrash = localStorage.getItem(`shukatsu_trash_companies` + suffix);
-      let loadedTrash: (Company & { deletedAt: string })[] = [];
-      if (storedTrash) {
-        try {
-          loadedTrash = JSON.parse(storedTrash);
-        } catch (_) {}
-      }
-      // Auto-purge items deleted more than 30 days ago
-      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      const filteredTrash = loadedTrash.filter(item => {
-        try {
-          const dt = new Date(item.deletedAt).getTime();
-          return dt >= thirtyDaysAgo;
-        } catch (_) {
-          return true;
-        }
-      });
-      setTrashCompanies(filteredTrash);
-      localStorage.setItem(`shukatsu_trash_companies` + suffix, JSON.stringify(filteredTrash));
-
-      const storedTodos = localStorage.getItem(`shukatsu_todos` + suffix);
-      if (storedTodos) {
-        setTodos(JSON.parse(storedTodos));
-      } else {
-        const initial = initialStatus === 'authenticated' ? [] : INITIAL_TODOS;
-        setTodos(initial);
-        localStorage.setItem(`shukatsu_todos` + suffix, JSON.stringify(initial));
-      }
-
-      const storedSettings = localStorage.getItem(`shukatsu_settings` + suffix);
-      if (storedSettings) {
-        setSettings({ ...INITIAL_SETTINGS, ...JSON.parse(storedSettings) });
-      } else {
-        setSettings(INITIAL_SETTINGS);
-        localStorage.setItem(`shukatsu_settings` + suffix, JSON.stringify(INITIAL_SETTINGS));
-      }
-
-      const storedObVisits = localStorage.getItem(`shukatsu_ob_visits` + suffix);
-      if (storedObVisits) {
-        setObVisits(JSON.parse(storedObVisits));
-      } else {
-        const initial = initialStatus === 'authenticated' ? [] : INITIAL_OB_VISITS;
-        setObVisits(initial);
-        localStorage.setItem(`shukatsu_ob_visits` + suffix, JSON.stringify(initial));
-      }
-
-      const storedComparisons = localStorage.getItem(`shukatsu_comparisons` + suffix);
-      if (storedComparisons) {
-        setOfferComparisons(JSON.parse(storedComparisons));
-      } else {
-        const initial = initialStatus === 'authenticated' ? [] : INITIAL_OFFER_COMPARISONS;
-        setOfferComparisons(initial);
-        localStorage.setItem(`shukatsu_comparisons` + suffix, JSON.stringify(initial));
-      }
-
-      const storedSelfAnalysis = localStorage.getItem(`shukatsu_self_analysis` + suffix);
-      if (storedSelfAnalysis) {
-        setSelfAnalysis(JSON.parse(storedSelfAnalysis));
-      } else {
-        const initial = initialStatus === 'authenticated' 
-          ? { selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] } 
-          : INITIAL_SELF_ANALYSIS;
-        setSelfAnalysis(initial);
-        localStorage.setItem(`shukatsu_self_analysis` + suffix, JSON.stringify(initial));
-      }
-
-      const storedNotifications = localStorage.getItem(`shukatsu_notifications` + suffix);
-      if (storedNotifications) {
-        setNotifications(JSON.parse(storedNotifications));
-      } else {
-        const initial: NotificationItem[] = [];
-        setNotifications(initial);
-        localStorage.setItem(`shukatsu_notifications` + suffix, JSON.stringify(initial));
-      }
-
+      // Load client settings only
       const isBio = localStorage.getItem('shukatsu_biometric_enabled');
       setIsBiometricEnabled(isBio === 'true');
 
@@ -343,7 +256,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setShowOnboarding(true);
       }
 
-      const storedFontSize = localStorage.getItem(`shukatsu_font_size` + suffix);
+      const storedFontSize = localStorage.getItem(`shukatsu_font_size` + (uid ? `_${uid}` : ''));
       if (storedFontSize === 'small' || storedFontSize === 'medium' || storedFontSize === 'large') {
         setFontSizeState(storedFontSize);
       } else {
@@ -351,7 +264,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
 
     } catch (e) {
-      console.error('Error loading localStorage', e);
+      console.error('Error loading localStorage configurations', e);
     }
   }, []);
 
@@ -451,9 +364,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return () => clearTimeout(timer);
   };
 
-  // Helper suffix to fetch/save according to specific linked profile
-  const getSuffix = () => {
-    return authStatus === 'authenticated' && currentUser ? `_${currentUser.uid}` : '';
+  // Generic database upsert helper for self_analysis table (replaces localStorage queries)
+  const saveUserDataItem = async (userId: string, title: string, content: string) => {
+    // Delete old record to avoid duplicates
+    const { error: deleteErr } = await supabase
+      .from('self_analysis')
+      .delete()
+      .eq('user_id', userId)
+      .eq('title', title);
+    if (deleteErr) {
+      console.error(`[saveUserDataItem] DELETE error for ${title}:`, deleteErr);
+      throw deleteErr;
+    }
+
+    const { error: insertErr } = await supabase
+      .from('self_analysis')
+      .insert({
+        user_id: userId,
+        title,
+        content
+      });
+    if (insertErr) {
+      console.error(`[saveUserDataItem] INSERT error for ${title}:`, insertErr);
+      throw insertErr;
+    }
   };
 
   // Save to LocalStorage helpers, supporting reactive account databases
@@ -475,10 +409,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // STEP 2: ユーザーIDを取得（localStorage優先 = 同期的で確実）
       const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
       console.log('[🏢 saveCompanies] activeUserId:', activeUserId, '| 件数:', newCompanies.length);
-
-      // STEP 3: localStorageにバックアップ
-      const suffix = activeUserId ? `_${activeUserId}` : '';
-      localStorage.setItem(`shukatsu_companies${suffix}`, JSON.stringify(newCompanies));
 
       // STEP 4: Supabase同期（ログインしている場合のみ）
       if (!activeUserId) {
@@ -556,10 +486,19 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const saveTrashCompanies = (newTrash: (Company & { deletedAt: string })[]) => {
+  const saveTrashCompanies = async (newTrash: (Company & { deletedAt: string })[]) => {
     setTrashCompanies(newTrash);
-    localStorage.setItem(`shukatsu_trash_companies` + getSuffix(), JSON.stringify(newTrash));
-    if (authStatus === 'authenticated') triggerSync();
+    const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+    if (!activeUserId) return;
+    setIsSyncing(true);
+    try {
+      await saveUserDataItem(activeUserId, 'trash_companies', JSON.stringify(newTrash));
+      if (authStatus === 'authenticated') triggerSync();
+    } catch (e) {
+      console.error('Failed to sync trash companies:', e);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const saveTodos = async (newTodos: TodoItem[]) => {
@@ -571,10 +510,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       // STEP 2: ユーザーIDを取得（localStorage優先 = 同期的で確実）
       const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
       console.log('[📝 saveTodos] activeUserId:', activeUserId, '| 件数:', newTodos.length);
-
-      // STEP 3: localStorageにバックアップ
-      const suffix = activeUserId ? `_${activeUserId}` : '';
-      localStorage.setItem(`shukatsu_todos${suffix}`, JSON.stringify(newTodos));
 
       // STEP 4: Supabase同期（ログインしている場合のみ）
       if (!activeUserId) {
@@ -619,28 +554,64 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const saveSettings = (newSettings: AppSettings) => {
+  const saveSettings = async (newSettings: AppSettings) => {
     setSettings(newSettings);
-    localStorage.setItem(`shukatsu_settings` + getSuffix(), JSON.stringify(newSettings));
-    if (authStatus === 'authenticated') triggerSync();
+    const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+    if (!activeUserId) return;
+    setIsSyncing(true);
+    try {
+      await saveUserDataItem(activeUserId, 'settings', JSON.stringify(newSettings));
+      if (authStatus === 'authenticated') triggerSync();
+    } catch (e) {
+      console.error('Failed to sync settings:', e);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const saveObVisits = (newVisits: ObVisit[]) => {
+  const saveObVisits = async (newVisits: ObVisit[]) => {
     setObVisits(newVisits);
-    localStorage.setItem(`shukatsu_ob_visits` + getSuffix(), JSON.stringify(newVisits));
-    if (authStatus === 'authenticated') triggerSync();
+    const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+    if (!activeUserId) return;
+    setIsSyncing(true);
+    try {
+      await saveUserDataItem(activeUserId, 'ob_visits', JSON.stringify(newVisits));
+      if (authStatus === 'authenticated') triggerSync();
+    } catch (e) {
+      console.error('Failed to sync OB visits:', e);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const saveComparisons = (newComparisons: OfferComparison[]) => {
+  const saveComparisons = async (newComparisons: OfferComparison[]) => {
     setOfferComparisons(newComparisons);
-    localStorage.setItem(`shukatsu_comparisons` + getSuffix(), JSON.stringify(newComparisons));
-    if (authStatus === 'authenticated') triggerSync();
+    const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+    if (!activeUserId) return;
+    setIsSyncing(true);
+    try {
+      await saveUserDataItem(activeUserId, 'offer_comparisons', JSON.stringify(newComparisons));
+      if (authStatus === 'authenticated') triggerSync();
+    } catch (e) {
+      console.error('Failed to sync offer comparisons:', e);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
-  const saveNotifications = (newNotifs: NotificationItem[]) => {
+  const saveNotifications = async (newNotifs: NotificationItem[]) => {
     setNotifications(newNotifs);
-    localStorage.setItem(`shukatsu_notifications` + getSuffix(), JSON.stringify(newNotifs));
-    if (authStatus === 'authenticated') triggerSync();
+    const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+    if (!activeUserId) return;
+    setIsSyncing(true);
+    try {
+      await saveUserDataItem(activeUserId, 'notifications', JSON.stringify(newNotifs));
+      if (authStatus === 'authenticated') triggerSync();
+    } catch (e) {
+      console.error('Failed to sync notifications:', e);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const saveSelfAnalysis = async (newAnalysis: SelfAnalysis) => {
@@ -651,9 +622,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
       console.log('[📊 saveSelfAnalysis] activeUserId:', activeUserId);
 
-      const suffix = activeUserId ? `_${activeUserId}` : '';
-      localStorage.setItem(`shukatsu_self_analysis${suffix}`, JSON.stringify(newAnalysis));
-
       if (!activeUserId) {
         console.warn('[saveSelfAnalysis] ⚠️ activeUserIdがnull。Supabase同期をスキップします。');
         return;
@@ -663,7 +631,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       const { error: deleteErr } = await supabase
         .from('self_analysis')
         .delete()
-        .eq('user_id', activeUserId);
+        .eq('user_id', activeUserId)
+        .in('title', ['self_pr', 'gakuchika', 'base_motivations', 'faqs']);
       if (deleteErr) throw new Error('自己分析DELETE失敗: ' + deleteErr.message + ' (code: ' + deleteErr.code + ')');
 
       const toInsert = [
@@ -725,45 +694,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   // ----------------------------------------------------
   // 🔐 厳格なログイン・認証・パスワードリセットのモックDBロジック
-  // ----------------------------------------------------
-  interface RegisteredUser {
-    email: string;
-    pass: string;
-    name: string;
-    uid: string;
-    verified: boolean;
-    verificationCode?: string;
-    resetToken?: string;
-    resetTokenExpires?: number;
-  }
-
-  const INITIAL_REGISTERED_USERS: RegisteredUser[] = [
-    {
-      email: 'demo@career.com',
-      pass: 'Career1234',
-      name: 'デモユーザー',
-      uid: 'user-demo-1234',
-      verified: true
-    }
-  ];
-
-  const getRegisteredUsers = (): RegisteredUser[] => {
-    const users = localStorage.getItem('shukatsu_registered_users');
-    if (!users) {
-      localStorage.setItem('shukatsu_registered_users', JSON.stringify(INITIAL_REGISTERED_USERS));
-      return INITIAL_REGISTERED_USERS;
-    }
-    try {
-      return JSON.parse(users);
-    } catch (e) {
-      return INITIAL_REGISTERED_USERS;
-    }
-  };
-
-  const saveRegisteredUsers = (users: RegisteredUser[]) => {
-    localStorage.setItem('shukatsu_registered_users', JSON.stringify(users));
-  };
-
   const loadUserDataFromSupabase = async (uid: string, name: string) => {
     setIsSyncing(true);
     try {
@@ -853,7 +783,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             };
           }
 
-          // Fallback: memoContent is plain text (notes)
           return {
             id: String(c.id || ''),
             name: c.name || '',
@@ -880,21 +809,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           };
         });
         setCompanies(loadedCos);
-        localStorage.setItem(`shukatsu_companies_${verifiedUid}`, JSON.stringify(loadedCos));
         console.log('[loadUserDataFromSupabase] companies 取得完了。件数:', loadedCos.length);
       } else {
-        // Supabaseが空ならlocalStorageを使用
-        const local = localStorage.getItem(`shukatsu_companies_${verifiedUid}`);
-        if (local) {
-          try {
-            setCompanies(JSON.parse(local));
-          } catch (_) {
-            setCompanies([]);
-          }
-        } else {
-          setCompanies([]);
-        }
-        console.log('[loadUserDataFromSupabase] companies: Supabaseは空。localStorageを使用。');
+        setCompanies([]);
+        console.log('[loadUserDataFromSupabase] companies: Supabaseは空。');
       }
 
       // ================================================================
@@ -940,7 +858,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             };
           }
 
-          // Fallback: task is plain text (title)
           return {
             id: String(t.id || ''),
             title: t.task || '',
@@ -951,21 +868,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           };
         });
         setTodos(loadedTodos);
-        localStorage.setItem(`shukatsu_todos_${verifiedUid}`, JSON.stringify(loadedTodos));
         console.log('[loadUserDataFromSupabase] todos 取得完了。件数:', loadedTodos.length);
       } else {
-        // Supabaseが空ならlocalStorageを使用
-        const local = localStorage.getItem(`shukatsu_todos_${verifiedUid}`);
-        if (local) {
-          try {
-            setTodos(JSON.parse(local));
-          } catch (_) {
-            setTodos([]);
-          }
-        } else {
-          setTodos([]);
-        }
-        console.log('[loadUserDataFromSupabase] todos: Supabaseは空。localStorageを使用。');
+        setTodos([]);
+        console.log('[loadUserDataFromSupabase] todos: Supabaseは空。');
       }
 
       // ================================================================
@@ -989,74 +895,73 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (sa && sa.length > 0) {
         let loadedSA = { selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] };
 
-        // 1. 'main' フォーマット (一括シリアライズ) のチェック (互換性維持のため)
-        const mainRow = sa.find(r => r.title === 'main');
-        let mainParsed: any = null;
-        if (mainRow && mainRow.content) {
+        const prRow = sa.find(r => r.title === 'self_pr' || r.title === 'selfPR');
+        const gakuRow = sa.find(r => r.title === 'gakuchika');
+        const bmRow = sa.find(r => r.title === 'base_motivations' || r.title === 'baseMotivations');
+        const faqRow = sa.find(r => r.title === 'faqs');
+
+        if (prRow) loadedSA.selfPR = prRow.content || '';
+        if (gakuRow) loadedSA.gakuchika = gakuRow.content || '';
+
+        if (bmRow && bmRow.content) {
           try {
-            const trimmed = mainRow.content.trim();
-            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-              mainParsed = JSON.parse(trimmed);
-            }
-          } catch (err) {
-            console.warn('[loadUserDataFromSupabase] Failed to parse self_analysis content JSON (main):', err);
-          }
+            const parsedBm = JSON.parse(bmRow.content);
+            loadedSA.baseMotivations = Array.isArray(parsedBm) ? parsedBm : [];
+          } catch (_) { loadedSA.baseMotivations = []; }
         }
-
-        if (mainParsed && typeof mainParsed === 'object') {
-          loadedSA = {
-            selfPR: mainParsed.selfPR || '',
-            gakuchika: mainParsed.gakuchika || '',
-            baseMotivations: mainParsed.baseMotivations || [],
-            faqs: mainParsed.faqs || []
-          };
-        } else {
-          // 2. 個別カラム (self_pr, gakuchika, base_motivations, faqs) からのパース
-          const prRow = sa.find(r => r.title === 'self_pr' || r.title === 'selfPR');
-          const gakuRow = sa.find(r => r.title === 'gakuchika');
-          const bmRow = sa.find(r => r.title === 'base_motivations' || r.title === 'baseMotivations');
-          const faqRow = sa.find(r => r.title === 'faqs');
-
-          if (prRow) loadedSA.selfPR = prRow.content || '';
-          if (gakuRow) loadedSA.gakuchika = gakuRow.content || '';
-
-          if (bmRow && bmRow.content) {
-            try {
-              const trimmed = bmRow.content.trim();
-              if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-                const parsedBm = JSON.parse(trimmed);
-                loadedSA.baseMotivations = Array.isArray(parsedBm) ? parsedBm : [];
-              } else {
-                loadedSA.baseMotivations = [];
-              }
-            } catch (_) {
-              console.warn('[loadUserDataFromSupabase] Failed to parse baseMotivations JSON');
-              loadedSA.baseMotivations = [];
-            }
-          }
-          if (faqRow && faqRow.content) {
-            try {
-              const trimmed = faqRow.content.trim();
-              if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-                const parsedFaq = JSON.parse(trimmed);
-                loadedSA.faqs = Array.isArray(parsedFaq) ? parsedFaq : [];
-              }
-            } catch (_) {
-              console.warn('[loadUserDataFromSupabase] Failed to parse faqs JSON');
-            }
-          }
+        if (faqRow && faqRow.content) {
+          try {
+            const parsedFaq = JSON.parse(faqRow.content);
+            loadedSA.faqs = Array.isArray(parsedFaq) ? parsedFaq : [];
+          } catch (_) {}
         }
 
         setSelfAnalysis(loadedSA);
-        localStorage.setItem(`shukatsu_self_analysis_${verifiedUid}`, JSON.stringify(loadedSA));
         console.log('[loadUserDataFromSupabase] self_analysis 取得完了。');
+
+        // 3. self_analysis 内の拡張データのパース (trash_companies, ob_visits, offer_comparisons, notifications, settings)
+        const trashRow = sa.find(r => r.title === 'trash_companies');
+        if (trashRow && trashRow.content) {
+          try { setTrashCompanies(JSON.parse(trashRow.content)); } catch (_) {}
+        } else {
+          setTrashCompanies([]);
+        }
+
+        const obVisitsRow = sa.find(r => r.title === 'ob_visits');
+        if (obVisitsRow && obVisitsRow.content) {
+          try { setObVisits(JSON.parse(obVisitsRow.content)); } catch (_) {}
+        } else {
+          setObVisits([]);
+        }
+
+        const comparisonsRow = sa.find(r => r.title === 'offer_comparisons');
+        if (comparisonsRow && comparisonsRow.content) {
+          try { setOfferComparisons(JSON.parse(comparisonsRow.content)); } catch (_) {}
+        } else {
+          setOfferComparisons([]);
+        }
+
+        const notificationsRow = sa.find(r => r.title === 'notifications');
+        if (notificationsRow && notificationsRow.content) {
+          try { setNotifications(JSON.parse(notificationsRow.content)); } catch (_) {}
+        } else {
+          setNotifications([]);
+        }
+
+        const settingsRow = sa.find(r => r.title === 'settings');
+        if (settingsRow && settingsRow.content) {
+          try { setSettings({ ...INITIAL_SETTINGS, ...JSON.parse(settingsRow.content) }); } catch (_) {}
+        }
+
       } else {
-        const local = localStorage.getItem(`shukatsu_self_analysis_${verifiedUid}`);
-        if (local) { try { setSelfAnalysis(JSON.parse(local)); } catch (_) {} }
-        console.log('[loadUserDataFromSupabase] self_analysis: Supabaseは空。localStorageを使用。');
+        setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+        setTrashCompanies([]);
+        setObVisits([]);
+        setOfferComparisons([]);
+        setNotifications([]);
+        console.log('[loadUserDataFromSupabase] self_analysis: Supabaseは空。');
       }
 
-      // 設定はリセットしない（ユーザー定義のテーマカラーを保持）
       console.log('[loadUserDataFromSupabase] 完了。');
     } catch (e: any) {
       console.error('[loadUserDataFromSupabase] 例外発生:', e);
@@ -1192,25 +1097,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     alert('📝 パスワードの再設定が完了しました！新しいパスワードでログインしてください。');
   };
 
-  // Convert guest accounts to cloud synchronized databases seamlessly
-  const migrateGuestToAccount = async (email: string, name: string) => {
-    // Standard register first
-    const newUid = `user-${Date.now()}`;
-    localStorage.setItem('shukatsu_auth_status', 'authenticated');
-    localStorage.setItem('shukatsu_user_uid', newUid);
-    localStorage.setItem('shukatsu_user_email', email);
-    localStorage.setItem('shukatsu_user_name', name);
-    
-    setCurrentUser({ uid: newUid, email, name, isAnonymous: false });
-    setAuthStatus('authenticated');
 
-    // Sync current UI state with Supabase
-    await saveCompanies(companies);
-    await saveTodos(todos);
-    await saveSelfAnalysis(selfAnalysis);
-
-    triggerSync();
-  };
 
   const logout = async () => {
     await supabase.auth.signOut();
@@ -1770,14 +1657,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         authStatus,
         syncStatus,
         isBiometricEnabled,
-        startAsGuest,
         signUpWithEmail,
         loginWithEmail,
         verifyEmailCode,
         resendVerificationCode,
         resetPassword,
         completePasswordReset,
-        migrateGuestToAccount,
         logout,
         deleteAccount,
         setBiometrics,

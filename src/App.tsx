@@ -43,7 +43,6 @@ import { motion, AnimatePresence } from 'motion/react';
 
 function WelcomeScreen() {
   const { 
-    startAsGuest, 
     signUpWithEmail, 
     loginWithEmail, 
     resetPassword,
@@ -54,7 +53,7 @@ function WelcomeScreen() {
   
   const theme = getTheme(settings.themeColor);
 
-  const [activeTab, setActiveTab] = useState<'guest' | 'signup' | 'login' | 'forgot_password' | 'reset_password'>('guest');
+  const [activeTab, setActiveTab] = useState<'signup' | 'login' | 'forgot_password' | 'reset_password'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -190,10 +189,9 @@ function WelcomeScreen() {
         </div>
 
         {/* Tab Buttons */}
-        {['guest', 'signup', 'login'].includes(activeTab) && (
-          <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100 dark:bg-slate-950 rounded-2xl mb-5">
+        {['signup', 'login'].includes(activeTab) && (
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-100 dark:bg-slate-950 rounded-2xl mb-5">
             {[
-              { id: 'guest', label: 'ゲスト利用' },
               { id: 'signup', label: '新規登録' },
               { id: 'login', label: 'ログイン' }
             ].map(tab => (
@@ -222,26 +220,6 @@ function WelcomeScreen() {
           </div>
         ) : (
           <div className="space-y-4">
-            {activeTab === 'guest' && (
-              <div className="space-y-4 text-center">
-                <div className="p-4 bg-blue-50/50 dark:bg-slate-950/20 border border-blue-105/50 rounded-2xl text-left">
-                  <span className="text-xs font-bold text-blue-800 dark:text-blue-300 block mb-1">
-                    🟢 すぐ試せる「ゲストモード」対応
-                  </span>
-                  <p className="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
-                    アカウントを作成せずに、すぐ就活アシスト機能をお使いいただけます。データはブラウザ（ローカル）に即時保存され、後からいつでも「アカウントを作成して同期」することが可能です。
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={startAsGuest}
-                  className={`w-full py-2.5 font-bold rounded-xl text-white ${theme.bg} ${theme.hover} cursor-pointer shadow-sm text-xs active:scale-98 transition`}
-                >
-                  🚀 ゲストとして今すぐ始める
-                </button>
-              </div>
-            )}
 
             {(activeTab === 'signup' || activeTab === 'login') && (
               <form onSubmit={handleAction} className="space-y-3 text-left">
@@ -471,7 +449,7 @@ function WelcomeScreen() {
             )}
 
             {/* Quick biometric login bypass shortcut */}
-            {isBiometricSaved && activeTab !== 'guest' && ['signup', 'login'].includes(activeTab) && (
+            {isBiometricSaved && ['signup', 'login'].includes(activeTab) && (
               <div className="pt-2">
                 <button
                   type="button"
@@ -641,7 +619,7 @@ function AppContent() {
                 Berufly
               </span>
               <span className="text-[9px] text-gray-400 font-bold block -mt-0.5 font-sans">
-                {authStatus === 'guest' ? '👤 ゲストモード（未同期）' : `☁️ 同期: ${currentUser?.name} (${currentUser?.email})`}
+                {`☁️ 同期: ${currentUser?.name} (${currentUser?.email})`}
               </span>
             </div>
           </div>
