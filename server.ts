@@ -5,6 +5,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import { getCompanyMaster } from "./src/data/companyMaster";
+import beruChatRouter from "./api/beru/chat";
 
 dotenv.config();
 
@@ -1173,6 +1174,9 @@ URL: ${url}
       });
     }
   });
+
+  // Register BERU Chat API Router
+  app.use("/api/beru/chat", beruChatRouter);
 
   // Vite development integration or static build serving in production
   if (process.env.NODE_ENV !== "production") {
