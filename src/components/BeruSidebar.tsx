@@ -740,7 +740,7 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
             <input
               type="text"
               value={chatMessage}
-              onChange={e => setSearchQuery(e.target.value)} /* wait, should change chatMessage, not searchQuery! Fixed below. */
+              onChange={e => setChatMessage(e.target.value)}
               disabled={isSendingChat}
               placeholder={isSendingChat ? "BERUが考え中です..." : "BERUに就活の相談をする..."}
               className={`flex-1 px-3.5 py-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 ${

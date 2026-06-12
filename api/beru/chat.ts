@@ -5,6 +5,11 @@
 
 import { Router, Request, Response } from "express";
 import { GoogleGenAI } from "@google/genai";
+import dotenv from "dotenv";
+
+// Load env vars from both .env and .env.local (for local dev)
+dotenv.config();
+dotenv.config({ path: '.env.local', override: false });
 
 const router = Router();
 
@@ -26,13 +31,21 @@ router.post("/", async (req: Request, res: Response): Promise<any> => {
     }
 
     // 2. Fetch API Key securely from the env
-    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    // Priority: GEMINI_API_KEY > NEXT_PUBLIC_GEMINI_API_KEY (both .env and .env.local are loaded)
+    const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     if (!apiKey) {
       console.error("[BERU Backend Error]: Gemini API key is missing from environment variables.");
+      console.error("[BERU Backend Error]: Please set GEMINI_API_KEY in .env or .env.local");
       return res.status(500).json({
-        error: "Gemini API key is not configured. Please set NEXT_PUBLIC_GEMINI_API_KEY or GEMINI_API_KEY."
+        error: "Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file."
       });
     }
+
+    // Warn if key format looks wrong (Gemini API keys start with AIza)
+    if (!apiKey.startsWith('AIza')) {
+      console.warn(`[BERU Backend Warning]: API key may be invalid format. Gemini API keys typically start with 'AIza'. Got prefix: ${apiKey.substring(0, 8)}...`);
+    }
+
 
     // 3. Initialize GoogleGenAI SDK
     const ai = new GoogleGenAI({ apiKey });

@@ -8,6 +8,7 @@ import { getCompanyMaster } from "./src/data/companyMaster";
 import beruChatRouter from "./api/beru/chat";
 
 dotenv.config();
+dotenv.config({ path: '.env.local', override: false });
 
 // Helper functions for fuzzy, Kana and Zenkaku-Hankaku normalized matches
 function normalizeString(str: string): string {
