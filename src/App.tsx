@@ -499,7 +499,6 @@ function AppContent() {
     authStatus, 
     currentUser, 
     syncStatus,
-    logout,
     fontSize
   } = useApp();
   
@@ -648,26 +647,12 @@ function AppContent() {
           </div>
           
           <div className="flex items-center gap-2">
-            {syncStatus !== 'synced' && (
-              <span className={`text-[10px] inline-flex items-center gap-1 font-bold border px-2.5 py-0.5 rounded-full font-mono transition-all ${
-                syncStatus === 'offline' 
-                  ? 'bg-rose-50 border-rose-200 text-rose-500' 
-                  : syncStatus === 'syncing'
-                    ? 'bg-amber-50 border-amber-200 text-amber-500 animate-pulse'
-                    : 'bg-rose-50 border-rose-200 text-rose-500 dark:bg-rose-950/20 dark:border-rose-800/40 dark:text-rose-400'
-              }`}>
-                <CornerDownRight className={`h-3 w-3 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-                {syncStatus === 'offline' ? 'OFFLINE' : syncStatus === 'syncing' ? 'SYNCING...' : 'ERROR'}
+            {syncStatus === 'offline' && (
+              <span className="text-[10px] inline-flex items-center gap-1 font-bold border px-2.5 py-0.5 rounded-full font-mono transition-all bg-rose-50 border-rose-200 text-rose-500 dark:bg-rose-950/20 dark:border-rose-800/40 dark:text-rose-400">
+                <CornerDownRight className="h-3 w-3" />
+                OFFLINE
               </span>
             )}
-
-            <button
-              type="button"
-              onClick={logout}
-              className="text-[10px] font-bold text-rose-500 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 px-2.5 py-1 rounded-full transition-colors cursor-pointer border border-rose-100 dark:border-rose-900/40 shrink-0 font-sans"
-            >
-              ログアウト
-            </button>
           </div>
         </div>
       </header>

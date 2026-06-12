@@ -19,6 +19,7 @@ import {
   RotateCcw,
   Sparkles,
   User,
+  UserCheck,
   Sun,
   Moon,
   Monitor,
@@ -671,33 +672,6 @@ export default function SettingsView() {
                   <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:height-5 after:width-5 after:transition-all ${isBiometricEnabled ? theme.bg : 'bg-gray-200'}`} />
                 </label>
               </div>
-
-              {/* Logout and data deletion widgets */}
-              <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (confirm('ログアウトしてセッションを終了しますか？\n（次回のログインで再度本クラウドデータに同期可能です。）')) {
-                      logout();
-                    }
-                  }}
-                  className="w-full sm:w-auto py-2.5 px-4 text-center border border-gray-200 text-gray-700 hover:bg-gray-100 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                >
-                  🚪 クラウドからログアウト
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (confirm('⚠️ 警告：アカウント消去\n本アカウントに紐づくすべてのクラウド履歴および同期データベースをサーバー（クラウド・ローカル双方）から物理消去します。この操作は復旧できません。本当に消去しますか？')) {
-                      deleteAccount();
-                    }
-                  }}
-                  className="w-full sm:w-auto py-2.5 px-4 text-center bg-red-50 text-red-650 hover:bg-red-100/70 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:bg-rose-950/20 dark:text-rose-455"
-                >
-                  ⚠️ アカウント情報の物理削除
-                </button>
-              </div>
             </div>
           )}
 
@@ -763,6 +737,50 @@ export default function SettingsView() {
           </div>
         </div>
       </div>
+
+      {/* --- Account Actions / Operations Section --- */}
+      {authStatus === 'authenticated' && (
+        <div className={`p-5 rounded-3xl border shadow-xs space-y-4 ${
+          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
+        }`}>
+          <h3 className={`text-xs font-bold flex items-center gap-1.5 border-b pb-2.5 ${
+            isDark ? 'text-slate-200 border-slate-800' : 'text-gray-800 border-gray-50'
+          }`}>
+            <UserCheck className={`h-4.5 w-4.5 ${theme.text}`} />
+            アカウント連携・操作
+          </h3>
+          
+          <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+            クラウドとの連携解除やアカウント全体の物理削除操作を行うことができます。ログアウトすると、クラウドとの自動同期が一時的に停止します。
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm('ログアウトしてセッションを終了しますか？\n（次回のログインで再度本クラウドデータに同期可能です。）')) {
+                  logout();
+                }
+              }}
+              className="w-full sm:w-auto py-2.5 px-4 text-center border border-gray-200 text-gray-700 hover:bg-gray-100 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5"
+            >
+              🚪 クラウドからログアウト
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm('⚠️ 警告：アカウント消去\n本アカウントに紐づくすべてのクラウド履歴および同期データベースをサーバー（クラウド・ローカル双方）から物理消去します。この操作は復旧できません。本当に消去しますか？')) {
+                  deleteAccount();
+                }
+              }}
+              className="w-full sm:w-auto py-2.5 px-4 text-center bg-red-50 text-red-650 hover:bg-red-100/70 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:bg-rose-950/20 dark:text-rose-455 flex items-center justify-center gap-1.5"
+            >
+              ⚠️ アカウント情報の物理削除
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
