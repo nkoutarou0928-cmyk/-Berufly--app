@@ -6,11 +6,6 @@ import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import { getCompanyMaster } from "./src/data/companyMaster";
 
-// Load environment variables (.env.local overrides .env)
-const envLocalPath = path.join(process.cwd(), ".env.local");
-if (fs.existsSync(envLocalPath)) {
-  dotenv.config({ path: envLocalPath });
-}
 dotenv.config();
 
 // Helper functions for fuzzy, Kana and Zenkaku-Hankaku normalized matches
@@ -1176,97 +1171,6 @@ URL: ${url}
         establishedYear,
         employeeCount
       });
-    }
-  });
-
-  app.post("/api/chat", async (req, res) => {
-    const { messages } = req.body;
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: "messages array is required" });
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      // Graceful offline mock responses
-      const lastUserMsg = messages[messages.length - 1]?.content || "";
-      let reply = "";
-
-      if (lastUserMsg.includes("自己PR") || lastUserMsg.includes("添削")) {
-        reply = `こんにちは！BERUだよ！🔔 (※APIキー未設定のためデモ返答です)
-自己PRの添削だね！STARの法則に従って整理すると、以下のような構成になるよ：
-
-1. **結論 (強み)**: あなたの最大の強みを一言で（例: 課題解決力、粘り強さなど）。
-2. **Situation (状況)**: その強みを発揮した背景や場面。
-3. **Task (課題)**: 直面した課題や乗り越えるべき壁。
-4. **Action (行動)**: あなた自身が具体的にとった行動や工夫。
-5. **Result (結果)**: 行動した結果、どのような成果が得られたか。
-
-キミの具体的なエピソード（部活動、アルバイト、インターンなど）を教えてくれたら、さらに詳しく添削するベル！🔔`;
-      } else if (lastUserMsg.includes("志望動機") || lastUserMsg.includes("作成")) {
-        reply = `こんにちは！BERUだよ！🔔 (※APIキー未設定のためデモ返答です)
-志望動機の作成だね！以下のステップで構成すると論理的で伝わりやすくなるよ：
-
-- **なぜこの業界か**: 業界に関心を持ったきっかけ。
-- **なぜこの企業か**: 競合他社ではなく、この企業でなければならない理由（理念、製品、社風など）。
-- **入社後にどう貢献できるか**: キミの強みをどう活かせるか。
-
-まずは、志望する企業名やその企業の魅力に感じている部分を教えてね！`;
-      } else if (lastUserMsg.includes("企業") || lastUserMsg.includes("研究") || lastUserMsg.includes("競合")) {
-        reply = `こんにちは！BERUだよ！🔔 (※APIキー未設定のためデモ返答です)
-企業研究だね！企業研究では、以下の4点を明確に整理することが大切ベル！
-
-1. **ビジネスモデル**: 誰にどのような価値を提供して収益を得ているか。
-2. **競合優位性**: 他社（ライバル企業）と何が違い、どこが優れているか。
-3. **求める人物像**: 主体性、協調性、論理的思考など、どのような人が好まれるか。
-4. **マッチ度**: あなたの志望軸（例: 「成長環境」など）とどう合致しているか。
-
-気になる企業名や業界を教えてくれたら、一緒に深掘りしていこう！🔔`;
-      } else {
-        reply = `こんにちは！就活AIアシスタントの「BERU（ベル）」だよ！🔔 (※APIキー未設定のためデモ返答です)
-キミの就活を全力で応援するベル！自己分析の相談、ESの添削、企業研究のやり方など、気になることを何でも聞いてね！`;
-      }
-
-      return res.json({ response: reply });
-    }
-
-    try {
-      const ai = new GoogleGenAI({
-        apiKey: apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          }
-        }
-      });
-
-      const systemInstruction = `あなたは就活生を支えるAIコンシェルジュ「BERU（ベル）」です。「ベル（鈴）」をモチーフにした、親しみやすくポジティブなキャラクターとして振る舞ってください。語尾には「〜だよ」「〜ベル🔔」などを使って親和性を出してください。
-就活生が求めている情報を分かりやすく整理して回答してください。
-① 企業研究：ビジネスモデル、競合との違い、求める人物像、ユーザーの志望軸とのマッチ度を構造化する。
-② ES作成・添削：指定された文字数に合わせ、論理的な文章の構成案・修正案を作成する。
-③ 自己分析：STARの法則（状況・課題・行動・結果）に基づき、強みを引き出すための深掘り質問を「1回につき1問ずつ」投げかける。
-
-回答は適切なマークダウン形式で分かりやすく整理してください。`;
-
-      // Map history to Google Gen AI contents format
-      const contents = messages.map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }]
-      }));
-
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: contents,
-        config: {
-          systemInstruction: systemInstruction
-        }
-      });
-
-      const reply = response.text || "申し訳ありません、返答の生成に失敗しました。";
-      res.json({ response: reply });
-
-    } catch (error: any) {
-      console.error("[BERU AI Backend Error]:", error);
-      res.status(500).json({ error: "AIの処理中にエラーが発生しました。" });
     }
   });
 
