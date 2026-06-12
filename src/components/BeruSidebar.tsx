@@ -26,13 +26,69 @@ interface BeruSidebarProps {
 }
 
 export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
-  const { settings, isDark, fontSize } = useApp();
+  const { settings, isDark, fontSize, companies } = useApp();
   const theme = getTheme(settings.themeColor);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [chatMessage, setChatMessage] = useState('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
   const fontSizeClass = fontSize === 'small' ? 'text-xs' : fontSize === 'large' ? 'text-base' : 'text-sm';
+
+  // 1. 就活状況アラートのフィルタリング (3日以内)
+  const todayStr = new Date().toISOString().split('T')[0];
+  const today = new Date(todayStr);
+
+  const activeAlerts: { id: string; name: string; type: string; due: string; color: string }[] = [];
+
+  companies.forEach((co) => {
+    if (co.esDeadline) {
+      const target = new Date(co.esDeadline);
+      if (!isNaN(target.getTime())) {
+        const targetDate = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+        const diffTime = targetDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays >= 0 && diffDays <= 3) {
+          const dayLabel = diffDays === 0 ? '今日' : diffDays === 1 ? '明日' : diffDays === 2 ? '2日後' : `${diffDays}日後`;
+          const timeStr = co.esDeadline.includes(' ') ? co.esDeadline.split(' ')[1] : '23:59';
+          activeAlerts.push({
+            id: `es-${co.id}`,
+            name: co.name,
+            type: co.selectionType === 'intern' ? 'インターンES' : '本選考ES',
+            due: `ES締切: ${dayLabel} ${timeStr}`,
+            color: co.selectionType === 'intern'
+              ? 'text-amber-600 bg-amber-50/60 dark:bg-amber-950/20 dark:text-amber-400'
+              : 'text-red-500 bg-red-50/60 dark:bg-red-950/20 dark:text-red-400'
+          });
+        }
+      }
+    }
+    if (co.interviewDate) {
+      const target = new Date(co.interviewDate);
+      if (!isNaN(target.getTime())) {
+        const targetDate = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+        const diffTime = targetDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays >= 0 && diffDays <= 3) {
+          const dayLabel = diffDays === 0 ? '今日' : diffDays === 1 ? '明日' : diffDays === 2 ? '2日後' : `${diffDays}日後`;
+          let timePart = '';
+          const parts = co.interviewDate.split(/[ T]/);
+          if (parts[1]) {
+            timePart = parts[1].substring(0, 5);
+          }
+          activeAlerts.push({
+            id: `interview-${co.id}`,
+            name: co.name,
+            type: co.selectionType === 'intern' ? 'インターン面接' : '本選考面接',
+            due: `面接: ${dayLabel} ${timePart}`.trim(),
+            color: 'text-blue-500 bg-blue-50/60 dark:bg-blue-950/20 dark:text-blue-400'
+          });
+        }
+      }
+    }
+  });
 
   return (
     <>
@@ -87,7 +143,7 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
             <div className={`p-2.5 rounded-2xl border text-[11px] font-bold leading-normal relative text-left flex-1 ${
               isDark 
                 ? 'bg-slate-850 border-slate-800 text-slate-205' 
-                : 'bg-purple-50/60 border-purple-100/60 text-purple-955'
+                : 'bg-purple-50/60 border-purple-100/60 text-purple-950'
             }`}>
               {/* Balloon tail indicator pointing left */}
               <div className={`absolute top-4.5 -left-1 w-2 h-2 rotate-45 border-l border-b ${
@@ -102,7 +158,7 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
             className={`p-1.5 rounded-xl border transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0 ${
               isDark 
                 ? 'border-slate-800 hover:bg-slate-800 text-slate-400' 
-                : 'border-gray-150 hover:bg-gray-100 text-gray-555'
+                : 'border-gray-150 hover:bg-gray-100 text-gray-550'
             }`}
           >
             <X className="h-4 w-4" />
@@ -123,30 +179,34 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
             <div className="p-3.5 bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 rounded-2xl text-left space-y-2.5">
               <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 block flex items-center gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
-                🚨 本選考・インターン締め切り間近の企業が3社あります
+                {activeAlerts.length > 0 
+                  ? `🚨 本選考・インターン締め切り間近の選考が ${activeAlerts.length} 件あります`
+                  : `✅ 現在、直近の締め切りアラートはありません`}
               </span>
-              <div className="grid grid-cols-1 gap-1.5">
-                {[
-                  { name: 'ソニーグループ', type: '本選考ES', due: '今日 23:59', color: 'text-red-500 bg-red-50/60 dark:bg-red-950/20 dark:text-red-405' },
-                  { name: 'キーエンス', type: 'インターンES', due: '明日 23:59', color: 'text-amber-600 bg-amber-50/60 dark:bg-amber-950/20 dark:text-amber-405' },
-                  { name: '野村総合研究所', type: '本選考面接', due: '2日後 14:00', color: 'text-blue-500 bg-blue-50/60 dark:bg-blue-950/20 dark:text-blue-405' }
-                ].map((item, idx) => (
-                  <div key={idx} className={`p-2.5 rounded-xl border flex items-center justify-between text-[10px] font-bold transition-all hover:scale-[1.01] ${
-                    isDark ? 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-900' : 'bg-white border-gray-150/70 hover:bg-slate-50'
-                  }`}>
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                      <span className="truncate">{item.name}</span>
+              {activeAlerts.length > 0 ? (
+                <div className="grid grid-cols-1 gap-1.5">
+                  {activeAlerts.map((item, idx) => (
+                    <div key={idx} className={`p-2.5 rounded-xl border flex items-center justify-between text-[10px] font-bold transition-all hover:scale-[1.01] ${
+                      isDark ? 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-900' : 'bg-white border-gray-150/70 hover:bg-slate-50'
+                    }`}>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                        <span className="truncate">{item.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`px-1.5 py-0.5 rounded-sm text-[8px] font-black ${item.color}`}>
+                          {item.type}
+                        </span>
+                        <span className="text-gray-400 dark:text-slate-400 font-medium font-mono">{item.due}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className={`px-1.5 py-0.5 rounded-sm text-[8px] font-black ${item.color}`}>
-                        {item.type}
-                      </span>
-                      <span className="text-gray-400 dark:text-slate-400 font-medium font-mono">{item.due}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-2 text-[10px] font-bold text-gray-400 dark:text-slate-400">
+                  現在、直近の締め切りアラートはありません
+                </div>
+              )}
             </div>
           </div>
 
@@ -282,10 +342,49 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
               <FileEdit className={`h-4 w-4 ${theme.text}`} />
               <span>AI ES作成・添削</span>
             </h3>
+            
+            {/* Dropdown to select company */}
+            <div className="text-left">
+              <label className="block text-[9px] font-bold text-gray-400 dark:text-slate-400 mb-1">
+                対象の企業を選択
+              </label>
+              <select
+                value={selectedCompanyId}
+                onChange={e => {
+                  setSelectedCompanyId(e.target.value);
+                  const matched = companies.find(c => c.id === e.target.value);
+                  if (matched) {
+                    console.log(`[ES Target Company Selected] ID: ${matched.id}, Name: ${matched.name}`);
+                  }
+                }}
+                className={`w-full px-3 py-2 text-xs border rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 font-bold transition-all ${
+                  isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-805'
+                }`}
+              >
+                <option value="">-- 企業を選択してください --</option>
+                {companies.length > 0 ? (
+                  companies.map(co => (
+                    <option key={co.id} value={co.id}>
+                      {co.name} {co.selectionType === 'intern' ? '（インターン）' : '（本選考）'}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>企業が登録されていません</option>
+                )}
+              </select>
+            </div>
+
             <div className="grid grid-cols-2 gap-2 text-left">
               <button
                 type="button"
-                onClick={() => alert('志望動機の作成を開始します（フェーズ1 モックアップのためダミー動作です）')}
+                onClick={() => {
+                  const targetCo = companies.find(c => c.id === selectedCompanyId);
+                  if (!targetCo) {
+                    alert('企業を選択してください。');
+                    return;
+                  }
+                  alert(`「${targetCo.name}」の志望動機の作成を開始します（フェーズ1 モックアップのためダミー動作です）`);
+                }}
                 className={`py-3 px-3 rounded-2xl border font-bold text-[11px] transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-3xs hover:scale-102 hover:shadow-2xs ${
                   isDark 
                     ? 'border-slate-800 bg-slate-950/30 text-slate-250 hover:bg-slate-950/60' 
@@ -298,7 +397,14 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
 
               <button
                 type="button"
-                onClick={() => alert('自己PRの添削を開始します（フェーズ1 モックアップのためダミー動作です）')}
+                onClick={() => {
+                  const targetCo = companies.find(c => c.id === selectedCompanyId);
+                  if (!targetCo) {
+                    alert('企業を選択してください。');
+                    return;
+                  }
+                  alert(`「${targetCo.name}」の自己PRの添削を開始します（フェーズ1 モックアップのためダミー動作です）`);
+                }}
                 className={`py-3 px-3 rounded-2xl border font-bold text-[11px] transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-3xs hover:scale-102 hover:shadow-2xs ${
                   isDark 
                     ? 'border-slate-800 bg-slate-950/30 text-slate-250 hover:bg-slate-950/60' 
@@ -384,7 +490,7 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
               onChange={e => setChatMessage(e.target.value)}
               placeholder="BERUに就活の相談をする..."
               className={`flex-1 px-3.5 py-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 ${
-                isDark ? 'bg-slate-950 border-slate-800 text-white font-bold' : 'bg-gray-55 border-gray-200 text-gray-855 font-bold'
+                isDark ? 'bg-slate-950 border-slate-800 text-white font-bold' : 'bg-gray-50 border-gray-200 text-gray-850 font-bold'
               }`}
             />
             <button
