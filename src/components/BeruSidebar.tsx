@@ -186,7 +186,7 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
       // Headers
       if (content.startsWith('### ')) {
         content = content.replace('### ', '');
-        className = 'text-xs font-black text-slate-800 dark:text-slate-205 mt-3 mb-1 block border-b pb-0.5 border-slate-200/50 dark:border-slate-800/50';
+        className = 'text-xs font-black text-slate-800 dark:text-slate-200 mt-3 mb-1 block border-b pb-0.5 border-slate-200/50 dark:border-slate-800/50';
       } else if (content.startsWith('## ')) {
         content = content.replace('## ', '');
         className = 'text-[13px] font-black text-slate-900 dark:text-slate-100 mt-4 mb-1.5 block border-b pb-1 border-slate-250/50 dark:border-slate-850/50';
@@ -284,7 +284,7 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
             className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
               isDark 
                 ? 'border-slate-800 hover:bg-slate-800 text-slate-400' 
-                : 'border-gray-100 hover:bg-gray-50 text-gray-500'
+                : 'border-gray-100 hover:bg-gray-55 text-gray-500'
             }`}
           >
             <X className="h-4 w-4" />
@@ -495,7 +495,7 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
                         <div className={`p-2.5 rounded-xl text-[10px] leading-relaxed font-bold pl-3 border ${
                           isDark ? 'bg-slate-900 border-slate-800/80 text-slate-300' : 'bg-white border-gray-100/60 text-gray-600'
                         }`}>
-                          <span className="font-extrabold text-[9px] block text-amber-500 mb-0.5">💡 BERU's Recommend</span>
+                          <span className="font-extrabold text-[9px] block text-amber-500 mb-0.5">💡 BERU\'s Recommend</span>
                           {rec.reason}
                         </div>
                       </div>
