@@ -81,7 +81,7 @@ export default function CompaniesView() {
   const [viewMode, setViewMode] = useState<'grouped' | 'list'>('grouped');
 
   // New selection view tabs & intern status-specific filters
-  const [selectionTab, setSelectionTab] = useState<'main' | 'intern'>('main');
+  const [selectionTab, setSelectionTab] = useState<'main' | 'intern' | 'all'>('main');
   const [filterStatusIntern, setFilterStatusIntern] = useState<InternStatus | 'all'>('all');
 
   // 新しい「日系のみ」「外資系のみ」「両方（すべて）」フィルター
@@ -328,7 +328,7 @@ export default function CompaniesView() {
   const [filterStatus, setFilterStatus] = useState<CompanyStatus | 'all'>('all');
   const [filterPreference, setFilterPreference] = useState<'all' | '1' | '2' | '3' | '4' | '5'>('all');
   const [filterIndustry, setFilterIndustry] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'preference' | 'deadline' | 'status'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'preference' | 'deadline' | 'status' | 'industry'>('newest');
 
   // New Company form states
   const [newSelectionType, setNewSelectionType] = useState<'main' | 'intern'>('main');
@@ -930,7 +930,7 @@ export default function CompaniesView() {
   const filteredCompanies = companies.filter(co => {
     // Separate by Selection Type tab
     const coType = co.selectionType || 'main';
-    if (coType !== selectionTab) {
+    if (selectionTab !== 'all' && coType !== selectionTab) {
       return false;
     }
 
@@ -963,7 +963,7 @@ export default function CompaniesView() {
       if (filterStatus !== 'all' && co.status !== filterStatus) {
         return false;
       }
-    } else {
+    } else if (selectionTab === 'intern') {
       const coInternStatus = co.selectionStatusIntern || 'entry_done';
       if (filterStatusIntern !== 'all' && coInternStatus !== filterStatusIntern) {
         return false;
@@ -1003,6 +1003,9 @@ export default function CompaniesView() {
     if (sortBy === 'newest') {
       return b.id.localeCompare(a.id);
     }
+    if (sortBy === 'industry') {
+      return a.industry.localeCompare(b.industry, 'ja');
+    }
     if (sortBy === 'status') {
       if (selectionTab === 'main') {
         const statusOrder: Record<CompanyStatus, number> = {
@@ -1014,7 +1017,7 @@ export default function CompaniesView() {
           rejected: 5
         };
         return statusOrder[a.status] - statusOrder[b.status];
-      } else {
+      } else if (selectionTab === 'intern') {
         const statusOrderIntern: Record<InternStatus, number> = {
           entry_done: 0,
           es_submitted: 1,
@@ -1025,6 +1028,32 @@ export default function CompaniesView() {
         const statusA = a.selectionStatusIntern || 'entry_done';
         const statusB = b.selectionStatusIntern || 'entry_done';
         return statusOrderIntern[statusA] - statusOrderIntern[statusB];
+      } else {
+        const getUnifiedStatusOrder = (co: Company) => {
+          const type = co.selectionType || 'main';
+          if (type === 'main') {
+            const mainOrder: Record<CompanyStatus, number> = {
+              interested: 0,
+              es_planned: 1,
+              es_submitted: 2,
+              selecting: 3,
+              offered: 4,
+              rejected: 5
+            };
+            return mainOrder[co.status] || 0;
+          } else {
+            const internOrder: Record<InternStatus, number> = {
+              entry_done: 0,
+              es_submitted: 2,
+              selecting: 3,
+              passed: 4,
+              rejected: 5
+            };
+            const status = co.selectionStatusIntern || 'entry_done';
+            return internOrder[status] || 0;
+          }
+        };
+        return getUnifiedStatusOrder(a) - getUnifiedStatusOrder(b);
       }
     }
     return 0;
@@ -1052,7 +1081,7 @@ export default function CompaniesView() {
     if (selectionTab === 'intern') {
       const status = co.selectionStatusIntern || 'entry_done';
       companyGroupsIntern[status].push(co);
-    } else {
+    } else if (selectionTab === 'main') {
       companyGroups[co.status].push(co);
     }
   });
@@ -1070,7 +1099,7 @@ export default function CompaniesView() {
             className="space-y-6 animate-fade-in"
           >
             {/* Top selectionType Segment Switch */}
-            <div className="flex bg-gray-100 dark:bg-slate-900 p-1 rounded-2xl gap-1 w-full max-w-[340px] border border-gray-200/50 dark:border-slate-800">
+            <div className="flex bg-gray-100 dark:bg-slate-900 p-1 rounded-2xl gap-1 w-full max-w-[480px] border border-gray-200/50 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => {
@@ -1099,6 +1128,20 @@ export default function CompaniesView() {
               >
                 🎖️ インターン選考
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectionTab('all');
+                  setSelectedCompanyId(null);
+                }}
+                className={`flex-1 py-1.5 text-center text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  selectionTab === 'all'
+                    ? `${theme.bg} text-white shadow-xs`
+                    : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-slate-200'
+                }`}
+              >
+                📊 すべての企業
+              </button>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1109,32 +1152,34 @@ export default function CompaniesView() {
 
               <div className="flex items-center gap-2">
                 {/* View toggle helper segment control */}
-                <div className={`flex rounded-lg p-0.5 border ${
-                  isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-gray-100/60 border-gray-200'
-                }`}>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('grouped')}
-                    className={`text-[10px] py-1 px-2.5 rounded-md font-bold cursor-pointer transition-all ${
-                      viewMode === 'grouped'
-                        ? (isDark ? 'bg-slate-800 text-slate-200' : 'bg-white text-gray-900 shadow-3xs')
-                        : 'text-gray-400 hover:text-gray-650'
-                    }`}
-                  >
-                    ステータス別
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('list')}
-                    className={`text-[10px] py-1 px-2.5 rounded-md font-bold cursor-pointer transition-all ${
-                      viewMode === 'list'
-                        ? (isDark ? 'bg-slate-800 text-slate-200' : 'bg-white text-gray-900 shadow-3xs')
-                        : 'text-gray-400 hover:text-gray-650'
-                    }`}
-                  >
-                    一覧
-                  </button>
-                </div>
+                {selectionTab !== 'all' && (
+                  <div className={`flex rounded-lg p-0.5 border ${
+                    isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-gray-100/60 border-gray-200'
+                  }`}>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('grouped')}
+                      className={`text-[10px] py-1 px-2.5 rounded-md font-bold cursor-pointer transition-all ${
+                        viewMode === 'grouped'
+                          ? (isDark ? 'bg-slate-800 text-slate-200' : 'bg-white text-gray-900 shadow-3xs')
+                          : 'text-gray-400 hover:text-gray-650'
+                      }`}
+                    >
+                      ステータス別
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('list')}
+                      className={`text-[10px] py-1 px-2.5 rounded-md font-bold cursor-pointer transition-all ${
+                        viewMode === 'list'
+                          ? (isDark ? 'bg-slate-800 text-slate-200' : 'bg-white text-gray-900 shadow-3xs')
+                          : 'text-gray-400 hover:text-gray-650'
+                      }`}
+                    >
+                      一覧
+                    </button>
+                  </div>
+                )}
 
                 <button
                   onClick={() => setShowAddCompanyModal(true)}
@@ -1210,7 +1255,7 @@ export default function CompaniesView() {
                         <option value="offered">内定</option>
                         <option value="rejected">選考終了</option>
                       </select>
-                    ) : (
+                    ) : selectionTab === 'intern' ? (
                       <select
                         value={filterStatusIntern}
                         onChange={e => setFilterStatusIntern(e.target.value as any)}
@@ -1224,6 +1269,13 @@ export default function CompaniesView() {
                         <option value="selecting">選考中</option>
                         <option value="passed">合格</option>
                         <option value="rejected">不合格</option>
+                      </select>
+                    ) : (
+                      <select
+                        disabled
+                        className={`w-full px-2.5 py-2 text-[10px] line-clamp-1 bg-gray-50/80 dark:bg-slate-905/40 rounded-xl border border-gray-200 dark:border-slate-800 text-gray-400`}
+                      >
+                        <option>選考フィルター：無効</option>
                       </select>
                     )}
                   </div>
@@ -1272,6 +1324,7 @@ export default function CompaniesView() {
                       <option value="preference">志望度順</option>
                       <option value="deadline">締切近い順</option>
                       <option value="status">選考フェーズ順</option>
+                      <option value="industry">業界順</option>
                     </select>
                   </div>
                 </div>
@@ -1587,7 +1640,92 @@ export default function CompaniesView() {
             )}
 
             {/* --- COMPANY LIST RENDERING --- */}
-            {viewMode === 'list' ? (
+            {selectionTab === 'all' ? (
+              <div className="overflow-x-auto w-full rounded-3xl border border-gray-150 dark:border-slate-800 shadow-3xs bg-white dark:bg-slate-900">
+                <table className="w-full text-left border-collapse min-w-[700px] text-xs">
+                  <thead>
+                    <tr className={`border-b ${isDark ? 'bg-slate-900/60 border-slate-800 text-slate-400' : 'bg-gray-50 border-gray-100 text-gray-500'} font-bold`}>
+                      <th className="py-3.5 px-4 font-black">企業名</th>
+                      <th className="py-3.5 px-4 font-black">業界</th>
+                      <th className="py-3.5 px-4 font-black">選考状況</th>
+                      <th className="py-3.5 px-4 font-black">志望度</th>
+                    </tr>
+                  </thead>
+                  <tbody className={`divide-y ${isDark ? 'divide-slate-800/60' : 'divide-gray-100'}`}>
+                    {sortedCompanies.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-12 text-center text-gray-400 font-sans">
+                          登録されている企業はありません
+                        </td>
+                      </tr>
+                    ) : (
+                      sortedCompanies.map((co) => {
+                        const isMain = (co.selectionType || 'main') === 'main';
+                        const design = isMain 
+                          ? STATUS_COLORS[co.status]
+                          : INTERN_STATUS_COLORS[co.selectionStatusIntern || 'entry_done'];
+                        
+                        return (
+                          <tr
+                            key={co.id}
+                            onClick={() => {
+                              setSelectedCompanyId(co.id);
+                              setActiveTabState('basic');
+                            }}
+                            className={`hover:bg-gray-55/65 dark:hover:bg-slate-800/50 cursor-pointer transition-colors ${
+                              isDark ? 'text-slate-350 border-slate-800/50' : 'text-gray-750 border-gray-100'
+                            }`}
+                          >
+                            <td className="py-3.5 px-4 font-bold max-w-[280px] truncate">
+                              <div className="flex items-center gap-2">
+                                <span className={isDark ? 'text-slate-200' : 'text-gray-900'}>{co.name}</span>
+                                <div className="flex gap-1 shrink-0">
+                                  {co.isForeign ? (
+                                    <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-[8px] font-black leading-none">
+                                      外資系
+                                    </span>
+                                  ) : (
+                                    <span className="px-1.5 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-[8px] font-black leading-none">
+                                      日系
+                                    </span>
+                                  )}
+                                  {isMain ? (
+                                    <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-900/40 rounded-sm text-[8px] font-black leading-none">
+                                      本選考
+                                    </span>
+                                  ) : (
+                                    <span className="px-1.5 py-0.5 bg-teal-50 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400 border border-teal-200/50 dark:border-teal-900/40 rounded-sm text-[8px] font-black leading-none">
+                                      インターン
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4 font-sans text-gray-500 dark:text-slate-400">
+                              {co.industry}
+                            </td>
+                            <td className="py-3.5 px-4 font-bold">
+                              <span className={`inline-block px-2 py-0.5 rounded-sm text-[9px] font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
+                                {isMain 
+                                  ? STATUS_LABELS[co.status]
+                                  : INTERN_STATUS_LABELS[co.selectionStatusIntern || 'entry_done']}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 font-sans">
+                              <span className="flex items-center gap-0.5">
+                                {[...Array(co.preference)].map((_, i) => (
+                                  <Star key={i} className="h-3.5 w-3.5 fill-amber-300 text-amber-300" />
+                                ))}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : viewMode === 'list' ? (
               <div className="space-y-3">
                 {sortedCompanies.length === 0 ? (
                   <div className={`py-12 text-center text-xs space-y-2 rounded-2xl border border-dashed ${
