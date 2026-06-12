@@ -6,6 +6,11 @@ import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import { getCompanyMaster } from "./src/data/companyMaster";
 
+// Load environment variables (.env.local overrides .env)
+const envLocalPath = path.join(process.cwd(), ".env.local");
+if (fs.existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath });
+}
 dotenv.config();
 
 // Helper functions for fuzzy, Kana and Zenkaku-Hankaku normalized matches

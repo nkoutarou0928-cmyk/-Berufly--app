@@ -1,7 +1,14 @@
 import express from "express";
 import { GoogleGenAI, Type } from "@google/genai";
+import fs from "fs";
+import path from "path";
 import dotenv from "dotenv";
 
+// Load environment variables (.env.local overrides .env)
+const envLocalPath = path.join(process.cwd(), ".env.local");
+if (fs.existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath });
+}
 dotenv.config();
 
 // Helper functions for fuzzy, Kana and Zenkaku-Hankaku normalized matches
