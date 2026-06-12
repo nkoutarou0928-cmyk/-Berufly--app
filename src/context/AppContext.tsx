@@ -124,6 +124,8 @@ interface AppContextType {
   saveEvents: (newCompanies: Company[]) => Promise<void>;
   fontSize: 'small' | 'medium' | 'large';
   setFontSize: (size: 'small' | 'medium' | 'large') => void;
+  selectionTypeFilter: 'main' | 'intern';
+  setSelectionTypeFilter: (type: 'main' | 'intern') => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -142,6 +144,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   
   // Font Size state
   const [fontSize, setFontSizeState] = useState<'small' | 'medium' | 'large'>('medium');
+
+  // Selection Type filter state
+  const [selectionTypeFilter, setSelectionTypeFilter] = useState<'main' | 'intern'>('main');
 
   const setFontSize = (size: 'small' | 'medium' | 'large') => {
     setFontSizeState(size);
@@ -1712,7 +1717,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         saveSelfAnalysis,
         saveEvents,
         fontSize,
-        setFontSize
+        setFontSize,
+        selectionTypeFilter,
+        setSelectionTypeFilter
       }}
     >
       {children}

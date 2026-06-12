@@ -27,7 +27,7 @@ interface BeruSidebarProps {
 }
 
 export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
-  const { settings, isDark, fontSize } = useApp();
+  const { settings, isDark, fontSize, companies, selectionTypeFilter } = useApp();
   const theme = getTheme(settings.themeColor);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,7 +37,93 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
 
   const fontSizeClass = fontSize === 'small' ? 'text-xs' : fontSize === 'large' ? 'text-base' : 'text-sm';
 
-  const quickSearchTags = ['夏インターン', '本選考', 'IT', 'コンサル', '商社'];
+  // 1. 就活状況アラートのフィルタリング (3日以内)
+  const todayStr = new Date().toISOString().split('T')[0];
+  const today = new Date(todayStr);
+
+  const activeAlerts: { id: string; name: string; type: string; due: string }[] = [];
+
+  companies.forEach((co) => {
+    if (co.esDeadline) {
+      const target = new Date(co.esDeadline);
+      const diffTime = target.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays <= 3) {
+        const dayLabel = diffDays === 0 ? '今日' : diffDays === 1 ? '明日' : diffDays === 2 ? '2日後' : '3日後';
+        activeAlerts.push({
+          id: `es-${co.id}`,
+          name: co.name,
+          type: co.selectionType === 'intern' ? 'インターンES' : '本選考ES',
+          due: `ES締切: ${dayLabel} 23:59`
+        });
+      }
+    }
+    if (co.interviewDate) {
+      const target = new Date(co.interviewDate);
+      const diffTime = target.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays <= 3) {
+        const dayLabel = diffDays === 0 ? '今日' : diffDays === 1 ? '明日' : diffDays === 2 ? '2日後' : '3日後';
+        activeAlerts.push({
+          id: `interview-${co.id}`,
+          name: co.name,
+          type: co.selectionType === 'intern' ? 'インターン面接' : '本選考面接',
+          due: `面接: ${dayLabel}`
+        });
+      }
+    }
+  });
+
+  // 2. タブ連動用データ定義
+  const isIntern = selectionTypeFilter === 'intern';
+
+  const quickSearchTags = isIntern
+    ? ['夏インターン', '1day', '長期インターン', 'IT', 'コンサル']
+    : ['本選考', 'IT', 'コンサル', '商社', 'メーカー'];
+
+  const searchPlaceholder = isIntern
+    ? 'インターンの特徴や職種で探す...'
+    : '志望職種や企業名で探す...';
+
+  const dummySearchCards = isIntern
+    ? [
+        { name: 'テックイノベーション', tag: 'IT / エンジニア', desc: '開発体験5Daysインターン。現場社員のメンターがサポート！', due: '締切: 6/30' },
+        { name: 'グローバルコンサルティング', tag: 'コンサル', desc: 'ロジカルシンキング養成3Days。最終日に役員へのプレゼンあり。', due: '締切: 7/5' }
+      ]
+    : [
+        { name: 'フロンティアソリューションズ', tag: 'IT / 本選考', desc: '本選考直結型のエントリー開始！若手から裁量権を持って活躍可能。', due: '締切: 6/20' },
+        { name: 'スマートネクスト', tag: 'コンサル / 本選考', desc: '総合コンサルタント職の本選考エントリー。論理思考力が試されます。', due: '締切: 6/25' }
+      ];
+
+  const recommendationsTitle = isIntern
+    ? 'あなたにおすすめのインターンシップ募集'
+    : 'あなたの志望軸にマッチした本選考はここ！';
+
+  const recommendationCards = isIntern
+    ? [
+        { 
+          co: 'フロンティアソリューションズ', 
+          axis: '若手から裁量権がある', 
+          reason: '新規事業立案型インターンは過去実績として満足度95%以上。アウトプット重視のカルチャーがマッチ！'
+        },
+        { 
+          co: 'スマートネクスト', 
+          axis: '技術力向上の環境', 
+          reason: 'IT業界への高い関心と、キミの自己PR「課題解決力」が求められるデータサイエンス部門の特別招待枠がマッチ。'
+        }
+      ]
+    : [
+        { 
+          co: '日本コンサルティンググループ', 
+          axis: 'ロジカル思考力を活かす', 
+          reason: '本選考での適性検査とキミの強みである「分析力」がベストマッチ。早期選考ルートへの案内が期待できます。'
+        },
+        { 
+          co: 'ライフテクノロジー', 
+          axis: '社会貢献度が高いビジネス', 
+          reason: '医療×IT分野での急成長企業。本選考ではキミの「成長意欲」と企業ビジョンが完全に合致しています。'
+        }
+      ];
 
   return (
     <>
@@ -123,25 +209,29 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
             </h3>
             <div className="p-3.5 bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 rounded-2xl text-left space-y-2">
               <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 block">
-                🚨 本選考・インターン締め切り間近の企業が3社あります
+                {activeAlerts.length > 0 
+                  ? `🚨 締め切り間近の選考が ${activeAlerts.length} 件あります` 
+                  : `✅ 直近の締め切りアラートはありません`}
               </span>
-              <div className="grid grid-cols-1 gap-1.5">
-                {[
-                  { name: 'フロンティアソリューションズ', type: '本選考ES', due: '明日 23:59まで' },
-                  { name: 'スマートネクスト', type: '1dayインターン', due: '3日後' },
-                  { name: '日本コンサルティンググループ', type: '本選考面接', due: '5日後' }
-                ].map((item, idx) => (
-                  <div key={idx} className={`p-2.5 rounded-xl border flex items-center justify-between text-[10px] font-bold ${
-                    isDark ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-gray-150/70'
-                  }`}>
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                      <span className="truncate">{item.name}</span>
+              {activeAlerts.length > 0 ? (
+                <div className="grid grid-cols-1 gap-1.5">
+                  {activeAlerts.map((item) => (
+                    <div key={item.id} className={`p-2.5 rounded-xl border flex items-center justify-between text-[10px] font-bold ${
+                      isDark ? 'bg-slate-900/60 border-slate-800/80' : 'bg-white border-gray-150/70'
+                    }`}>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                        <span className="truncate">{item.name}</span>
+                      </div>
+                      <span className="text-gray-400 shrink-0">{item.type} ( {item.due} )</span>
                     </div>
-                    <span className="text-gray-400 shrink-0">{item.type} ( {item.due} )</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[10px] text-gray-500 dark:text-slate-400 font-bold text-center py-2">
+                  現在、直近の締め切りアラートはありません
+                </p>
+              )}
             </div>
           </div>
 
@@ -162,9 +252,9 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="志望職種やインターンの特徴で探す..."
+                  placeholder={searchPlaceholder}
                   className={`w-full pl-8.5 pr-3 py-2 text-xs border rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 ${
-                    isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-gray-50 border-gray-200'
+                    isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-gray-55 border-gray-200'
                   }`}
                 />
               </div>
@@ -190,12 +280,9 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
 
               {/* Dummy Cards */}
               <div className="space-y-2 pt-1">
-                {[
-                  { name: 'テックイノベーション', tag: 'IT / エンジニア', desc: '開発体験5Daysインターン。現場社員のメンターがサポート！', due: '締切: 6/30' },
-                  { name: 'グローバルコンサルティング', tag: 'コンサル', desc: 'ロジカルシンキング養成3Days。最終日に役員へのプレゼンあり。', due: '締切: 7/5' }
-                ].map((item, idx) => (
+                {dummySearchCards.map((item, idx) => (
                   <div key={idx} className={`p-3 rounded-2xl border transition-all hover:shadow-xs text-left ${
-                    isDark ? 'bg-slate-950/30 border-slate-800/80 hover:bg-slate-950/50' : 'bg-gray-55/30 border-gray-100 hover:bg-gray-50/50'
+                    isDark ? 'bg-slate-950/30 border-slate-800/80 hover:bg-slate-950/50' : 'bg-gray-55/30 border-gray-100 hover:bg-gray-55/50'
                   }`}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-black">{item.name}</span>
@@ -225,22 +312,11 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
             </h3>
             <div className="space-y-2.5 text-left">
               <span className="text-[10px] text-gray-400 dark:text-slate-400 font-bold block -mt-1">
-                あなたの志望軸にマッチしたインターン・企業はここ！
+                {recommendationsTitle}
               </span>
 
               <div className="grid grid-cols-1 gap-2.5">
-                {[
-                  { 
-                    co: 'フロンティアソリューションズ', 
-                    axis: '若手から裁量権がある', 
-                    reason: '新規事業立案型インターンは過去実績として満足度95%以上。アウトプット重視のカルチャーがマッチ！'
-                  },
-                  { 
-                    co: 'スマートネクスト', 
-                    axis: '技術力向上の環境', 
-                    reason: 'IT業界への高い関心と、キミの自己PR「課題解決力」が求められるデータサイエンス部門の特別招待枠がマッチ。'
-                  }
-                ].map((rec, idx) => (
+                {recommendationCards.map((rec, idx) => (
                   <div key={idx} className={`p-3 rounded-2xl border space-y-1.5 relative overflow-hidden ${
                     isDark ? 'bg-slate-850/40 border-slate-800' : 'bg-indigo-50/20 border-indigo-100/35'
                   }`}>

@@ -36,14 +36,15 @@ export default function DashboardView() {
     navigateToCompany,
     setActiveTab,
     setSelectedCompanyId,
-    isDark
+    isDark,
+    selectionTypeFilter,
+    setSelectionTypeFilter
   } = useApp();
 
   const theme = getTheme(settings.themeColor);
 
   const [graphMode, setGraphMode] = useState<'weekly' | 'monthly' | 'cumulative'>('cumulative');
   const [showNotifications, setShowNotifications] = useState(false);
-  const [selectionTypeFilter, setSelectionTypeFilter] = useState<'main' | 'intern'>('main');
   const [todoPeriod, setTodoPeriod] = useState<'today' | 'weekly' | 'monthly'>('weekly');
 
   const filteredCompanies = companies.filter(c => {
