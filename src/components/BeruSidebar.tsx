@@ -3,19 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  X, 
-  Bell, 
-  Search, 
-  Sparkles, 
-  FileEdit, 
-  BrainCircuit, 
-  Send, 
-  ChevronRight, 
+import {
+  X,
+  Bell,
+  CheckSquare,
+  Square,
+  Trash2,
+  Plus,
+  BookOpen,
+  FileEdit,
+  BrainCircuit,
   AlertTriangle,
-  Calendar
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { getTheme } from '../utils/theme';
 import { useApp } from '../context/AppContext';
@@ -25,148 +30,36 @@ interface BeruSidebarProps {
   onClose: () => void;
 }
 
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+interface TodoItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+// ─── Helper ──────────────────────────────────────────────────────────────────
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
   const { settings, isDark, fontSize, companies } = useApp();
   const theme = getTheme(settings.themeColor);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [chatMessage, setChatMessage] = useState('');
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+  const fontSizeClass =
+    fontSize === 'small' ? 'text-xs' : fontSize === 'large' ? 'text-base' : 'text-sm';
 
-  // Step 4 States
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResult, setSearchResult] = useState<string>('');
-  
-  const [esRawInput, setEsRawInput] = useState('');
-  const [isGeneratingEs, setIsGeneratingEs] = useState(false);
-  const [esResult, setEsResult] = useState<string>('');
-  
-  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'user' | 'beru'; text: string }>>([
-    { sender: 'beru', text: "自己分析をお手伝いします！これまでに最も熱中した出来事や、就活で不安に思っていることを何でも教えてね！" }
-  ]);
-  const [isSendingChat, setIsSendingChat] = useState(false);
-  const [errorToast, setErrorToast] = useState<string | null>(null);
+  // ── Section collapse state ─────────────────────────────────────────────
+  const [todoOpen, setTodoOpen]       = useState(true);
+  const [memoOpen, setMemoOpen]       = useState(true);
+  const [esOpen,   setEsOpen]         = useState(true);
+  const [alertOpen, setAlertOpen]     = useState(true);
 
-  const chatBottomRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll chat to bottom
-  useEffect(() => {
-    if (chatBottomRef.current) {
-      chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [chatMessages, isSendingChat]);
-
-  const showError = (msg: string) => {
-    setErrorToast(msg);
-    setTimeout(() => {
-      setErrorToast(null);
-    }, 4000);
-  };
-
-  const handleSearch = async (queryToSearch: string) => {
-    if (!queryToSearch.trim() || isSearching) return;
-    setIsSearching(true);
-    setSearchResult('');
-    try {
-      const response = await fetch('/api/beru/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'search',
-          message: queryToSearch,
-          context: { companies }
-        })
-      });
-      if (!response.ok) throw new Error();
-      const data = await response.json();
-      if (data.reply) {
-        setSearchResult(data.reply);
-      } else {
-        throw new Error();
-      }
-    } catch (err) {
-      showError("通信に失敗しました。もう一度お試しください。");
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleGenerateEs = async (actionType: 'create' | 'review') => {
-    const targetCo = companies.find(c => c.id === selectedCompanyId);
-    if (!targetCo) {
-      showError("対象の企業を選択してください。");
-      return;
-    }
-    if (isGeneratingEs) return;
-    setIsGeneratingEs(true);
-    setEsResult('');
-    try {
-      const promptMsg = actionType === 'create'
-        ? `「${targetCo.name}」の志望動機を作成してください。アピールしたい強みや下書き・要望: ${esRawInput || "特になし"}`
-        : `「${targetCo.name}」向けの自己PRを添削してください。自己PRの下書き・要望: ${esRawInput || "特になし"}`;
-
-      const response = await fetch('/api/beru/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'es',
-          message: promptMsg,
-          context: targetCo
-        })
-      });
-      if (!response.ok) throw new Error();
-      const data = await response.json();
-      if (data.reply) {
-        setEsResult(data.reply);
-      } else {
-        throw new Error();
-      }
-    } catch (err) {
-      showError("通信に失敗しました。もう一度お試しください。");
-    } finally {
-      setIsGeneratingEs(false);
-    }
-  };
-
-  const handleSendChat = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!chatMessage.trim() || isSendingChat) return;
-
-    const userMsg = chatMessage.trim();
-    setChatMessage('');
-    setChatMessages(prev => [...prev, { sender: 'user', text: userMsg }]);
-    setIsSendingChat(true);
-
-    try {
-      const response = await fetch('/api/beru/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'self_analysis',
-          message: userMsg,
-          context: { chatHistory: chatMessages }
-        })
-      });
-      if (!response.ok) throw new Error();
-      const data = await response.json();
-      if (data.reply) {
-        setChatMessages(prev => [...prev, { sender: 'beru', text: data.reply }]);
-      } else {
-        throw new Error();
-      }
-    } catch (err) {
-      showError("通信に失敗しました。もう一度お試しください。");
-    } finally {
-      setIsSendingChat(false);
-    }
-  };
-
-  const fontSizeClass = fontSize === 'small' ? 'text-xs' : fontSize === 'large' ? 'text-base' : 'text-sm';
-
-  // 1. 就活状況アラートのフィルタリング (3日以内)
+  // ── ① 就活アラート (deadline-based, read from AppContext companies) ─────
   const todayStr = new Date().toISOString().split('T')[0];
-  const today = new Date(todayStr);
-
+  const today    = new Date(todayStr);
   const activeAlerts: { id: string; name: string; type: string; due: string; color: string }[] = [];
 
   companies.forEach((co) => {
@@ -174,20 +67,18 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
       const target = new Date(co.esDeadline);
       if (!isNaN(target.getTime())) {
         const targetDate = new Date(target.getFullYear(), target.getMonth(), target.getDate());
-        const diffTime = targetDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+        const diffDays   = Math.ceil((targetDate.getTime() - today.getTime()) / 86400000);
         if (diffDays >= 0 && diffDays <= 3) {
-          const dayLabel = diffDays === 0 ? '今日' : diffDays === 1 ? '明日' : diffDays === 2 ? '2日後' : `${diffDays}日後`;
-          const timeStr = co.esDeadline.includes(' ') ? co.esDeadline.split(' ')[1] : '23:59';
+          const dayLabel = diffDays === 0 ? '今日' : diffDays === 1 ? '明日' : `${diffDays}日後`;
+          const timeStr  = co.esDeadline.includes(' ') ? co.esDeadline.split(' ')[1] : '23:59';
           activeAlerts.push({
-            id: `es-${co.id}`,
-            name: co.name,
-            type: co.selectionType === 'intern' ? 'インターンES' : '本選考ES',
-            due: `ES締切: ${dayLabel} ${timeStr}`,
+            id:    `es-${co.id}`,
+            name:  co.name,
+            type:  co.selectionType === 'intern' ? 'インターンES' : '本選考ES',
+            due:   `ES締切: ${dayLabel} ${timeStr}`,
             color: co.selectionType === 'intern'
               ? 'text-amber-600 bg-amber-50/60 dark:bg-amber-950/20 dark:text-amber-400'
-              : 'text-red-500 bg-red-50/60 dark:bg-red-950/20 dark:text-red-400'
+              : 'text-red-500 bg-red-50/60 dark:bg-red-950/20 dark:text-red-400',
           });
         }
       }
@@ -196,31 +87,123 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
       const target = new Date(co.interviewDate);
       if (!isNaN(target.getTime())) {
         const targetDate = new Date(target.getFullYear(), target.getMonth(), target.getDate());
-        const diffTime = targetDate.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+        const diffDays   = Math.ceil((targetDate.getTime() - today.getTime()) / 86400000);
         if (diffDays >= 0 && diffDays <= 3) {
-          const dayLabel = diffDays === 0 ? '今日' : diffDays === 1 ? '明日' : diffDays === 2 ? '2日後' : `${diffDays}日後`;
-          let timePart = '';
-          const parts = co.interviewDate.split(/[ T]/);
-          if (parts[1]) {
-            timePart = parts[1].substring(0, 5);
-          }
+          const dayLabel = diffDays === 0 ? '今日' : diffDays === 1 ? '明日' : `${diffDays}日後`;
+          const parts    = co.interviewDate.split(/[ T]/);
+          const timePart = parts[1] ? parts[1].substring(0, 5) : '';
           activeAlerts.push({
-            id: `interview-${co.id}`,
-            name: co.name,
-            type: co.selectionType === 'intern' ? 'インターン面接' : '本選考面接',
-            due: `面接: ${dayLabel} ${timePart}`.trim(),
-            color: 'text-blue-500 bg-blue-50/60 dark:bg-blue-950/20 dark:text-blue-400'
+            id:    `interview-${co.id}`,
+            name:  co.name,
+            type:  co.selectionType === 'intern' ? 'インターン面接' : '本選考面接',
+            due:   `面接: ${dayLabel} ${timePart}`.trim(),
+            color: 'text-blue-500 bg-blue-50/60 dark:bg-blue-950/20 dark:text-blue-400',
           });
         }
       }
     }
   });
 
+  // ── ② TODOリスト ───────────────────────────────────────────────────────
+  const [todos, setTodos]         = useState<TodoItem[]>([
+    { id: uid(), text: 'A社のESを提出する', done: false },
+    { id: uid(), text: 'B社の面接対策をする', done: false },
+  ]);
+  const [newTodoText, setNewTodoText] = useState('');
+  const todoInputRef = useRef<HTMLInputElement>(null);
+
+  const addTodo = () => {
+    const text = newTodoText.trim();
+    if (!text) return;
+    setTodos(prev => [...prev, { id: uid(), text, done: false }]);
+    setNewTodoText('');
+    todoInputRef.current?.focus();
+  };
+
+  const toggleTodo  = (id: string) =>
+    setTodos(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t));
+
+  const deleteTodo  = (id: string) =>
+    setTodos(prev => prev.filter(t => t.id !== id));
+
+  const doneCount   = todos.filter(t => t.done).length;
+
+  // ── ③ 企業研究メモ帳 ────────────────────────────────────────────────
+  const [companyMemo, setCompanyMemo] = useState(
+    '【企業名】\n\n【事業内容・ビジネスモデル】\n\n【求める人物像】\n\n【自分との接点・志望理由】\n\n【気になったこと・質問メモ】\n'
+  );
+  const [memoCopied, setMemoCopied] = useState(false);
+
+  const copyMemo = () => {
+    navigator.clipboard.writeText(companyMemo).then(() => {
+      setMemoCopied(true);
+      setTimeout(() => setMemoCopied(false), 2000);
+    });
+  };
+
+  // ── ④ 文字数カウンター付きESエディタ ──────────────────────────────
+  const ES_TARGET = 400; // 目標文字数
+
+  const [esCompanyLabel, setEsCompanyLabel] = useState('');
+  const [esContent, setEsContent]           = useState('');
+  const [esCopied, setEsCopied]             = useState(false);
+
+  const esLen      = esContent.length;
+  const esProgress = Math.min(esLen / ES_TARGET, 1);
+  const esColor =
+    esLen === 0          ? 'text-gray-400'
+    : esLen < ES_TARGET  ? 'text-amber-500'
+    :                      'text-emerald-500';
+
+  const copyEs = () => {
+    navigator.clipboard.writeText(esContent).then(() => {
+      setEsCopied(true);
+      setTimeout(() => setEsCopied(false), 2000);
+    });
+  };
+
+  const clearEs = () => {
+    if (esContent && !window.confirm('入力した内容をリセットしますか？')) return;
+    setEsContent('');
+    setEsCompanyLabel('');
+  };
+
+  // ── Section header helper ──────────────────────────────────────────────
+  const SectionHeader = ({
+    icon,
+    label,
+    open,
+    onToggle,
+    badge,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    open: boolean;
+    onToggle: () => void;
+    badge?: React.ReactNode;
+  }) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`w-full flex items-center gap-1.5 text-left group ${
+        isDark ? 'text-slate-300' : 'text-gray-800'
+      }`}
+    >
+      {icon}
+      <span className="text-xs font-extrabold flex-1">{label}</span>
+      {badge}
+      {open ? (
+        <ChevronUp className="h-3.5 w-3.5 text-gray-400 shrink-0 group-hover:text-gray-600" />
+      ) : (
+        <ChevronDown className="h-3.5 w-3.5 text-gray-400 shrink-0 group-hover:text-gray-600" />
+      )}
+    </button>
+  );
+
+  // ────────────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* Backdrop with elegant blur */}
+      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -229,28 +212,29 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
         className="fixed inset-0 bg-slate-950/20 dark:bg-slate-950/50 backdrop-blur-xs z-40"
       />
 
-      {/* Slide-in sidebar drawer */}
+      {/* Slide-in drawer */}
       <motion.div
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ type: 'spring', damping: 25, stiffness: 220 }}
         className={`fixed top-0 right-0 h-screen w-full sm:w-[400px] border-l flex flex-col z-50 shadow-2xl transition-colors duration-200 ${
-          isDark 
-            ? 'bg-slate-900 border-slate-800 text-slate-100' 
+          isDark
+            ? 'bg-slate-900 border-slate-800 text-slate-100'
             : 'bg-white border-gray-150 text-gray-900'
         }`}
       >
-        {/* ① BERUのヘッダーエリア */}
-        <div className={`p-4 flex items-center gap-3 border-b shrink-0 ${
-          isDark ? 'border-slate-800 bg-slate-900' : 'border-gray-100 bg-white'
-        }`}>
+        {/* ── ヘッダー ─────────────────────────────────────────────────── */}
+        <div
+          className={`p-4 flex items-center gap-3 border-b shrink-0 ${
+            isDark ? 'border-slate-800 bg-slate-900' : 'border-gray-100 bg-white'
+          }`}
+        >
           <div className="flex items-center gap-2.5 flex-1 min-w-0 pr-1">
-            {/* Cute bell character with round background */}
+            {/* BERU キャラクター */}
             <div className="relative h-11 w-11 rounded-full bg-gradient-to-tr from-amber-400 via-amber-300 to-yellow-200 flex items-center justify-center shadow-md shrink-0 border border-white/20">
               <div className="relative flex flex-col items-center">
                 <Bell className="h-6 w-6 text-amber-950 fill-amber-500/40 stroke-[2] animate-bounce" />
-                {/* Minimalist blushing eyes and mouth */}
                 <div className="absolute top-[9px] flex gap-1 w-full justify-center">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-950 flex items-center justify-center relative">
                     <span className="absolute top-0.5 left-0.5 w-0.5 h-0.5 rounded-full bg-white" />
@@ -259,33 +243,34 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
                     <span className="absolute top-0.5 left-0.5 w-0.5 h-0.5 rounded-full bg-white" />
                   </span>
                 </div>
-                {/* Cute smile */}
                 <div className="absolute top-[16px] w-2.5 h-1.5 border-b-2 border-amber-950 rounded-b-full" />
               </div>
-              {/* Cute little red cheeks */}
               <div className="absolute top-[13px] left-1.5 w-1.5 h-0.5 rounded-full bg-rose-400/85" />
               <div className="absolute top-[13px] right-1.5 w-1.5 h-0.5 rounded-full bg-rose-400/85" />
             </div>
 
-            {/* Speech bubble */}
-            <div className={`p-2.5 rounded-2xl border text-[11px] font-bold leading-normal relative text-left flex-1 ${
-              isDark 
-                ? 'bg-slate-850 border-slate-800 text-slate-205' 
-                : 'bg-purple-50/60 border-purple-100/60 text-purple-955'
-            }`}>
-              {/* Balloon tail indicator pointing left */}
-              <div className={`absolute top-4.5 -left-1 w-2 h-2 rotate-45 border-l border-b ${
-                isDark ? 'bg-slate-850 border-slate-800' : 'bg-purple-50/60 border-purple-100/60'
-              }`} />
-              こんにちは、BERUです！インターンや本選考の相談に乗るよ！
+            {/* 吹き出し */}
+            <div
+              className={`p-2.5 rounded-2xl border text-[11px] font-bold leading-normal relative text-left flex-1 ${
+                isDark
+                  ? 'bg-slate-850 border-slate-800 text-slate-205'
+                  : 'bg-purple-50/60 border-purple-100/60 text-purple-950'
+              }`}
+            >
+              <div
+                className={`absolute top-4.5 -left-1 w-2 h-2 rotate-45 border-l border-b ${
+                  isDark ? 'bg-slate-850 border-slate-800' : 'bg-purple-50/60 border-purple-100/60'
+                }`}
+              />
+              就活ノートへようこそ！TODOや企業メモを自由に書き込んでね🔔
             </div>
           </div>
 
           <button
             onClick={onClose}
             className={`p-1.5 rounded-xl border transition-all cursor-pointer hover:scale-105 active:scale-95 shrink-0 ${
-              isDark 
-                ? 'border-slate-800 hover:bg-slate-800 text-slate-400' 
+              isDark
+                ? 'border-slate-800 hover:bg-slate-800 text-slate-400'
                 : 'border-gray-150 hover:bg-gray-100 text-gray-555'
             }`}
           >
@@ -293,487 +278,402 @@ export default function BeruSidebar({ isOpen, onClose }: BeruSidebarProps) {
           </button>
         </div>
 
-        {/* Scrollable Content Area */}
-        <div className={`flex-1 overflow-y-auto p-4 space-y-5.5 scrollbar-thin ${fontSizeClass}`}>
-          
-          {/* ②【📊 就活状況アラート】 */}
-          <div className="space-y-2.5">
-            <h3 className={`text-xs font-extrabold flex items-center gap-1.5 text-left ${
-              isDark ? 'text-slate-300' : 'text-gray-800'
-            }`}>
-              <AlertTriangle className="h-4 w-4 text-amber-500 animate-pulse" />
-              <span>就活状況アラート</span>
-            </h3>
-            <div className="p-3.5 bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 rounded-2xl text-left space-y-2.5">
-              <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 block flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
-                {activeAlerts.length > 0 
-                  ? `🚨 本選考・インターン締め切り間近の選考が ${activeAlerts.length} 件あります`
-                  : `✅ 現在、直近の締め切りアラートはありません`}
-              </span>
-              {activeAlerts.length > 0 ? (
-                <div className="grid grid-cols-1 gap-1.5">
-                  {activeAlerts.map((item, idx) => (
-                    <div key={idx} className={`p-2.5 rounded-xl border flex items-center justify-between text-[10px] font-bold transition-all hover:scale-[1.01] ${
-                      isDark ? 'bg-slate-900/60 border-slate-800/80 hover:bg-slate-900' : 'bg-white border-gray-150/70 hover:bg-slate-50'
-                    }`}>
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
-                        <span className="truncate">{item.name}</span>
+        {/* ── スクロールエリア ──────────────────────────────────────── */}
+        <div className={`flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin ${fontSizeClass}`}>
+
+          {/* ① 就活状況アラート ─────────────────────────────────────── */}
+          <div className="space-y-2">
+            <SectionHeader
+              icon={<AlertTriangle className="h-4 w-4 text-amber-500 animate-pulse shrink-0" />}
+              label="就活状況アラート"
+              open={alertOpen}
+              onToggle={() => setAlertOpen(o => !o)}
+              badge={
+                activeAlerts.length > 0 ? (
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-red-500 text-white">
+                    {activeAlerts.length}
+                  </span>
+                ) : undefined
+              }
+            />
+            <AnimatePresence initial={false}>
+              {alertOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-3.5 bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/20 rounded-2xl space-y-2">
+                    <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
+                      {activeAlerts.length > 0
+                        ? `🚨 締め切り間近の選考が ${activeAlerts.length} 件あります`
+                        : '✅ 直近の締め切りアラートはありません'}
+                    </span>
+                    {activeAlerts.length > 0 && (
+                      <div className="grid grid-cols-1 gap-1.5">
+                        {activeAlerts.map((item) => (
+                          <div
+                            key={item.id}
+                            className={`p-2.5 rounded-xl border flex items-center justify-between text-[10px] font-bold ${
+                              isDark
+                                ? 'bg-slate-900/60 border-slate-800/80'
+                                : 'bg-white border-gray-150/70'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
+                              <span className="truncate">{item.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                              <span className={`px-1.5 py-0.5 rounded-sm text-[8px] font-black ${item.color}`}>
+                                {item.type}
+                              </span>
+                              <span className="text-gray-400 dark:text-slate-400 font-mono text-[9px]">
+                                {item.due}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className={`px-1.5 py-0.5 rounded-sm text-[8px] font-black ${item.color}`}>
-                          {item.type}
-                        </span>
-                        <span className="text-gray-400 dark:text-slate-400 font-medium font-mono">{item.due}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-2 text-[10px] font-bold text-gray-400 dark:text-slate-400">
-                  現在、直近の締め切りアラートはありません
-                </div>
+                    )}
+                  </div>
+                </motion.div>
               )}
-            </div>
+            </AnimatePresence>
           </div>
 
-          {/* ③【🔍 AI企業・インターン検索】 */}
-          <div className="space-y-2.5">
-            <h3 className={`text-xs font-extrabold flex items-center gap-1.5 text-left ${
-              isDark ? 'text-slate-300' : 'text-gray-800'
-            }`}>
-              <Search className={`h-4 w-4 ${theme.text}`} />
-              <span>AI企業・インターン検索</span>
-            </h3>
-            <div className="space-y-2.5 text-left">
-              <form 
-                onSubmit={e => {
-                  e.preventDefault();
-                  handleSearch(searchQuery);
-                }}
-                className="flex gap-2"
-              >
-                <div className="relative flex-1">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                    <Search className="h-3.5 w-3.5" />
-                  </span>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    disabled={isSearching}
-                    placeholder="夏インターン、IT、コンサルなど..."
-                    className={`w-full pl-8.5 pr-3 py-2 text-xs border rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 ${
-                      isDark ? 'bg-slate-950 border-slate-800 text-white font-bold' : 'bg-gray-55 border-gray-200 text-gray-808 font-bold'
-                    } ${isSearching ? 'opacity-60 cursor-not-allowed' : ''}`}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={isSearching || !searchQuery.trim()}
-                  className={`px-3 py-2 text-xs font-bold rounded-xl text-white transition-all cursor-pointer hover:scale-102 active:scale-98 shrink-0 ${theme.bg} ${theme.hover} ${
-                    (isSearching || !searchQuery.trim()) ? 'opacity-55 cursor-not-allowed' : ''
-                  }`}
+          {/* ② TODOリスト ───────────────────────────────────────────── */}
+          <div className="space-y-2">
+            <SectionHeader
+              icon={<CheckSquare className={`h-4 w-4 ${theme.text} shrink-0`} />}
+              label="就活TODOリスト"
+              open={todoOpen}
+              onToggle={() => setTodoOpen(o => !o)}
+              badge={
+                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${theme.lightBg} ${theme.text}`}>
+                  {doneCount}/{todos.length}
+                </span>
+              }
+            />
+            <AnimatePresence initial={false}>
+              {todoOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
                 >
-                  検索
-                </button>
-              </form>
-              
-              {/* Tags */}
-              <div className="flex flex-wrap gap-1.5">
-                {['夏インターン', '本選考', 'IT', 'コンサル'].map(tag => (
-                  <button
-                    key={tag}
-                    type="button"
-                    disabled={isSearching}
-                    onClick={() => {
-                      setSearchQuery(tag);
-                      handleSearch(tag);
-                    }}
-                    className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer hover:scale-105 active:scale-95 ${
-                      isSearching ? 'opacity-50 cursor-not-allowed' : ''
-                    } ${
-                      searchQuery === tag
-                        ? `${theme.bg} text-white border-transparent`
-                        : isDark 
-                          ? 'border-slate-800 bg-slate-950/40 text-slate-400 hover:text-slate-205' 
-                          : 'border-gray-100 bg-gray-50 text-gray-500 hover:text-gray-900'
-                    }`}
-                  >
-                    #{tag}
-                  </button>
-                ))}
-              </div>
+                  <div className={`rounded-2xl border p-3 space-y-2 ${
+                    isDark ? 'bg-slate-850/40 border-slate-800' : 'bg-gray-50/60 border-gray-150'
+                  }`}>
+                    {/* 進捗バー */}
+                    {todos.length > 0 && (
+                      <div className={`w-full h-1.5 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}>
+                        <motion.div
+                          className={`h-full rounded-full ${theme.bg}`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${(doneCount / todos.length) * 100}%` }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </div>
+                    )}
 
-              {/* Search Result or Dummy Cards */}
-              <div className="space-y-2 pt-1">
-                {isSearching && (
-                  <div className="p-4 border rounded-2xl flex flex-col items-center justify-center gap-2 text-xs font-bold text-purple-500 bg-purple-500/5 border-purple-500/10">
-                    <span className="h-5 w-5 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
-                    <span>BERUがリサーチしています... 🔍</span>
+                    {/* TODOアイテム一覧 */}
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto scrollbar-thin">
+                      {todos.length === 0 && (
+                        <p className="text-center text-[10px] font-bold text-gray-400 dark:text-slate-500 py-3">
+                          TODOを追加してみよう！
+                        </p>
+                      )}
+                      {todos.map((todo) => (
+                        <div key={todo.id} className="flex items-center gap-2 group">
+                          <button
+                            type="button"
+                            onClick={() => toggleTodo(todo.id)}
+                            className="shrink-0 transition-transform hover:scale-110 active:scale-95"
+                          >
+                            {todo.done ? (
+                              <CheckSquare className={`h-4 w-4 ${theme.text}`} />
+                            ) : (
+                              <Square className="h-4 w-4 text-gray-400 dark:text-slate-500" />
+                            )}
+                          </button>
+                          <span
+                            className={`flex-1 text-[11px] font-bold leading-relaxed ${
+                              todo.done
+                                ? 'line-through text-gray-400 dark:text-slate-500'
+                                : isDark ? 'text-slate-200' : 'text-gray-800'
+                            }`}
+                          >
+                            {todo.text}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => deleteTodo(todo.id)}
+                            className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-red-400 hover:text-red-600" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 新規追加フォーム */}
+                    <div className="flex gap-2 pt-1">
+                      <input
+                        ref={todoInputRef}
+                        type="text"
+                        value={newTodoText}
+                        onChange={e => setNewTodoText(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') addTodo(); }}
+                        placeholder="例：A社のESを提出する..."
+                        className={`flex-1 px-3 py-1.5 text-xs border rounded-xl focus:outline-none focus:ring-1 focus:ring-${settings.themeColor}-450 font-bold transition-all ${
+                          isDark
+                            ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600'
+                            : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={addTodo}
+                        disabled={!newTodoText.trim()}
+                        className={`p-1.5 rounded-xl transition-all active:scale-95 cursor-pointer shrink-0 ${theme.bg} text-white ${
+                          !newTodoText.trim() ? 'opacity-40 cursor-not-allowed' : theme.hover
+                        }`}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-                {!isSearching && searchResult && (
-                  <div className={`p-4 rounded-2xl border text-left relative overflow-hidden space-y-2 ${
-                    isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-purple-50/25 border-purple-100/40'
+          {/* ③ 企業研究メモ帳 ────────────────────────────────────────── */}
+          <div className="space-y-2">
+            <SectionHeader
+              icon={<BookOpen className={`h-4 w-4 ${theme.text} shrink-0`} />}
+              label="企業研究メモ帳"
+              open={memoOpen}
+              onToggle={() => setMemoOpen(o => !o)}
+            />
+            <AnimatePresence initial={false}>
+              {memoOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className={`rounded-2xl border p-3 space-y-2 ${
+                    isDark ? 'bg-slate-850/40 border-slate-800' : 'bg-gray-50/60 border-gray-150'
                   }`}>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-black text-purple-600 dark:text-purple-400">💡 BERUのリサーチ結果</span>
+                      <span className="text-[9px] font-black text-gray-400 dark:text-slate-500">
+                        📝 自由に書き込んでOK！コピーして使ってね
+                      </span>
+                      <button
+                        type="button"
+                        onClick={copyMemo}
+                        className={`flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-lg transition-all cursor-pointer ${
+                          memoCopied
+                            ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20'
+                            : 'text-gray-400 hover:text-gray-700 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        {memoCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                        {memoCopied ? 'コピー済み' : 'コピー'}
+                      </button>
+                    </div>
+                    <textarea
+                      value={companyMemo}
+                      onChange={e => setCompanyMemo(e.target.value)}
+                      rows={9}
+                      placeholder="気になる企業の情報を自由にメモしよう..."
+                      className={`w-full px-3 py-2.5 text-[11px] border rounded-xl focus:outline-none focus:ring-1 focus:ring-${settings.themeColor}-450 font-medium transition-all resize-none leading-relaxed ${
+                        isDark
+                          ? 'bg-slate-950 border-slate-700 text-slate-200 placeholder-slate-600'
+                          : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'
+                      }`}
+                    />
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] font-bold text-gray-400 dark:text-slate-500">
+                        {companyMemo.length} 文字
+                      </span>
                       <button
                         type="button"
                         onClick={() => {
-                          navigator.clipboard.writeText(searchResult);
-                          alert("リサーチ結果をクリップボードにコピーしました！");
+                          if (!companyMemo.trim() || window.confirm('メモ内容をリセットしますか？')) {
+                            setCompanyMemo(
+                              '【企業名】\n\n【事業内容・ビジネスモデル】\n\n【求める人物像】\n\n【自分との接点・志望理由】\n\n【気になったこと・質問メモ】\n'
+                            );
+                          }
                         }}
-                        className="text-[9px] font-black text-gray-400 hover:text-gray-655 cursor-pointer"
+                        className="text-[9px] font-black text-gray-400 hover:text-red-400 cursor-pointer transition-colors"
                       >
-                        コピー
+                        テンプレートに戻す
                       </button>
                     </div>
-                    <p className="text-[11px] leading-relaxed whitespace-pre-wrap font-medium">
-                      {searchResult}
-                    </p>
                   </div>
-                )}
-
-                {!isSearching && !searchResult && (
-                  <>
-                    <span className="text-[9px] text-gray-400 dark:text-slate-400 font-bold block mb-1">
-                      おすすめ企業やタグ検索を試してみてね！
-                    </span>
-                    {[
-                      { name: 'テックイノベーション', tag: 'IT / インターン募集', desc: '開発体験5Days。現場最前線のシニアエンジニアがメンターとして密着並走！プロダクト開発のリアルを体験。', due: '締切: 6/30' },
-                      { name: 'グローバルコンサルティング', tag: 'コンサル / インターン募集', desc: '戦略提案型3Daysワーク。最終日に役員陣へ直接プレゼンテーション、優秀者は早期本選考ルート確約。', due: '締切: 7/5' }
-                    ].map((item, idx) => (
-                      <div key={idx} className={`p-3 rounded-2xl border transition-all hover:shadow-xs text-left cursor-pointer hover:scale-[1.01] active:scale-[0.99] ${
-                        isDark ? 'bg-slate-950/30 border-slate-800/80 hover:bg-slate-950/50' : 'bg-gray-55/30 border-gray-150/70 hover:bg-gray-55'
-                      }`}
-                      onClick={() => {
-                        setSearchQuery(item.name);
-                        handleSearch(item.name);
-                      }}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-black">{item.name}</span>
-                          <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-gray-550 dark:text-slate-400 px-1.5 py-0.5 rounded-sm font-bold">{item.tag}</span>
-                        </div>
-                        <p className="text-[10px] text-gray-550 dark:text-slate-400 leading-relaxed font-bold mb-1.5">{item.desc}</p>
-                        <div className="flex items-center justify-between text-[9px] text-gray-400 font-mono">
-                          <span className="flex items-center gap-1 font-bold text-rose-500">
-                            <Calendar className="h-3 w-3" />
-                            {item.due}
-                          </span>
-                          <ChevronRight className="h-3 w-3 text-gray-400" />
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
-            </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* ④【💡 BERUのあなた向けおすすめ企業】 */}
-          <div className="space-y-2.5">
-            <h3 className={`text-xs font-extrabold flex items-center gap-1.5 text-left ${
-              isDark ? 'text-slate-300' : 'text-gray-800'
-            }`}>
-              <Sparkles className="h-4 w-4 text-yellow-500 animate-pulse" />
-              <span>BERUのあなた向けおすすめ企業</span>
-            </h3>
-            <div className="space-y-2.5 text-left">
-              <span className="text-[10px] text-gray-400 dark:text-slate-400 font-bold block -mt-1">
-                あなたの志望軸にマッチしたインターン・企業はここ！
-              </span>
-
-              <div className="grid grid-cols-1 gap-2.5">
-                {[
-                  { 
-                    co: 'フロンティアソリューションズ', 
-                    axis: '若手から裁量権がある', 
-                    reason: '新規事業立案型インターンは満足度95%以上。若手が積極的にアイデアをカタチにできるカルチャーがキミ of 自己分析結果とマッチ！'
-                  },
-                  { 
-                    co: 'スマートネクスト', 
-                    axis: '技術力向上の環境', 
-                    reason: 'IT業界への高い関心と、自己PRの「課題解決力」が活きるデータサイエンス部門の早期特別インターンシップへの優待オファー枠。'
-                  }
-                ].map((rec, idx) => (
-                  <div key={idx} className={`p-3 rounded-2xl border space-y-1.5 relative overflow-hidden ${
-                    isDark ? 'bg-slate-850/40 border-slate-800' : 'bg-indigo-50/20 border-indigo-100/35'
+          {/* ④ 文字数カウンター付きESエディタ ──────────────────────── */}
+          <div className="space-y-2 pb-6">
+            <SectionHeader
+              icon={<FileEdit className={`h-4 w-4 ${theme.text} shrink-0`} />}
+              label="ES・志望動機エディタ"
+              open={esOpen}
+              onToggle={() => setEsOpen(o => !o)}
+              badge={
+                esLen > 0 ? (
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
+                    esLen >= ES_TARGET
+                      ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400'
+                      : 'bg-amber-100 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400'
                   }`}>
-                    {/* Glowing side accent line */}
-                    <div className={`absolute top-0 left-0 bottom-0 w-1 ${theme.bg}`} />
-                    
-                    <div className="flex items-center justify-between pl-1">
-                      <span className="text-xs font-black">{rec.co}</span>
-                      <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-sm ${
-                        isDark ? 'bg-slate-800 text-amber-400' : `${theme.lightBg} ${theme.text}`
-                      }`}>
-                        軸: {rec.axis}
+                    {esLen} 字
+                  </span>
+                ) : undefined
+              }
+            />
+            <AnimatePresence initial={false}>
+              {esOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className={`rounded-2xl border p-3 space-y-2.5 ${
+                    isDark ? 'bg-slate-850/40 border-slate-800' : 'bg-gray-50/60 border-gray-150'
+                  }`}>
+                    {/* 企業ラベル入力 */}
+                    <div>
+                      <label className="block text-[9px] font-black text-gray-400 dark:text-slate-500 mb-1">
+                        対象企業・設問名（任意）
+                      </label>
+                      <input
+                        type="text"
+                        value={esCompanyLabel}
+                        onChange={e => setEsCompanyLabel(e.target.value)}
+                        placeholder="例：A社 志望動機（400字）"
+                        className={`w-full px-3 py-1.5 text-xs border rounded-xl focus:outline-none focus:ring-1 focus:ring-${settings.themeColor}-450 font-bold transition-all ${
+                          isDark
+                            ? 'bg-slate-950 border-slate-700 text-white placeholder-slate-600'
+                            : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'
+                        }`}
+                      />
+                    </div>
+
+                    {/* ESテキストエリア */}
+                    <textarea
+                      value={esContent}
+                      onChange={e => setEsContent(e.target.value)}
+                      rows={8}
+                      placeholder="志望動機・自己PRをここに入力しよう。文字数はリアルタイムでカウントされます..."
+                      className={`w-full px-3 py-2.5 text-[11px] border rounded-xl focus:outline-none focus:ring-1 focus:ring-${settings.themeColor}-450 font-medium transition-all resize-none leading-relaxed ${
+                        isDark
+                          ? 'bg-slate-950 border-slate-700 text-slate-200 placeholder-slate-600'
+                          : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'
+                      }`}
+                    />
+
+                    {/* 文字数カウンター + プログレスバー */}
+                    <div className="space-y-1.5">
+                      <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-gray-200'}`}>
+                        <motion.div
+                          className={`h-full rounded-full transition-colors duration-300 ${
+                            esLen >= ES_TARGET ? 'bg-emerald-500' : 'bg-amber-400'
+                          }`}
+                          animate={{ width: `${esProgress * 100}%` }}
+                          transition={{ duration: 0.15 }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-[10px] font-black tabular-nums ${esColor}`}>
+                          {esLen} <span className="font-medium text-gray-400">/ 目安 {ES_TARGET} 字</span>
+                        </span>
+                        <span className="text-[9px] font-bold text-gray-400 dark:text-slate-500">
+                          {esLen >= ES_TARGET
+                            ? '✅ 目標文字数を達成！'
+                            : `あと ${ES_TARGET - esLen} 字`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* アクションボタン */}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={copyEs}
+                        disabled={esLen === 0}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-black rounded-xl transition-all cursor-pointer ${
+                          esLen === 0
+                            ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-slate-800 dark:text-slate-500'
+                            : esCopied
+                              ? 'bg-emerald-500 text-white'
+                              : `${theme.bg} text-white ${theme.hover}`
+                        }`}
+                      >
+                        {esCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        {esCopied ? 'コピー済み！' : 'コピー'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearEs}
+                        className={`px-3 py-2 text-[11px] font-black rounded-xl border transition-all cursor-pointer ${
+                          isDark
+                            ? 'border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-rose-400'
+                            : 'border-gray-200 text-gray-400 hover:bg-red-50 hover:text-red-500'
+                        }`}
+                      >
+                        クリア
+                      </button>
+                    </div>
+
+                    {/* BERU のひとこと */}
+                    <div className={`p-2.5 rounded-xl border text-[10px] font-bold flex items-start gap-2 ${
+                      isDark
+                        ? 'bg-slate-900 border-slate-800 text-slate-400'
+                        : 'bg-purple-50/40 border-purple-100/50 text-purple-700'
+                    }`}>
+                      <BrainCircuit className="h-3.5 w-3.5 shrink-0 mt-0.5 text-purple-500" />
+                      <span>
+                        {esLen === 0
+                          ? '書き始めたら文字数が自動でカウントされるよ！目安は設問の指定字数に合わせてね🔔'
+                          : esLen < 100
+                            ? 'まだ序盤！まずは思ったことをどんどん書き出してみよう💪'
+                            : esLen < ES_TARGET
+                              ? `いい感じ！あと ${ES_TARGET - esLen} 字で目安達成だよ✨`
+                              : '目標達成！読み返して磨きをかけてみよう🎉'}
                       </span>
                     </div>
-                    <div className={`p-2.5 rounded-xl text-[10px] leading-relaxed font-bold pl-3 border relative ${
-                      isDark ? 'bg-slate-900 border-slate-800/80 text-slate-300' : 'bg-white border-gray-100/60 text-gray-655'
-                    }`}>
-                      <span className="font-extrabold text-[9px] block text-amber-500 mb-0.5">💡 BERU's Recommend</span>
-                      {rec.reason}
-                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
-          {/* ⑤【📝 AI ES作成・添削】 */}
-          <div className="space-y-2.5">
-            <h3 className={`text-xs font-extrabold flex items-center gap-1.5 text-left ${
-              isDark ? 'text-slate-300' : 'text-gray-800'
-            }`}>
-              <FileEdit className={`h-4 w-4 ${theme.text}`} />
-              <span>AI ES作成・添削</span>
-            </h3>
-            
-            {/* Dropdown to select company */}
-            <div className="text-left">
-              <label className="block text-[9px] font-bold text-gray-400 dark:text-slate-400 mb-1">
-                対象の企業を選択
-              </label>
-              <select
-                value={selectedCompanyId}
-                disabled={isGeneratingEs}
-                onChange={e => {
-                  setSelectedCompanyId(e.target.value);
-                  const matched = companies.find(c => c.id === e.target.value);
-                  if (matched) {
-                    console.log(`[ES Target Company Selected] ID: ${matched.id}, Name: ${matched.name}`);
-                  }
-                }}
-                className={`w-full px-3 py-2 text-xs border rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 font-bold transition-all ${
-                  isDark ? 'bg-slate-950 border-slate-800 text-white' : 'bg-gray-50 border-gray-200 text-gray-855'
-                } ${isGeneratingEs ? 'opacity-60 cursor-not-allowed' : ''}`}
-              >
-                <option value="">-- 企業を選択してください --</option>
-                {companies.length > 0 ? (
-                  companies.map(co => (
-                    <option key={co.id} value={co.id}>
-                      {co.name} {co.selectionType === 'intern' ? '（インターン）' : '（本選考）'}
-                    </option>
-                  ))
-                ) : (
-                  <option value="" disabled>企業が登録されていません</option>
-                )}
-              </select>
-            </div>
-
-            {/* Input textarea for ES draft */}
-            <div className="text-left">
-              <label className="block text-[9px] font-bold text-gray-400 dark:text-slate-400 mb-1">
-                アピールしたい強みや下書き・要望 (任意)
-              </label>
-              <textarea
-                value={esRawInput}
-                onChange={e => setEsRawInput(e.target.value)}
-                disabled={isGeneratingEs}
-                placeholder="例：大学時代のサークルリーダーの経験、課題解決力を活かして貢献したい..."
-                rows={3}
-                className={`w-full px-3 py-2 text-xs border rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 font-bold transition-all resize-none ${
-                  isDark ? 'bg-slate-950 border-slate-800 text-white font-medium' : 'bg-gray-50 border-gray-200 text-gray-808 font-medium'
-                } ${isGeneratingEs ? 'opacity-60 cursor-not-allowed' : ''}`}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-left">
-              <button
-                type="button"
-                disabled={isGeneratingEs || !selectedCompanyId}
-                onClick={() => handleGenerateEs('create')}
-                className={`py-3 px-3 rounded-2xl border font-bold text-[11px] transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-3xs hover:scale-102 hover:shadow-2xs ${
-                  isGeneratingEs || !selectedCompanyId ? 'opacity-55 cursor-not-allowed' : ''
-                } ${
-                  isDark 
-                    ? 'border-slate-800 bg-slate-950/30 text-slate-250 hover:bg-slate-950/60' 
-                    : 'border-indigo-100/40 bg-indigo-50/30 text-indigo-700 hover:bg-indigo-50/60'
-                }`}
-              >
-                <Sparkles className="h-4.5 w-4.5 text-amber-500 animate-pulse" />
-                <span>志望動機を作成</span>
-              </button>
-
-              <button
-                type="button"
-                disabled={isGeneratingEs || !selectedCompanyId}
-                onClick={() => handleGenerateEs('review')}
-                className={`py-3 px-3 rounded-2xl border font-bold text-[11px] transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer active:scale-95 shadow-3xs hover:scale-102 hover:shadow-2xs ${
-                  isGeneratingEs || !selectedCompanyId ? 'opacity-55 cursor-not-allowed' : ''
-                } ${
-                  isDark 
-                    ? 'border-slate-800 bg-slate-950/30 text-slate-250 hover:bg-slate-950/60' 
-                    : 'border-indigo-100/40 bg-indigo-50/30 text-indigo-700 hover:bg-indigo-50/60'
-                }`}
-              >
-                <BrainCircuit className={`h-4.5 w-4.5 ${theme.text}`} />
-                <span>自己PRを添削</span>
-              </button>
-            </div>
-
-            {/* ES Generation Results */}
-            <div className="space-y-2 pt-1">
-              {isGeneratingEs && (
-                <div className="p-4 border rounded-2xl flex flex-col items-center justify-center gap-2 text-xs font-bold text-purple-500 bg-purple-500/5 border-purple-500/10">
-                  <span className="h-5 w-5 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
-                  <span>BERUがESを作成・添削しています... 📝</span>
-                </div>
-              )}
-
-              {!isGeneratingEs && esResult && (
-                <div className={`p-4 rounded-2xl border text-left relative overflow-hidden space-y-2 ${
-                  isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-purple-50/25 border-purple-100/40'
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-purple-600 dark:text-purple-400">📝 AI作成・添削結果</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(esResult);
-                        alert("結果をクリップボードにコピーしました！");
-                      }}
-                      className="text-[9px] font-black text-gray-400 hover:text-gray-655 cursor-pointer"
-                    >
-                      コピー
-                    </button>
-                  </div>
-                  <p className="text-[11px] leading-relaxed whitespace-pre-wrap font-medium">
-                    {esResult}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ⑥【🧠 AI自己分析メンター】 */}
-          <div className="space-y-2.5 pb-24">
-            <h3 className={`text-xs font-extrabold flex items-center gap-1.5 text-left ${
-              isDark ? 'text-slate-300' : 'text-gray-800'
-            }`}>
-              <BrainCircuit className="h-4 w-4 text-purple-500" />
-              <span>AI自己分析メンター</span>
-            </h3>
-            
-            <div className="space-y-3">
-              {chatMessages.map((msg, idx) => (
-                <div 
-                  key={idx} 
-                  className={`flex items-start gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {msg.sender === 'beru' && (
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-amber-400 via-amber-300 to-yellow-250 flex items-center justify-center shadow-xs border border-white/10 shrink-0">
-                      <Bell className="h-4.5 w-4.5 text-amber-955 fill-amber-500/20 stroke-[1.8]" />
-                    </div>
-                  )}
-                  
-                  <div className={`p-3.5 rounded-2xl border text-[11px] font-bold text-left relative max-w-[80%] ${
-                    msg.sender === 'user'
-                      ? isDark
-                        ? `${theme.bg} border-transparent text-white`
-                        : `${theme.bg} border-transparent text-white`
-                      : isDark
-                        ? 'bg-slate-850 border-slate-800 text-slate-205'
-                        : 'bg-purple-50/20 border-purple-100/35 text-gray-700'
-                  }`}>
-                    {/* Balloon tail */}
-                    <div className={`absolute top-3 w-2.5 h-2.5 rotate-45 border-b ${
-                      msg.sender === 'user'
-                        ? `-right-1 border-r ${theme.bg}`
-                        : `-left-1 border-l ${isDark ? 'bg-slate-850 border-slate-800' : 'bg-purple-50/20 border-purple-100/35'}`
-                    }`} />
-                    <p className={`font-extrabold text-[9px] mb-1 ${
-                      msg.sender === 'user' ? 'text-amber-250' : 'text-purple-600 dark:text-purple-400'
-                    }`}>
-                      {msg.sender === 'user' ? '👤 あなた' : '🧠 BERUメンター'}
-                    </p>
-                    <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
-                  </div>
-                </div>
-              ))}
-
-              {/* 優しく光る「BERUが考え中... 🔔」ローディングアニメーション */}
-              {isSendingChat && (
-                <div className="flex items-start gap-2.5 justify-start">
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-amber-400 via-amber-300 to-yellow-250 flex items-center justify-center shadow-xs border border-white/10 shrink-0">
-                    <Bell className="h-4.5 w-4.5 text-amber-950 fill-amber-500/20 stroke-[1.8] animate-bounce" />
-                  </div>
-                  <div className={`p-3.5 rounded-2xl text-[11px] font-bold border max-w-[80%] text-left relative ${
-                    isDark 
-                      ? 'bg-slate-850 border-slate-800 text-slate-400' 
-                      : 'bg-purple-50/10 border-purple-100/30 text-gray-400'
-                  }`}>
-                    <div className={`absolute top-3 -left-1 w-2.5 h-2.5 rotate-45 border-l border-b ${
-                      isDark ? 'bg-slate-850 border-slate-800' : 'bg-purple-50/10 border-purple-100/30'
-                    }`} />
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-pulse" style={{ animationDelay: '0ms' }} />
-                      <span className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-pulse" style={{ animationDelay: '150ms' }} />
-                      <span className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-pulse" style={{ animationDelay: '300ms' }} />
-                      <span className="text-[9px] font-black ml-1 text-purple-600 dark:text-purple-400 animate-pulse">BERUが考え中... 🔔</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Scroll anchor */}
-              <div ref={chatBottomRef} />
-            </div>
-          </div>
         </div>
-
-        {/* Chat Input Area (Fixed Bottom) */}
-        <div className={`p-4 border-t shrink-0 absolute bottom-0 left-0 right-0 z-10 transition-all ${
-          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-150'
+        {/* ── フッター（クレジット） ───────────────────────────────── */}
+        <div className={`px-4 py-3 border-t shrink-0 text-center ${
+          isDark ? 'border-slate-800 bg-slate-900' : 'border-gray-100 bg-white'
         }`}>
-          <form 
-            onSubmit={handleSendChat}
-            className="flex items-center gap-2"
-          >
-            <input
-              type="text"
-              value={chatMessage}
-              onChange={e => setChatMessage(e.target.value)}
-              disabled={isSendingChat}
-              placeholder={isSendingChat ? "BERUが考え中です..." : "BERUに就活の相談をする..."}
-              className={`flex-1 px-3.5 py-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 ${
-                isDark ? 'bg-slate-950 border-slate-800 text-white font-bold' : 'bg-gray-55 border-gray-200 text-gray-855 font-bold'
-              } ${isSendingChat ? 'opacity-60 cursor-not-allowed' : ''}`}
-            />
-            <button
-              type="submit"
-              disabled={isSendingChat || !chatMessage.trim()}
-              className={`p-2.5 rounded-xl text-white transition-all active:scale-95 cursor-pointer flex items-center justify-center shrink-0 ${theme.bg} ${theme.hover} ${
-                (isSendingChat || !chatMessage.trim()) ? 'opacity-55 cursor-not-allowed' : ''
-              }`}
-            >
-              <Send className="h-4 w-4" />
-            </button>
-          </form>
+          <span className="text-[9px] font-bold text-gray-400 dark:text-slate-600">
+            🔔 BERU 就活ノート — データはブラウザのみで管理されます
+          </span>
         </div>
       </motion.div>
-
-      {/* Error Toast Message */}
-      <AnimatePresence>
-        {errorToast && (
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-24 right-4 z-[60] w-[85%] max-w-[340px] p-3.5 bg-red-500 text-white text-xs font-extrabold rounded-2xl shadow-xl flex items-center gap-2.5 border border-red-400"
-          >
-            <AlertTriangle className="h-4.5 w-4.5 shrink-0 animate-bounce" />
-            <span className="flex-1 text-left">{errorToast}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </>
   );
 }
