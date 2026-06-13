@@ -1,7 +1,7 @@
 import express from "express";
 import { GoogleGenAI, Type } from "@google/genai";
 import { streamText } from 'ai';
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -431,13 +431,25 @@ ${ragContext ? JSON.stringify(ragContext, null, 2) : "コンテキストデー�
 上記のデータを踏まえ、ユーザーのメッセージに対してベルとして自然に返答してください。
 `;
 
+    const googleProvider = createGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || ''
+    });
+
     const result = streamText({
-      model: google('gemini-2.0-flash'),
+      model: googleProvider('gemini-2.0-flash'),
       system: systemPrompt,
       messages: messages,
     });
 
-    result.pipeTextStreamToResponse(res);
+    // Native Express Streaming for Vercel Serverless
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    
+    for await (const textPart of result.textStream) {
+      res.write(textPart);
+    }
+    
+    res.end();
   } catch (error) {
     console.error("Chat API error:", error);
     res.status(500).json({ error: "Failed to process chat" });
