@@ -1,7 +1,6 @@
 import express from "express";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
-import beruChatRouter from "./beru/chat";
 
 dotenv.config();
 dotenv.config({ path: '.env.local', override: false });
@@ -405,8 +404,5 @@ URL: ${url}
     res.status(500).json({ error: "Failed to extract company information" });
   }
 });
-
-// Register BERU Chat API Router
-app.use("/api/beru/chat", beruChatRouter);
 
 export default app;
