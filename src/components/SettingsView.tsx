@@ -41,8 +41,6 @@ export default function SettingsView() {
     currentUser,
     authStatus,
     syncStatus,
-    isBiometricEnabled,
-    setBiometrics,
     logout,
     deleteAccount,
     setShowOnboarding,
@@ -161,68 +159,6 @@ export default function SettingsView() {
         </button>
       </div>
 
-      {/* --- Profile Settings Section (Simplified & Compacted) --- */}
-      <div className={`p-4 rounded-3xl border shadow-xs space-y-3.5 ${
-        isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
-      }`}>
-        <div className="flex items-center justify-between border-b pb-2 px-0.5 border-gray-100 dark:border-slate-800">
-          <h3 className={`text-xs font-bold flex items-center gap-1.5 ${
-            isDark ? 'text-slate-200' : 'text-gray-800'
-          }`}>
-            <User className={`h-4.5 w-4.5 ${theme.text}`} />
-            プロフィール設定
-          </h3>
-          <span className="text-[10px] text-gray-400 dark:text-slate-500 font-sans">
-            ホーム画面等に自動反映されます
-          </span>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-              名前・ニックネーム
-            </label>
-            <input 
-              type="text"
-              value={settings.profileName}
-              onChange={e => updateSettings({ profileName: e.target.value })}
-              placeholder="例: タロウ"
-              className={`w-full p-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 ${
-                isDark ? 'bg-slate-800 border-slate-700 text-slate-100 font-medium' : 'bg-gray-50 border-gray-250 text-gray-800 font-medium'
-              }`}
-            />
-          </div>
-
-          <div>
-            <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-              就活開始日
-            </label>
-            <input 
-              type="date"
-              value={settings.shukatsuStartDate}
-              onChange={e => updateSettings({ shukatsuStartDate: e.target.value })}
-              className={`w-full p-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 font-mono ${
-                isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-gray-50 border-gray-250 text-gray-800'
-              }`}
-            />
-          </div>
-
-          <div>
-            <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
-              一言メモ（目標など）
-            </label>
-            <input 
-              type="text"
-              value={settings.profileMemo}
-              onChange={e => updateSettings({ profileMemo: e.target.value })}
-              placeholder="例: 絶対志望内定！"
-              className={`w-full p-2.5 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-450 ${
-                isDark ? 'bg-slate-800 border-slate-700 text-slate-100 font-medium' : 'bg-gray-50 border-gray-250 text-gray-800 font-medium'
-              }`}
-            />
-          </div>
-        </div>
-      </div>
 
       {/* --- Light / Dark Mode Toggle Section --- */}
       <div className={`p-5 rounded-3xl border shadow-xs space-y-4 ${
@@ -561,33 +497,6 @@ export default function SettingsView() {
               </div>
             </div>
 
-            {/* Simulated biometric login logic */}
-            <div className="flex items-center justify-between p-3.5 bg-gray-50/50 border rounded-2xl dark:bg-slate-900/40 dark:border-slate-800">
-              <div>
-                <span className={`font-bold text-xs block ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
-                  Touch ID / Face ID 生体認証連携
-                </span>
-                <span className="text-[10px] text-gray-400 block mt-0.5">起動時のパスコード認証やログインをかんたん生体認証化</span>
-              </div>
-
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={isBiometricEnabled}
-                  onChange={(e) => {
-                    const enabled = e.target.checked;
-                    if (enabled) {
-                      alert('🔐 端末側の Touch ID / Face ID 認証要求を受け付けました。\nシステム認証を通りました。これでログイン時の生体認証が有効になります。');
-                      setBiometrics(true);
-                    } else {
-                      setBiometrics(false);
-                    }
-                  }}
-                  className="sr-only peer"
-                />
-                <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:height-5 after:width-5 after:transition-all ${isBiometricEnabled ? theme.bg : 'bg-gray-200'}`} />
-              </label>
-            </div>
           </div>
 
           {/* Local statistics diagnostics */}

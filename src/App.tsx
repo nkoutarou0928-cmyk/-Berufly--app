@@ -153,18 +153,6 @@ function WelcomeScreen() {
     }, 700);
   };
 
-  // Automated biometric face/finger simulation login bypass
-  const isBiometricSaved = localStorage.getItem('shukatsu_biometric_enabled') === 'true';
-  const handleBiometricLogin = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      alert('🔐 外部端末 Touch ID / Face ID 連携チェックに成功しました（SSL鍵ペア検証）。\n自動ログインに成功しました。データベースを自動同期します。');
-      const savedEmail = localStorage.getItem('shukatsu_user_email') || 'demo@career.com';
-      loginWithEmail(savedEmail, 'Career1234');
-      setIsLoading(false);
-    }, 700);
-  };
-
   const fontSizeClass = fontSize === 'small' ? 'text-sm' : fontSize === 'large' ? 'text-lg' : 'text-base';
 
   return (
@@ -448,20 +436,6 @@ function WelcomeScreen() {
                 </div>
               </form>
             )}
-
-            {/* Quick biometric login bypass shortcut */}
-            {isBiometricSaved && ['signup', 'login'].includes(activeTab) && (
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={handleBiometricLogin}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold rounded-xl text-[11px] transition-all cursor-pointer border border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-800/40"
-                >
-                  <Smartphone className="h-4 w-4 text-emerald-500 animate-pulse" />
-                  <span>生体認証 (Touch ID / Face ID) で自動ログイン</span>
-                </button>
-              </div>
-            )}
           </div>
         )}
       </motion.div>
@@ -625,9 +599,6 @@ function AppContent() {
           <div className="flex items-center gap-3">
             {/* 同期・ユーザー情報 */}
             <div className="flex items-center gap-2 border-l border-gray-150 dark:border-slate-800 pl-3">
-              <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center text-[10px] font-black text-white shadow-xs">
-                {currentUser?.name?.slice(0, 1).toUpperCase() || 'U'}
-              </div>
               <div className="text-left hidden xs:block">
                 <span className={`text-[10px] font-black block leading-none ${isDark ? 'text-slate-205' : 'text-gray-800'}`}>
                   {currentUser?.name || 'ユーザー'}

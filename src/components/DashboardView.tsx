@@ -190,51 +190,8 @@ export default function DashboardView() {
     const w = ['日', '月', '火', '水', '木', '金', '土'][today.getDay()];
     return `${y}年${m}月${d}日(${w})`;
   };
-
-  // Days since Shukatsu Start Date helper
-  const getShukatsuDaysCount = () => {
-    if (!settings.shukatsuStartDate) return null;
-    const start = new Date(settings.shukatsuStartDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    start.setHours(0, 0, 0, 0);
-    const diffTime = today.getTime() - start.getTime();
-    if (diffTime < 0) {
-      const diffDays = Math.ceil(Math.abs(diffTime) / (1000 * 60 * 60 * 24));
-      return `開始まであと ${diffDays} 日`;
-    }
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // start date is day 1
-    return `就活 ${diffDays} 日目`;
-  };
-
-  const shukatsuDaysText = getShukatsuDaysCount();
-
   return (
     <div className="space-y-6 pb-20 text-left">
-      {/* Compact Welcome Ribbon */}
-      <div className="px-4 py-2.5 rounded-2xl border border-app-border bg-app-bg-secondary text-app-text-secondary transition-all flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-bold text-app-text-primary">
-              {settings.profileName || 'ゲストユーザー'}
-            </span>
-          </div>
-          {settings.profileMemo && (
-            <>
-              <span className="text-app-border">•</span>
-              <span className="text-app-text-secondary italic truncate max-w-[200px] sm:max-w-[350px] md:max-w-[500px]">
-                「{settings.profileMemo}」
-              </span>
-            </>
-          )}
-        </div>
-        {shukatsuDaysText && (
-          <span className="font-bold font-mono px-2 py-0.5 rounded-md text-[10px] bg-app-card-bg text-app-text-primary border border-app-border">
-            {shukatsuDaysText}
-          </span>
-        )}
-      </div>
 
       {/* Top Welcome Bar */}
       <div className="p-4 rounded-3xl border border-app-card-border bg-app-card-bg flex items-center justify-between transition-all shadow-3xs">

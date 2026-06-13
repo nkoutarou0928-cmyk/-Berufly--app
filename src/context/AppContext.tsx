@@ -27,7 +27,6 @@ interface AppContextType {
   currentUser: { uid: string; email: string; name: string; isAnonymous: boolean } | null;
   authStatus: 'welcome' | 'unauthenticated' | 'authenticated';
   syncStatus: 'synced' | 'syncing' | 'offline' | 'error';
-  isBiometricEnabled: boolean;
 
   // Account actions
   signUpWithEmail: (email: string, pass: string, name: string) => Promise<void>;
@@ -38,7 +37,6 @@ interface AppContextType {
   completePasswordReset: (email: string, token: string, newPass: string) => Promise<void>;
   logout: () => void;
   deleteAccount: () => void;
-  setBiometrics: (enabled: boolean) => void;
   
   // Navigation actions
   setActiveTab: (tab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about') => void;
@@ -184,7 +182,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<AppContextType['currentUser']>(null);
   const [authStatus, setAuthStatus] = useState<AppContextType['authStatus']>('welcome');
   const [syncStatus, setSyncStatus] = useState<AppContextType['syncStatus']>('synced');
-  const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
 
   const setIsSyncing = (isSyncing: boolean) => {
     setSyncStatus(isSyncing ? 'syncing' : 'synced');
@@ -251,10 +248,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setOfferComparisons([]);
       setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
       setNotifications([]);
-
-      // Load client settings only
-      const isBio = localStorage.getItem('shukatsu_biometric_enabled');
-      setIsBiometricEnabled(isBio === 'true');
 
       const onboarded = localStorage.getItem('shukatsu_onboarded');
       if (onboarded !== 'true') {
@@ -1138,11 +1131,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     alert('アカウント情報およびクラウド同期データを完全に抹消しました。');
   };
 
-  const setBiometrics = (enabled: boolean) => {
-    setIsBiometricEnabled(enabled);
-    localStorage.setItem('shukatsu_biometric_enabled', enabled ? 'true' : 'false');
-  };
-
   // --- End of Account Actions ---
 
   // Run dynamic alarm simulation checks when companies are modified or on startup
@@ -1661,7 +1649,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         currentUser,
         authStatus,
         syncStatus,
-        isBiometricEnabled,
         signUpWithEmail,
         loginWithEmail,
         verifyEmailCode,
@@ -1670,7 +1657,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         completePasswordReset,
         logout,
         deleteAccount,
-        setBiometrics,
         setActiveTab,
         navigateToCompany,
         setSelectedCompanyId,

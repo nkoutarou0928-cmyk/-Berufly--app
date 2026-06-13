@@ -14,11 +14,7 @@ export const INITIAL_SETTINGS: AppSettings = {
   notificationsEnabled: true,
   notificationDaysBefore: 3,
   notificationTime: '09:00',
-  themeMode: 'light',
-  profileName: '就活チャレンジャー',
-  profileAvatar: 'preset-1',
-  profileMemo: '絶対内定！焦らず自分らしく。',
-  shukatsuStartDate: '2026-04-01'
+  themeMode: 'light'
 };
 
 export const INITIAL_OB_VISITS: ObVisit[] = [];

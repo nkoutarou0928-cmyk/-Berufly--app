@@ -133,10 +133,6 @@ export interface AppSettings {
   notificationDaysBefore: number; // 何日前に通知するか
   notificationTime: string; // "09:00" etc.
   themeMode: 'light' | 'dark' | 'system';
-  profileName: string;
-  profileAvatar: string; // Base64 dataURL or avatar preset ID (e.g., 'preset-1')
-  profileMemo: string; // 一言メモ (自分への励ましや就活の目標)
-  shukatsuStartDate: string; // 就活開始日 (YYYY-MM-DD)
 }
 
 export interface NotificationItem {
