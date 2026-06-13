@@ -10,12 +10,12 @@ interface BeruDrawerProps {
 
 export const BeruDrawer: React.FC<BeruDrawerProps> = ({ isOpen, onClose }) => {
   const { 
-    state: { companies, todos, selfAnalysis, profile } 
+    companies, todos, selfAnalysis, currentUser 
   } = useApp();
 
   // Create the RAG context string
   const ragContext = {
-    profile: profile,
+    profile: currentUser,
     companies: companies.slice(0, 50).map(c => ({
       name: c.name,
       status: c.status,
