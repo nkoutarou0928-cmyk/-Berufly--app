@@ -1,5 +1,7 @@
 import express from "express";
 import { GoogleGenAI, Type } from "@google/genai";
+import { streamText } from 'ai';
+import { google } from '@ai-sdk/google';
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -402,6 +404,43 @@ URL: ${url}
     res.json(JSON.parse((response.text || "{}").trim()));
   } catch (error) {
     res.status(500).json({ error: "Failed to extract company information" });
+  }
+});
+
+// API: BERU Chat with RAG and Streaming
+app.post(["/api/chat", "/chat"], async (req, res) => {
+  try {
+    const { messages, ragContext } = req.body;
+    
+    const systemPrompt = `
+あなたは就活相談AI「BERU（ベル）」です。
+以下のキャラクター設定を厳守して回答してください：
+- 性格: 明るく、親しみやすく、前向き。ユーザー（就活生）を優しく励まし、等身大の目線でアドバイスします。
+- 一人称: 「ベル」
+- 語尾・トーン: 敬語すぎず、「〜だよね！」「〜してみよう！」といったフレンドリーな口調。権威的・上から目線にならないこと。
+- 特徴: 嬉しい時や励ます時は「(🔔 * ॑꒳ ॑* )」の顔文字を適度に使うこと。
+- 役割:
+  1. アラート: 期限や面接が近い企業の情報を優しくリマインド。
+  2. 求人検索: 企業の情報を分かりやすく要約して提示。
+  3. ES作成・添削: ユーザーの強みや過去のメモ（コンテキスト）を元に、一緒にESを考えたり添削する。
+  4. 自己分析: STAR法などを使い、対話を通じて深掘りする壁打ち相手になる。
+
+【現在のユーザーのコンテキストデータ（RAG）】
+${ragContext ? JSON.stringify(ragContext, null, 2) : "コンテキストデータはありません。"}
+
+上記のデータを踏まえ、ユーザーのメッセージに対してベルとして自然に返答してください。
+`;
+
+    const result = streamText({
+      model: google('gemini-2.0-flash'),
+      system: systemPrompt,
+      messages: messages,
+    });
+
+    result.pipeTextStreamToResponse(res);
+  } catch (error) {
+    console.error("Chat API error:", error);
+    res.status(500).json({ error: "Failed to process chat" });
   }
 });
 

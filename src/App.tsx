@@ -20,6 +20,7 @@ const AboutView = lazy(() => import('./components/AboutView'));
 
 import { OnboardingModal } from './components/OnboardingModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { BeruDrawer } from './components/BeruDrawer';
 
 import { 
   Home, 
@@ -463,6 +464,9 @@ function AppContent() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showA2HSBanner, setShowA2HSBanner] = useState(false);
 
+  // BERU Drawer state
+  const [isBeruOpen, setIsBeruOpen] = useState(false);
+
   useEffect(() => {
     const isDismissed = localStorage.getItem('berufly_a2hs_dismissed') === 'true';
 
@@ -597,6 +601,15 @@ function AppContent() {
           </div>
           
           <div className="flex items-center gap-3">
+            {/* BERUに相談ボタン */}
+            <button
+              onClick={() => setIsBeruOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-full shadow-md hover:shadow-lg hover:scale-105 transition-all cursor-pointer"
+            >
+              <span className="inline-block animate-bounce" style={{ animationDuration: '2s' }}>🔔</span>
+              <span className="hidden xs:inline">BERUに相談</span>
+            </button>
+
             {/* 同期・ユーザー情報 */}
             <div className="flex items-center gap-2 border-l border-gray-150 dark:border-slate-800 pl-3">
               <div className="text-left hidden xs:block">
@@ -765,6 +778,9 @@ function AppContent() {
 
       {/* Onboarding Overlay Modal */}
       <OnboardingModal />
+
+      {/* BERU AI Drawer */}
+      <BeruDrawer isOpen={isBeruOpen} onClose={() => setIsBeruOpen(false)} />
 
       {/* PWA Install Invitation Banner */}
       <PWAInstallPrompt />
