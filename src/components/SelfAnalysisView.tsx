@@ -23,7 +23,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { parseStarData, getDisplayRepresentation } from '../utils/selfAnalysis';
+import { parseStarData, getDisplayRepresentation, parseSelfAnalysisText } from '../utils/selfAnalysis';
 
 export default function SelfAnalysisView() {
   const { 
@@ -53,113 +53,90 @@ export default function SelfAnalysisView() {
 
   // Edit Modes ('free' | 'star')
   const [selfPrMode, setSelfPrMode] = useState<'free' | 'star'>(() => {
-    return parseStarData(selfAnalysis?.selfPR || '') ? 'star' : 'free';
+    return parseSelfAnalysisText(selfAnalysis?.selfPR || '').activeMode;
   });
   const [gakuchikaMode, setGakuchikaMode] = useState<'free' | 'star'>(() => {
-    return parseStarData(selfAnalysis?.gakuchika || '') ? 'star' : 'free';
+    return parseSelfAnalysisText(selfAnalysis?.gakuchika || '').activeMode;
   });
 
   // Keep modes in sync when selfAnalysis changes (e.g. from backend sync)
   React.useEffect(() => {
-    const isPrStar = parseStarData(selfAnalysis?.selfPR || '') !== null;
-    setSelfPrMode(isPrStar ? 'star' : 'free');
+    const parsed = parseSelfAnalysisText(selfAnalysis?.selfPR || '');
+    setSelfPrMode(parsed.activeMode);
   }, [selfAnalysis.selfPR]);
 
   React.useEffect(() => {
-    const isGakuStar = parseStarData(selfAnalysis?.gakuchika || '') !== null;
-    setGakuchikaMode(isGakuStar ? 'star' : 'free');
+    const parsed = parseSelfAnalysisText(selfAnalysis?.gakuchika || '');
+    setGakuchikaMode(parsed.activeMode);
   }, [selfAnalysis.gakuchika]);
 
   // Mode togglers
   const toggleSelfPrMode = (mode: 'free' | 'star') => {
-    if (mode === 'free') {
-      const plainText = getDisplayRepresentation(selfAnalysis.selfPR || '');
-      saveSelfAnalysis({ ...selfAnalysis, selfPR: plainText });
-    } else {
-      const currentText = selfAnalysis.selfPR || '';
-      const existingStar = parseStarData(currentText);
-      if (!existingStar) {
-        const initialStar = {
-          isStar: true,
-          situation: currentText,
-          task: '',
-          action: '',
-          result: ''
-        };
-        saveSelfAnalysis({ ...selfAnalysis, selfPR: JSON.stringify(initialStar) });
-      }
-    }
+    const parsed = parseSelfAnalysisText(selfAnalysis.selfPR || '');
+    saveSelfAnalysis({
+      ...selfAnalysis,
+      selfPR: JSON.stringify({
+        activeMode: mode,
+        freeText: parsed.freeText,
+        starData: parsed.starData
+      })
+    });
     setSelfPrMode(mode);
   };
 
   const toggleGakuchikaMode = (mode: 'free' | 'star') => {
-    if (mode === 'free') {
-      const plainText = getDisplayRepresentation(selfAnalysis.gakuchika || '');
-      saveSelfAnalysis({ ...selfAnalysis, gakuchika: plainText });
-    } else {
-      const currentText = selfAnalysis.gakuchika || '';
-      const existingStar = parseStarData(currentText);
-      if (!existingStar) {
-        const initialStar = {
-          isStar: true,
-          situation: currentText,
-          task: '',
-          action: '',
-          result: ''
-        };
-        saveSelfAnalysis({ ...selfAnalysis, gakuchika: JSON.stringify(initialStar) });
-      }
-    }
+    const parsed = parseSelfAnalysisText(selfAnalysis.gakuchika || '');
+    saveSelfAnalysis({
+      ...selfAnalysis,
+      gakuchika: JSON.stringify({
+        activeMode: mode,
+        freeText: parsed.freeText,
+        starData: parsed.starData
+      })
+    });
     setGakuchikaMode(mode);
   };
 
   // STAR field change handlers
   const handleStarPRChange = (field: 'situation' | 'task' | 'action' | 'result', value: string) => {
-    const current = parseStarData(selfAnalysis.selfPR || '') || {
-      isStar: true,
-      situation: '',
-      task: '',
-      action: '',
-      result: ''
-    };
-    const updated = {
-      ...current,
+    const parsed = parseSelfAnalysisText(selfAnalysis.selfPR || '');
+    const updatedStar = {
+      ...parsed.starData,
       [field]: value
     };
-    saveSelfAnalysis({ ...selfAnalysis, selfPR: JSON.stringify(updated) });
+    saveSelfAnalysis({
+      ...selfAnalysis,
+      selfPR: JSON.stringify({
+        activeMode: 'star',
+        freeText: parsed.freeText,
+        starData: updatedStar
+      })
+    });
   };
 
   const handleStarGakuchikaChange = (field: 'situation' | 'task' | 'action' | 'result', value: string) => {
-    const current = parseStarData(selfAnalysis.gakuchika || '') || {
-      isStar: true,
-      situation: '',
-      task: '',
-      action: '',
-      result: ''
-    };
-    const updated = {
-      ...current,
+    const parsed = parseSelfAnalysisText(selfAnalysis.gakuchika || '');
+    const updatedStar = {
+      ...parsed.starData,
       [field]: value
     };
-    saveSelfAnalysis({ ...selfAnalysis, gakuchika: JSON.stringify(updated) });
+    saveSelfAnalysis({
+      ...selfAnalysis,
+      gakuchika: JSON.stringify({
+        activeMode: 'star',
+        freeText: parsed.freeText,
+        starData: updatedStar
+      })
+    });
   };
 
-  // Parsed STAR Data
-  const starPR = parseStarData(selfAnalysis.selfPR || '') || {
-    isStar: true,
-    situation: '',
-    task: '',
-    action: '',
-    result: ''
-  };
+  // Parsed Data
+  const parsedPR = parseSelfAnalysisText(selfAnalysis.selfPR || '');
+  const parsedGakuchika = parseSelfAnalysisText(selfAnalysis.gakuchika || '');
 
-  const starGakuchika = parseStarData(selfAnalysis.gakuchika || '') || {
-    isStar: true,
-    situation: '',
-    task: '',
-    action: '',
-    result: ''
-  };
+  // For compatibility with legacy bindings expecting starPR / starGakuchika
+  const starPR = parsedPR.starData;
+  const starGakuchika = parsedGakuchika.starData;
 
   // Count helper
   const displayPR = getDisplayRepresentation(selfAnalysis.selfPR || '');
@@ -382,8 +359,17 @@ export default function SelfAnalysisView() {
 
                 {selfPrMode === 'free' ? (
                   <textarea
-                    value={selfAnalysis.selfPR || ''}
-                    onChange={e => saveSelfAnalysis({ ...selfAnalysis, selfPR: e.target.value })}
+                    value={parsedPR.freeText}
+                    onChange={e => {
+                      saveSelfAnalysis({
+                        ...selfAnalysis,
+                        selfPR: JSON.stringify({
+                          activeMode: 'free',
+                          freeText: e.target.value,
+                          starData: parsedPR.starData
+                        })
+                      });
+                    }}
                     rows={6}
                     maxLength={1500}
                     placeholder="私の強みは【主体的解決力】です。大学時代、サークル活動にて～"
@@ -527,8 +513,17 @@ export default function SelfAnalysisView() {
 
                 {gakuchikaMode === 'free' ? (
                   <textarea
-                    value={selfAnalysis.gakuchika || ''}
-                    onChange={e => saveSelfAnalysis({ ...selfAnalysis, gakuchika: e.target.value })}
+                    value={parsedGakuchika.freeText}
+                    onChange={e => {
+                      saveSelfAnalysis({
+                        ...selfAnalysis,
+                        gakuchika: JSON.stringify({
+                          activeMode: 'free',
+                          freeText: e.target.value,
+                          starData: parsedGakuchika.starData
+                        })
+                      });
+                    }}
                     rows={6}
                     maxLength={1500}
                     placeholder="学生時代に最も注力したことは、サークル代表としての新規会員獲得です。当初～"
@@ -731,7 +726,8 @@ export default function SelfAnalysisView() {
                       </button>
                       <button
                         type="submit"
-                        className={`text-xs font-bold px-4 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg}`}
+                        disabled={!motivationIndustry.trim() || !motivationContent.trim()}
+                        className={`text-xs font-bold px-4 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         保存する
                       </button>
@@ -760,13 +756,13 @@ export default function SelfAnalysisView() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={`inline-block text-[10px] font-extrabold font-mono px-2 py-0.5 rounded-md ${
+                        <span className={`inline-block text-[10px] font-extrabold font-mono px-2 py-0.5 rounded-md break-words ${
                           isDark ? 'bg-slate-800 text-slate-300' : 'bg-gray-150 text-gray-700'
                         }`}>
                           {bm.industry}
                         </span>
                         {bm.occupation && (
-                          <span className={`inline-block text-[10px] px-2 py-0.5 rounded-md ${
+                          <span className={`inline-block text-[10px] px-2 py-0.5 rounded-md break-words ${
                             isDark ? 'bg-slate-900 border border-slate-800 text-slate-400' : 'bg-white border border-gray-200 text-gray-500'
                           }`}>
                             {bm.occupation}
@@ -798,7 +794,7 @@ export default function SelfAnalysisView() {
                       </div>
                     </div>
 
-                    <p className={`text-xs leading-relaxed font-sans whitespace-pre-wrap ${
+                    <p className={`text-xs leading-relaxed font-sans whitespace-pre-wrap break-words ${
                       isDark ? 'text-slate-200' : 'text-gray-800'
                     }`}>
                       {bm.content}
@@ -933,7 +929,8 @@ export default function SelfAnalysisView() {
                       </button>
                       <button
                         type="submit"
-                        className={`text-xs font-bold px-4 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg}`}
+                        disabled={!faqQuestion.trim() || !faqAnswer.trim()}
+                        className={`text-xs font-bold px-4 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         保存する
                       </button>
@@ -963,7 +960,7 @@ export default function SelfAnalysisView() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex gap-2 items-start">
                         <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-md text-white ${theme.bg} mt-0.5 font-mono`}>Q</span>
-                        <h4 className={`text-xs font-bold leading-relaxed ${isDark ? 'text-slate-155' : 'text-gray-905'}`}>
+                        <h4 className={`text-xs font-bold leading-relaxed break-words ${isDark ? 'text-slate-155' : 'text-gray-905'}`}>
                           {faq.question}
                         </h4>
                       </div>
@@ -996,7 +993,7 @@ export default function SelfAnalysisView() {
                       <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-md font-mono ${
                         isDark ? 'bg-slate-800 text-slate-350' : 'bg-gray-100 text-gray-500'
                       }`}>A</span>
-                      <p className={`text-xs leading-relaxed whitespace-pre-wrap font-sans ${
+                      <p className={`text-xs leading-relaxed whitespace-pre-wrap break-words font-sans ${
                         isDark ? 'text-slate-300' : 'text-gray-700'
                       }`}>
                         {faq.answer}

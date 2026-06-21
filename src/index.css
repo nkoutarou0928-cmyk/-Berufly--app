@@ -37,7 +37,7 @@
 }
 
 @theme {
-  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* 既存の slate パレットを、青みを抑えた目に優しい超深ダークグレーにオーバーライド */
   --color-slate-50: #F9FAFB;
@@ -74,6 +74,10 @@
   --color-app-calendar-today-bg: var(--app-calendar-today-bg);
   --color-app-calendar-selected-bg: var(--app-calendar-selected-bg);
   --color-app-calendar-selected-text: var(--app-calendar-selected-text);
+}
+
+body, input, textarea, select, button {
+  font-family: var(--font-sans);
 }
 
 body {
