@@ -38,7 +38,8 @@ import {
   Smartphone,
   RefreshCw,
   Clock,
-  Bell
+  Bell,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -457,6 +458,9 @@ function AppContent() {
   
   const theme = getTheme(settings.themeColor);
 
+  // Footer Modal overlay state
+  const [footerModalType, setFooterModalType] = useState<'about' | 'privacy' | 'contact' | null>(null);
+
 
 
   // PWA Add to Home Screen (A2HS) states
@@ -636,39 +640,35 @@ function AppContent() {
         </div>
 
         {/* Global compliance Footer */}
-        <footer className={`mt-16 pt-6 pb-2 border-t text-center space-y-3.5 ${
-          isDark ? 'border-slate-800 text-slate-500' : 'border-gray-200/65 text-gray-405'
+        <footer className={`mt-12 pt-6 pb-6 text-center space-y-2.5 transition-colors ${
+          isDark ? 'text-slate-500' : 'text-gray-405'
         }`}>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] font-bold">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10.5px] font-bold">
             <button 
               type="button" 
-              onClick={() => setActiveTab('about')}
-              className={`hover:underline cursor-pointer bg-transparent border-0 transition-colors ${
-                activeTab === 'about' ? theme.text : 'hover:text-indigo-650 dark:hover:text-indigo-400'
-              }`}
+              onClick={() => setFooterModalType('about')}
+              className="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-transparent border-0"
             >
               About
             </button>
+            <span className="text-gray-300 dark:text-slate-800 font-normal select-none">•</span>
             <button 
               type="button" 
-              onClick={() => setActiveTab('privacy')}
-              className={`hover:underline cursor-pointer bg-transparent border-0 transition-colors ${
-                activeTab === 'privacy' ? theme.text : 'hover:text-indigo-650 dark:hover:text-indigo-400'
-              }`}
+              onClick={() => setFooterModalType('privacy')}
+              className="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-transparent border-0"
             >
               プライバシーポリシー
             </button>
+            <span className="text-gray-300 dark:text-slate-800 font-normal select-none">•</span>
             <button 
               type="button" 
-              onClick={() => setActiveTab('contact')}
-              className={`hover:underline cursor-pointer bg-transparent border-0 transition-colors ${
-                activeTab === 'contact' ? theme.text : 'hover:text-indigo-650 dark:hover:text-indigo-400'
-              }`}
+              onClick={() => setFooterModalType('contact')}
+              className="hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-transparent border-0"
             >
               お問い合わせ
             </button>
           </div>
-          <p className="text-[9px] font-medium tracking-wide">
+          <p className="text-[9.5px] tracking-wide font-sans opacity-70">
             &copy; 2026 Berufly. All Rights Reserved.
           </p>
         </footer>
@@ -762,6 +762,54 @@ function AppContent() {
       </nav>
 
 
+
+      {/* Footer Modal Overlay */}
+      <AnimatePresence>
+        {footerModalType && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+            {/* Backdrop click to close */}
+            <div className="fixed inset-0" onClick={() => setFooterModalType(null)} />
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ type: 'spring', duration: 0.3 }}
+              className={`relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl shadow-2xl border flex flex-col p-6 sm:p-8 text-left z-10 ${
+                isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-gray-100 text-gray-900'
+              }`}
+            >
+              {/* Close Button */}
+              <button 
+                type="button"
+                onClick={() => setFooterModalType(null)}
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors z-20 cursor-pointer"
+              >
+                <X className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-350" />
+              </button>
+
+              {/* Modal Content */}
+              <div className="mt-2 pr-1">
+                {footerModalType === 'about' && (
+                  <Suspense fallback={<div className="py-10 text-center text-xs">読み込み中...</div>}>
+                    <AboutView />
+                  </Suspense>
+                )}
+                {footerModalType === 'privacy' && (
+                  <Suspense fallback={<div className="py-10 text-center text-xs">読み込み中...</div>}>
+                    <PrivacyView />
+                  </Suspense>
+                )}
+                {footerModalType === 'contact' && (
+                  <Suspense fallback={<div className="py-10 text-center text-xs">読み込み中...</div>}>
+                    <ContactView />
+                  </Suspense>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Onboarding Overlay Modal */}
       <OnboardingModal />

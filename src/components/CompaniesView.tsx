@@ -40,6 +40,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Company, CompanyStatus, SelectionStage, ESQuestionMemo, InterviewMemo, ESCategory, ESStatus, InternStatus, InternType, InternStep } from '../types';
 import { MASTER_COMPANIES } from '../constants/companies';
 import { supabase } from '../utils/supabaseClient';
+import { getDisplayRepresentation } from '../utils/selfAnalysis';
 
 export default function CompaniesView() {
   const { 
@@ -2573,7 +2574,7 @@ export default function CompaniesView() {
                                   type="button"
                                   onClick={() => {
                                     setNewQuestion('自己PRについて詳しく教えてください（400文字目安）');
-                                    setNewAnswer(selfAnalysis.selfPR);
+                                    setNewAnswer(getDisplayRepresentation(selfAnalysis.selfPR));
                                     setShowImportSelfAnalysis(false);
                                   }}
                                   className={`text-[10px] px-2 py-0.5 rounded-md font-bold text-white transition-all hover:opacity-90 cursor-pointer ${theme.bg}`}
@@ -2581,7 +2582,7 @@ export default function CompaniesView() {
                                   引用する
                                 </button>
                               </div>
-                              <p className="text-[10.5px] text-gray-400 line-clamp-3 leading-relaxed">{selfAnalysis.selfPR}</p>
+                              <p className="text-[10.5px] text-gray-400 line-clamp-3 leading-relaxed">{getDisplayRepresentation(selfAnalysis.selfPR)}</p>
                             </div>
                           )}
 
@@ -2596,7 +2597,7 @@ export default function CompaniesView() {
                                   type="button"
                                   onClick={() => {
                                     setNewQuestion('学生時代に最も力を入れたこと（ガクチカ）を教えてください。');
-                                    setNewAnswer(selfAnalysis.gakuchika);
+                                    setNewAnswer(getDisplayRepresentation(selfAnalysis.gakuchika));
                                     setShowImportSelfAnalysis(false);
                                   }}
                                   className={`text-[10px] px-2 py-0.5 rounded-md font-bold text-white transition-all hover:opacity-90 cursor-pointer ${theme.bg}`}
@@ -2604,7 +2605,7 @@ export default function CompaniesView() {
                                   引用する
                                 </button>
                               </div>
-                              <p className="text-[10.5px] text-gray-400 line-clamp-3 leading-relaxed">{selfAnalysis.gakuchika}</p>
+                              <p className="text-[10.5px] text-gray-400 line-clamp-3 leading-relaxed">{getDisplayRepresentation(selfAnalysis.gakuchika)}</p>
                             </div>
                           )}
 

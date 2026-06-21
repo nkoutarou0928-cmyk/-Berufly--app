@@ -23,6 +23,7 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { parseStarData, getDisplayRepresentation } from '../utils/selfAnalysis';
 
 export default function SelfAnalysisView() {
   const { 
@@ -50,9 +51,121 @@ export default function SelfAnalysisView() {
   const [faqQuestion, setFaqQuestion] = useState('');
   const [faqAnswer, setFaqAnswer] = useState('');
 
+  // Edit Modes ('free' | 'star')
+  const [selfPrMode, setSelfPrMode] = useState<'free' | 'star'>(() => {
+    return parseStarData(selfAnalysis?.selfPR || '') ? 'star' : 'free';
+  });
+  const [gakuchikaMode, setGakuchikaMode] = useState<'free' | 'star'>(() => {
+    return parseStarData(selfAnalysis?.gakuchika || '') ? 'star' : 'free';
+  });
+
+  // Keep modes in sync when selfAnalysis changes (e.g. from backend sync)
+  React.useEffect(() => {
+    const isPrStar = parseStarData(selfAnalysis?.selfPR || '') !== null;
+    setSelfPrMode(isPrStar ? 'star' : 'free');
+  }, [selfAnalysis.selfPR]);
+
+  React.useEffect(() => {
+    const isGakuStar = parseStarData(selfAnalysis?.gakuchika || '') !== null;
+    setGakuchikaMode(isGakuStar ? 'star' : 'free');
+  }, [selfAnalysis.gakuchika]);
+
+  // Mode togglers
+  const toggleSelfPrMode = (mode: 'free' | 'star') => {
+    if (mode === 'free') {
+      const plainText = getDisplayRepresentation(selfAnalysis.selfPR || '');
+      saveSelfAnalysis({ ...selfAnalysis, selfPR: plainText });
+    } else {
+      const currentText = selfAnalysis.selfPR || '';
+      const existingStar = parseStarData(currentText);
+      if (!existingStar) {
+        const initialStar = {
+          isStar: true,
+          situation: currentText,
+          task: '',
+          action: '',
+          result: ''
+        };
+        saveSelfAnalysis({ ...selfAnalysis, selfPR: JSON.stringify(initialStar) });
+      }
+    }
+    setSelfPrMode(mode);
+  };
+
+  const toggleGakuchikaMode = (mode: 'free' | 'star') => {
+    if (mode === 'free') {
+      const plainText = getDisplayRepresentation(selfAnalysis.gakuchika || '');
+      saveSelfAnalysis({ ...selfAnalysis, gakuchika: plainText });
+    } else {
+      const currentText = selfAnalysis.gakuchika || '';
+      const existingStar = parseStarData(currentText);
+      if (!existingStar) {
+        const initialStar = {
+          isStar: true,
+          situation: currentText,
+          task: '',
+          action: '',
+          result: ''
+        };
+        saveSelfAnalysis({ ...selfAnalysis, gakuchika: JSON.stringify(initialStar) });
+      }
+    }
+    setGakuchikaMode(mode);
+  };
+
+  // STAR field change handlers
+  const handleStarPRChange = (field: 'situation' | 'task' | 'action' | 'result', value: string) => {
+    const current = parseStarData(selfAnalysis.selfPR || '') || {
+      isStar: true,
+      situation: '',
+      task: '',
+      action: '',
+      result: ''
+    };
+    const updated = {
+      ...current,
+      [field]: value
+    };
+    saveSelfAnalysis({ ...selfAnalysis, selfPR: JSON.stringify(updated) });
+  };
+
+  const handleStarGakuchikaChange = (field: 'situation' | 'task' | 'action' | 'result', value: string) => {
+    const current = parseStarData(selfAnalysis.gakuchika || '') || {
+      isStar: true,
+      situation: '',
+      task: '',
+      action: '',
+      result: ''
+    };
+    const updated = {
+      ...current,
+      [field]: value
+    };
+    saveSelfAnalysis({ ...selfAnalysis, gakuchika: JSON.stringify(updated) });
+  };
+
+  // Parsed STAR Data
+  const starPR = parseStarData(selfAnalysis.selfPR || '') || {
+    isStar: true,
+    situation: '',
+    task: '',
+    action: '',
+    result: ''
+  };
+
+  const starGakuchika = parseStarData(selfAnalysis.gakuchika || '') || {
+    isStar: true,
+    situation: '',
+    task: '',
+    action: '',
+    result: ''
+  };
+
   // Count helper
-  const prLength = selfAnalysis.selfPR?.length || 0;
-  const gakuchikaLength = selfAnalysis.gakuchika?.length || 0;
+  const displayPR = getDisplayRepresentation(selfAnalysis.selfPR || '');
+  const displayGakuchika = getDisplayRepresentation(selfAnalysis.gakuchika || '');
+  const prLength = displayPR.length;
+  const gakuchikaLength = displayGakuchika.length;
 
   // Question presets helper
   const questionPresets = [
@@ -240,19 +353,122 @@ export default function SelfAnalysisView() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <textarea
-                  value={selfAnalysis.selfPR || ''}
-                  onChange={e => saveSelfAnalysis({ ...selfAnalysis, selfPR: e.target.value })}
-                  rows={6}
-                  maxLength={1500}
-                  placeholder="私の強みは【主体的解決力】です。大学時代、サークル活動にて～"
-                  className={`w-full p-3.5 text-xs rounded-2xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
-                    isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-50/70 border-gray-200 text-gray-800'
-                  }`}
-                />
+              <div className="space-y-3">
+                {/* Toggle mode */}
+                <div className="flex p-0.5 rounded-xl bg-gray-100/60 dark:bg-slate-800/60 border border-gray-150/30 dark:border-slate-750/30 max-w-xs">
+                  <button
+                    type="button"
+                    onClick={() => toggleSelfPrMode('free')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                      selfPrMode === 'free'
+                        ? (isDark ? 'bg-slate-700 text-slate-100 shadow-2xs' : 'bg-white text-gray-900 shadow-2xs')
+                        : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
+                    }`}
+                  >
+                    自由記述（メモ）
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleSelfPrMode('star')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                      selfPrMode === 'star'
+                        ? (isDark ? 'bg-slate-700 text-slate-100 shadow-2xs' : 'bg-white text-gray-900 shadow-2xs')
+                        : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
+                    }`}
+                  >
+                    STARの法則
+                  </button>
+                </div>
+
+                {selfPrMode === 'free' ? (
+                  <textarea
+                    value={selfAnalysis.selfPR || ''}
+                    onChange={e => saveSelfAnalysis({ ...selfAnalysis, selfPR: e.target.value })}
+                    rows={6}
+                    maxLength={1500}
+                    placeholder="私の強みは【主体的解決力】です。大学時代、サークル活動にて～"
+                    className={`w-full p-3.5 text-xs rounded-2xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-55/70 border-gray-200 text-gray-800'
+                    }`}
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#38bdf8] bg-[#38bdf8]/10 px-2 py-0.5 rounded-md">
+                          Situation（状況）
+                        </span>
+                        <span className="text-[9px] text-gray-400">背景や状況</span>
+                      </div>
+                      <textarea
+                        value={starPR.situation}
+                        onChange={e => handleStarPRChange('situation', e.target.value)}
+                        rows={3}
+                        placeholder="当時どのような背景や状況だったかを具体的に記述します。"
+                        className={`w-full p-3 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
+                          isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-55/70 border-gray-200 text-gray-800'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-md">
+                          Task（課題・目標）
+                        </span>
+                        <span className="text-[9px] text-gray-400">問題や目標</span>
+                      </div>
+                      <textarea
+                        value={starPR.task}
+                        onChange={e => handleStarPRChange('task', e.target.value)}
+                        rows={3}
+                        placeholder="どのような問題があり、何を目指したかを記述します。"
+                        className={`w-full p-3 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
+                          isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-55/70 border-gray-200 text-gray-800'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md dark:text-indigo-400">
+                          Action（行動）
+                        </span>
+                        <span className="text-[9px] text-gray-400">具体的な行動</span>
+                      </div>
+                      <textarea
+                        value={starPR.action}
+                        onChange={e => handleStarPRChange('action', e.target.value)}
+                        rows={3}
+                        placeholder="課題解決のために、具体的に自分がどう行動したかを記述します。"
+                        className={`w-full p-3 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
+                          isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-55/70 border-gray-200 text-gray-800'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md dark:text-emerald-400">
+                          Result（結果）
+                        </span>
+                        <span className="text-[9px] text-gray-400">成果や変化</span>
+                      </div>
+                      <textarea
+                        value={starPR.result}
+                        onChange={e => handleStarPRChange('result', e.target.value)}
+                        rows={3}
+                        placeholder="その行動によって、どのような成果や変化が得られたかを記述します。"
+                        className={`w-full p-3 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
+                          isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-55/70 border-gray-200 text-gray-800'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between text-[11px] text-gray-400 px-1">
-                  <span>💡 企業が読みやすい「結論ファースト」で構成するのがポイントです。</span>
+                  <span>💡 {selfPrMode === 'free' ? '企業が読みやすい「結論ファースト」で構成するのがポイントです。' : 'STAR（状況・目標・行動・結果）に沿って整理すると伝わりやすくなります。'}</span>
                   {prLength > 0 && (
                     <span className="text-emerald-600 font-bold flex items-center gap-0.5 dark:text-emerald-400 font-mono animate-fade-in">
                       <Check className="h-3 w-3" />
@@ -282,19 +498,122 @@ export default function SelfAnalysisView() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <textarea
-                  value={selfAnalysis.gakuchika || ''}
-                  onChange={e => saveSelfAnalysis({ ...selfAnalysis, gakuchika: e.target.value })}
-                  rows={6}
-                  maxLength={1500}
-                  placeholder="学生時代に最も注力したことは、サークル代表としての新規会員獲得です。当初～"
-                  className={`w-full p-3.5 text-xs rounded-2xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
-                    isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-50/70 border-gray-200 text-gray-800'
-                  }`}
-                />
+              <div className="space-y-3">
+                {/* Toggle mode */}
+                <div className="flex p-0.5 rounded-xl bg-gray-100/60 dark:bg-slate-800/60 border border-gray-150/30 dark:border-slate-750/30 max-w-xs">
+                  <button
+                    type="button"
+                    onClick={() => toggleGakuchikaMode('free')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                      gakuchikaMode === 'free'
+                        ? (isDark ? 'bg-slate-700 text-slate-100 shadow-2xs' : 'bg-white text-gray-900 shadow-2xs')
+                        : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
+                    }`}
+                  >
+                    自由記述（メモ）
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleGakuchikaMode('star')}
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                      gakuchikaMode === 'star'
+                        ? (isDark ? 'bg-slate-700 text-slate-100 shadow-2xs' : 'bg-white text-gray-900 shadow-2xs')
+                        : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
+                    }`}
+                  >
+                    STARの法則
+                  </button>
+                </div>
+
+                {gakuchikaMode === 'free' ? (
+                  <textarea
+                    value={selfAnalysis.gakuchika || ''}
+                    onChange={e => saveSelfAnalysis({ ...selfAnalysis, gakuchika: e.target.value })}
+                    rows={6}
+                    maxLength={1500}
+                    placeholder="学生時代に最も注力したことは、サークル代表としての新規会員獲得です。当初～"
+                    className={`w-full p-3.5 text-xs rounded-2xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
+                      isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-55/70 border-gray-200 text-gray-800'
+                    }`}
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#38bdf8] bg-[#38bdf8]/10 px-2 py-0.5 rounded-md">
+                          Situation（状況）
+                        </span>
+                        <span className="text-[9px] text-gray-400">背景や状況</span>
+                      </div>
+                      <textarea
+                        value={starGakuchika.situation}
+                        onChange={e => handleStarGakuchikaChange('situation', e.target.value)}
+                        rows={3}
+                        placeholder="当時どのような背景や状況だったかを具体的に記述します。"
+                        className={`w-full p-3 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
+                          isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-55/70 border-gray-200 text-gray-800'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-md">
+                          Task（課題・目標）
+                        </span>
+                        <span className="text-[9px] text-gray-400">問題や目標</span>
+                      </div>
+                      <textarea
+                        value={starGakuchika.task}
+                        onChange={e => handleStarGakuchikaChange('task', e.target.value)}
+                        rows={3}
+                        placeholder="どのような問題があり、何を目指したかを記述します。"
+                        className={`w-full p-3 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
+                          isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-55/70 border-gray-200 text-gray-800'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md dark:text-indigo-400">
+                          Action（行動）
+                        </span>
+                        <span className="text-[9px] text-gray-400">具体的な行動</span>
+                      </div>
+                      <textarea
+                        value={starGakuchika.action}
+                        onChange={e => handleStarGakuchikaChange('action', e.target.value)}
+                        rows={3}
+                        placeholder="課題解決のために、具体的に自分がどう行動したかを記述します。"
+                        className={`w-full p-3 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
+                          isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-55/70 border-gray-200 text-gray-800'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-1.5 justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md dark:text-emerald-400">
+                          Result（結果）
+                        </span>
+                        <span className="text-[9px] text-gray-400">成果や変化</span>
+                      </div>
+                      <textarea
+                        value={starGakuchika.result}
+                        onChange={e => handleStarGakuchikaChange('result', e.target.value)}
+                        rows={3}
+                        placeholder="その行動によって、どのような成果や変化が得られたかを記述します。"
+                        className={`w-full p-3 text-xs rounded-xl focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400 leading-relaxed font-sans ${
+                          isDark ? 'bg-slate-800 border-slate-700 text-slate-150' : 'bg-gray-55/70 border-gray-200 text-gray-800'
+                        }`}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between text-[11px] text-gray-400 px-1">
-                  <span>💡 STARフレーム（状況・目標・行動・結果）に従うと相手に伝わりやすくなります。</span>
+                  <span>💡 {gakuchikaMode === 'free' ? 'STARフレーム（状況・目標・行動・結果）に従うと相手に伝わりやすくなります。' : 'STAR（状況・目標・行動・結果）に沿って整理すると伝わりやすくなります。'}</span>
                   {gakuchikaLength > 0 && (
                     <span className="text-emerald-600 font-bold flex items-center gap-0.5 dark:text-emerald-400 font-mono animate-fade-in">
                       <Check className="h-3 w-3" />
