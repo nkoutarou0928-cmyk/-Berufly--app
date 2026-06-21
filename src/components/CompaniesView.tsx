@@ -1631,7 +1631,8 @@ export default function CompaniesView() {
 
                     <button
                       type="submit"
-                      className={`w-full py-3 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs ${theme.bg} ${theme.hover}`}
+                      disabled={!newName.trim() || !newIndustry.trim()}
+                      className={`w-full py-3 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs ${theme.bg} ${theme.hover} disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       企業を追加する
                     </button>
@@ -2511,12 +2512,12 @@ export default function CompaniesView() {
 
                           <div>
                             <span className="block font-bold text-gray-500 text-[10px] font-mono">QUESTION:</span>
-                            <p className="font-bold text-gray-900 mt-0.5 leading-relaxed bg-white border border-gray-100 p-2.5 rounded-xl">{memo.question}</p>
+                            <p className="font-bold text-gray-900 mt-0.5 leading-relaxed bg-white border border-gray-100 p-2.5 rounded-xl break-words">{memo.question}</p>
                           </div>
 
                           <div>
                             <span className="block font-bold text-gray-500 text-[10px] font-mono">ANSWER:</span>
-                            <div className="whitespace-pre-wrap text-gray-700 mt-1 leading-relaxed bg-white border border-gray-100 p-3.5 rounded-xl text-[11px] font-sans">
+                            <div className="whitespace-pre-wrap text-gray-700 mt-1 leading-relaxed bg-white border border-gray-100 p-3.5 rounded-xl text-[11px] font-sans break-words">
                               {memo.answer}
                             </div>
                           </div>
@@ -2714,7 +2715,8 @@ export default function CompaniesView() {
 
                       <button
                         type="submit"
-                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg}`}
+                        disabled={!newQuestion.trim() || !newAnswer.trim()}
+                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         設問と回答を保存
                       </button>
@@ -2758,11 +2760,11 @@ export default function CompaniesView() {
                           <div className="p-3.5 space-y-3 bg-white text-xs">
                             {memo.questionsAndAnswers.map((qa, i) => (
                               <div key={i} className="space-y-1.5 p-2.5 bg-gray-50/50 rounded-xl">
-                                <div className="font-bold flex items-start gap-1 pr-1 text-gray-900">
+                                <div className="font-bold flex items-start gap-1 pr-1 text-gray-900 break-words">
                                   <span className="text-rose-500">❓</span>
-                                  <span>質問: {qa.q}</span>
+                                  <span className="break-words">質問: {qa.q}</span>
                                 </div>
-                                <div className="text-gray-700 font-medium pl-6 leading-relaxed">
+                                <div className="text-gray-700 font-medium pl-6 leading-relaxed break-words">
                                   回答: {qa.a}
                                 </div>
                               </div>
@@ -2772,19 +2774,19 @@ export default function CompaniesView() {
                               {memo.reflections && (
                                 <div className="bg-blue-50/30 border border-blue-100 p-2.5 rounded-xl">
                                   <span className="block font-black text-blue-800 text-[10px] mb-1">💡 振り返り・手応え</span>
-                                  <p className="text-gray-700 leading-relaxed font-sans">{memo.reflections}</p>
+                                  <p className="text-gray-700 leading-relaxed font-sans break-words">{memo.reflections}</p>
                                 </div>
                               )}
                               {memo.improvements && (
                                 <div className="bg-amber-50/30 border border-amber-100 p-2.5 rounded-xl">
                                   <span className="block font-black text-amber-800 text-[10px] mb-1">⚠️ 改善・反省点</span>
-                                  <p className="text-gray-700 leading-relaxed font-sans">{memo.improvements}</p>
+                                  <p className="text-gray-700 leading-relaxed font-sans break-words">{memo.improvements}</p>
                                 </div>
                               )}
                               {memo.nextPrep && (
                                 <div className="bg-green-50/30 border border-green-100 p-2.5 rounded-xl">
                                   <span className="block font-black text-emerald-800 text-[10px] mb-1">🎯 次回への準備</span>
-                                  <p className="text-gray-700 leading-relaxed font-sans">{memo.nextPrep}</p>
+                                  <p className="text-gray-700 leading-relaxed font-sans break-words">{memo.nextPrep}</p>
                                 </div>
                               )}
                             </div>
@@ -2898,7 +2900,8 @@ export default function CompaniesView() {
                     <div className="flex justify-end pt-2">
                       <button
                         type="submit"
-                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg}`}
+                        disabled={!newIntStage.trim() || !newIntQ.trim() || !newIntA.trim()}
+                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         面接メモを保存
                       </button>
@@ -2952,11 +2955,11 @@ export default function CompaniesView() {
                             <span className="text-[10px] text-gray-400 font-mono">({visit.visitDate})</span>
                           </div>
 
-                          <div className="text-[10px] text-gray-500 font-sans font-bold">
+                          <div className="text-[10px] text-gray-500 font-sans font-bold break-words">
                             所属部署: {visit.department}
                           </div>
 
-                          <p className="text-gray-700 bg-white p-2.5 rounded-xl border border-gray-100 leading-relaxed font-sans">
+                          <p className="text-gray-700 bg-white p-2.5 rounded-xl border border-gray-100 leading-relaxed font-sans break-words">
                             {visit.notes}
                           </p>
                         </div>
@@ -3019,7 +3022,8 @@ export default function CompaniesView() {
                     <div className="flex justify-end pt-1">
                       <button
                         type="submit"
-                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg}`}
+                        disabled={!newObName.trim() || !newObDept.trim() || !newObNotes.trim()}
+                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         訪問記録を保存
                       </button>
@@ -3057,7 +3061,7 @@ export default function CompaniesView() {
                             <div className="space-y-2">
                               <div>
                                 <span className="text-gray-400 block font-bold">配属予定職種:</span>
-                                <span className="font-bold text-gray-900">{comp.role || '未定（一般職）'}</span>
+                                <span className="font-bold text-gray-900 break-words">{comp.role || '未定（一般職）'}</span>
                               </div>
                               <div>
                                 <span className="text-gray-400 block font-bold">基本給 (月額基準):</span>
@@ -3065,22 +3069,22 @@ export default function CompaniesView() {
                               </div>
                               <div>
                                 <span className="text-gray-400 block font-bold">通勤・通勤時間形態:</span>
-                                <span className="text-gray-700">{comp.commuteTime || '通常通勤'}</span>
+                                <span className="text-gray-700 break-words">{comp.commuteTime || '通常通勤'}</span>
                               </div>
                               <div>
                                 <span className="text-gray-400 block font-bold">諸手当・福利厚生:</span>
-                                <p className="text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-100 font-sans">{comp.benefits || 'なし'}</p>
+                                <p className="text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-100 font-sans break-words">{comp.benefits || 'なし'}</p>
                               </div>
                             </div>
 
                             <div className="space-y-2.5">
                               <div className="p-2.5 bg-green-50/40 rounded-xl border border-green-100">
                                 <span className="text-emerald-800 font-bold block text-[10px] mb-0.5">👍 魅力・メリット（Pros）</span>
-                                <p className="text-gray-700 font-sans leading-relaxed">{comp.pros || '特になし'}</p>
+                                <p className="text-gray-700 font-sans leading-relaxed break-words">{comp.pros || '特になし'}</p>
                               </div>
                               <div className="p-2.5 bg-rose-50/40 rounded-xl border border-rose-100">
                                 <span className="text-rose-800 font-bold block text-[10px] mb-0.5">👎 懸念点・デメリット（Cons）</span>
-                                <p className="text-gray-700 font-sans leading-relaxed">{comp.cons || '特になし'}</p>
+                                <p className="text-gray-700 font-sans leading-relaxed break-words">{comp.cons || '特になし'}</p>
                               </div>
                             </div>
                           </div>
@@ -3182,7 +3186,8 @@ export default function CompaniesView() {
                     <div className="flex justify-end pt-1">
                       <button
                         type="submit"
-                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg}`}
+                        disabled={!newCompRole.trim() || !newCompCommute.trim() || !newCompSalary || Number(newCompSalary) <= 0}
+                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         待遇メモを保存
                       </button>

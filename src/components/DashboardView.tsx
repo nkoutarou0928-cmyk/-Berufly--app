@@ -285,8 +285,165 @@ export default function DashboardView() {
         </div>
       </div>
 
-      {/* Selection Type Switcher (本選考 vs インターン選考) */}
-      <div className="p-1.5 rounded-2xl border border-app-card-border bg-app-card-bg flex items-center justify-between gap-4 transition-all shadow-3xs">
+      {companies.length === 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Side: Empty State Card */}
+          <div className="lg:col-span-7 bg-app-card-bg p-8 rounded-3xl border border-app-card-border shadow-xs flex flex-col items-center justify-center text-center space-y-6 min-h-[450px]">
+            <div className="relative">
+              {/* Cute illustrated empty state icon */}
+              <div className="h-24 w-24 bg-indigo-50 dark:bg-slate-800 rounded-full flex items-center justify-center animate-pulse">
+                <Building2 className={`h-12 w-12 ${theme.text}`} />
+              </div>
+              <div className="absolute -bottom-1 -right-1 bg-amber-400 text-white p-1.5 rounded-full shadow-md">
+                <Sparkles className="h-4 w-4" />
+              </div>
+            </div>
+
+            <div className="max-w-md space-y-2">
+              <h3 className="text-lg font-black text-app-text-primary">
+                キャリアナビで就活をスタートしましょう！
+              </h3>
+              <p className="text-xs text-app-text-secondary leading-relaxed font-sans">
+                まだ企業情報が登録されていません。気になる企業や選考予定の企業を追加することで、応募締め切り、選考進捗（応募・面接・内定）、待遇比較などのダッシュボード機能がすべて利用可能になります。
+              </p>
+            </div>
+
+            <button
+              onClick={() => setActiveTab('companies')}
+              className={`px-6 py-3 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-md flex items-center gap-2 hover:opacity-95 ${theme.bg}`}
+            >
+              <span>💼 企業管理ページへ進む</span>
+            </button>
+          </div>
+
+          {/* Right Side: Todo Widget and Goals Widget */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* Todo Widget */}
+            <div className="bg-app-card-bg p-5 rounded-3xl border border-app-card-border shadow-xs flex flex-col justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5 text-[13px]">
+                    <CheckSquare className={`h-4.5 w-4.5 ${theme.text}`} />
+                    Todo達成率 ({todoPeriod === 'today' ? '今日' : todoPeriod === 'weekly' ? '今週' : '今月'})
+                  </h3>
+                  <p className="text-[10px] text-app-text-secondary mt-0.5">
+                    {todoPeriod === 'today' ? '今日のタスク集計' : todoPeriod === 'weekly' ? '今日と今週のタスク集計' : '今日・今週・今月のタスク集計'}
+                  </p>
+                </div>
+                
+                <div className="flex p-0.5 bg-app-bg-secondary rounded-lg text-[9px] font-sans font-bold self-start sm:self-center border border-app-border">
+                  {[
+                    { id: 'today', label: '今日' },
+                    { id: 'weekly', label: '今週' },
+                    { id: 'monthly', label: '今月' }
+                  ].map(btn => (
+                    <button
+                      key={btn.id}
+                      type="button"
+                      onClick={() => setTodoPeriod(btn.id as any)}
+                      className={`px-2 py-1 rounded-md transition-all cursor-pointer border-0 ${
+                        todoPeriod === btn.id 
+                          ? 'bg-app-card-bg text-app-text-primary shadow-xs' 
+                          : 'text-app-text-secondary hover:text-app-text-primary bg-transparent'
+                      }`}
+                    >
+                      {btn.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="my-5 flex flex-col items-center justify-center">
+                <div className="relative h-28 w-28 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle
+                      cx="56"
+                      cy="56"
+                      r="48"
+                      className="stroke-app-border fill-transparent"
+                      strokeWidth="8"
+                    />
+                    <motion.circle
+                      cx="56"
+                      cy="56"
+                      r="48"
+                      className="fill-transparent"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      stroke={theme.hex}
+                      initial={{ strokeDasharray: "301.6", strokeDashoffset: "301.6" }}
+                      animate={{ strokeDashoffset: 301.6 - (301.6 * periodCompletionRate) / 100 }}
+                      transition={{ type: 'spring', damping: 15, stiffness: 80 }}
+                    />
+                  </svg>
+                  <div className="absolute flex flex-col items-center">
+                    <motion.span 
+                      key={periodCompletionRate}
+                      initial={{ scale: 0.8, opacity: 0.5 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="text-2xl font-black font-mono text-app-text-primary"
+                    >
+                      {periodCompletionRate}%
+                    </motion.span>
+                    <span className="text-[10px] text-app-text-secondary font-medium">{completedPeriodCount} / {totalPeriodCount} 完了</span>
+                  </div>
+                </div>
+
+                <div className={`mt-3 px-3.5 py-1.5 rounded-full ${theme.lightBg} text-center`}>
+                  <p className={`text-xs font-bold ${theme.text}`}>{completionMessage}</p>
+                </div>
+              </div>
+
+              <div className="border-t border-app-border pt-3 text-[11px] text-app-text-secondary flex justify-between">
+                <span>完了: {completedPeriodCount}件</span>
+                <span>残タスク: {remainingPeriodCount}件</span>
+              </div>
+            </div>
+
+            {/* Goals Widget */}
+            <div className="bg-app-card-bg p-5 rounded-3xl border border-app-card-border shadow-xs text-left">
+              <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5 border-b border-app-border pb-3">
+                <Award className={`h-4.5 w-4.5 ${theme.text}`} />
+                現在の就活目標達成率
+              </h3>
+
+              <div className="mt-4 space-y-4">
+                {goals.length === 0 ? (
+                  <div className="py-4 text-center text-xs text-gray-400 dark:text-slate-500">
+                    目標はまだ登録されていません。「Todoリスト」タブの一番下で目標を設定してみましょう！
+                  </div>
+                ) : (
+                  goals.map(goal => {
+                    const subs = goal.subtasks || [];
+                    const finished = subs.filter(s => s.completed).length;
+                    const rate = subs.length > 0 ? Math.round((finished / subs.length) * 100) : 0;
+
+                    return (
+                      <div key={goal.id} className="space-y-1.5 p-3 rounded-xl hover:bg-gray-55/50 dark:hover:bg-slate-850/50 border border-gray-50 dark:border-slate-800 transition-colors">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-bold text-gray-800 dark:text-slate-200">{goal.title}</span>
+                          <span className={`font-mono font-bold ${theme.textDark}`}>{rate}% ({finished}/{subs.length})</span>
+                        </div>
+                        <div className="w-full bg-gray-100 dark:bg-slate-950 h-2 rounded-full overflow-hidden">
+                          <motion.div 
+                            className={`h-full ${theme.bg}`}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${rate}%` }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Selection Type Switcher (本選考 vs インターン選考) */}
+          <div className="p-1.5 rounded-2xl border border-app-card-border bg-app-card-bg flex items-center justify-between gap-4 transition-all shadow-3xs">
         <div className="pl-2 flex items-center gap-1.5">
           <Sparkles className={`h-4.5 w-4.5 ${theme.text}`} />
           <span className="text-xs font-bold font-sans text-app-text-secondary">
@@ -494,7 +651,25 @@ export default function DashboardView() {
 
           {/* Funnel Layers */}
           <div className="mt-5 space-y-2.5 max-w-lg mx-auto w-full flex-1 flex flex-col justify-center">
-            {isIntern ? (
+            {filteredCompanies.length === 0 ? (
+              <div className="py-12 px-4 text-center space-y-3 bg-gray-55/40 dark:bg-slate-850/30 rounded-2xl border border-dashed border-gray-200 dark:border-slate-800">
+                <Info className="h-8 w-8 mx-auto text-gray-400" />
+                <p className="text-xs font-bold text-app-text-primary">
+                  この選考区分の企業は登録されていません
+                </p>
+                <p className="text-[10px] text-app-text-secondary max-w-xs mx-auto leading-relaxed">
+                  {selectionTypeFilter === 'intern' 
+                    ? 'インターン選考の企業を追加すると、選考進捗ファネルが自動的に作成されます。' 
+                    : '本選考の企業を追加すると、応募から内定までの選考状況が視覚化されます。'}
+                </p>
+                <button
+                  onClick={() => setActiveTab('companies')}
+                  className={`mt-2 text-[10px] font-bold px-3.5 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg}`}
+                >
+                  企業を追加する
+                </button>
+              </div>
+            ) : isIntern ? (
               <>
                 {/* Stage 1: Intern Entry */}
                 <div className="space-y-1">
@@ -767,7 +942,15 @@ export default function DashboardView() {
 
         {/* Graph Content Area */}
         <div className="flex-1 mt-6 min-h-[140px] flex items-center justify-center">
-          {graphMode === 'weekly' && (
+          {filteredCompanies.length === 0 ? (
+            <div className="py-8 px-4 text-center space-y-2 w-full bg-gray-55/30 dark:bg-slate-850/10 rounded-2xl border border-dashed border-gray-150 dark:border-slate-800">
+              <p className="text-xs text-app-text-secondary">
+                表示できる選考チャートデータがありません
+              </p>
+            </div>
+          ) : (
+            <>
+              {graphMode === 'weekly' && (
             <div className="w-full flex flex-col justify-end space-y-4">
               <div className="flex items-end justify-between px-4 h-24 pt-4 border-b border-gray-100">
                 {/* Category bars representing count */}
@@ -970,6 +1153,8 @@ export default function DashboardView() {
               </div>
             </div>
           )}
+            </>
+          )}
         </div>
       </div>
 
@@ -1012,6 +1197,8 @@ export default function DashboardView() {
           )}
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

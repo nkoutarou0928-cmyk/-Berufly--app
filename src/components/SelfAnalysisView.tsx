@@ -731,7 +731,8 @@ export default function SelfAnalysisView() {
                       </button>
                       <button
                         type="submit"
-                        className={`text-xs font-bold px-4 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg}`}
+                        disabled={!motivationIndustry.trim() || !motivationContent.trim()}
+                        className={`text-xs font-bold px-4 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         保存する
                       </button>
@@ -760,13 +761,13 @@ export default function SelfAnalysisView() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={`inline-block text-[10px] font-extrabold font-mono px-2 py-0.5 rounded-md ${
+                        <span className={`inline-block text-[10px] font-extrabold font-mono px-2 py-0.5 rounded-md break-words ${
                           isDark ? 'bg-slate-800 text-slate-300' : 'bg-gray-150 text-gray-700'
                         }`}>
                           {bm.industry}
                         </span>
                         {bm.occupation && (
-                          <span className={`inline-block text-[10px] px-2 py-0.5 rounded-md ${
+                          <span className={`inline-block text-[10px] px-2 py-0.5 rounded-md break-words ${
                             isDark ? 'bg-slate-900 border border-slate-800 text-slate-400' : 'bg-white border border-gray-200 text-gray-500'
                           }`}>
                             {bm.occupation}
@@ -798,7 +799,7 @@ export default function SelfAnalysisView() {
                       </div>
                     </div>
 
-                    <p className={`text-xs leading-relaxed font-sans whitespace-pre-wrap ${
+                    <p className={`text-xs leading-relaxed font-sans whitespace-pre-wrap break-words ${
                       isDark ? 'text-slate-200' : 'text-gray-800'
                     }`}>
                       {bm.content}
@@ -933,7 +934,8 @@ export default function SelfAnalysisView() {
                       </button>
                       <button
                         type="submit"
-                        className={`text-xs font-bold px-4 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg}`}
+                        disabled={!faqQuestion.trim() || !faqAnswer.trim()}
+                        className={`text-xs font-bold px-4 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         保存する
                       </button>
@@ -963,7 +965,7 @@ export default function SelfAnalysisView() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex gap-2 items-start">
                         <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-md text-white ${theme.bg} mt-0.5 font-mono`}>Q</span>
-                        <h4 className={`text-xs font-bold leading-relaxed ${isDark ? 'text-slate-155' : 'text-gray-905'}`}>
+                        <h4 className={`text-xs font-bold leading-relaxed break-words ${isDark ? 'text-slate-155' : 'text-gray-905'}`}>
                           {faq.question}
                         </h4>
                       </div>
@@ -996,7 +998,7 @@ export default function SelfAnalysisView() {
                       <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-md font-mono ${
                         isDark ? 'bg-slate-800 text-slate-350' : 'bg-gray-100 text-gray-500'
                       }`}>A</span>
-                      <p className={`text-xs leading-relaxed whitespace-pre-wrap font-sans ${
+                      <p className={`text-xs leading-relaxed whitespace-pre-wrap break-words font-sans ${
                         isDark ? 'text-slate-300' : 'text-gray-700'
                       }`}>
                         {faq.answer}
