@@ -199,12 +199,7 @@ export default function DashboardView() {
           <h2 className="text-base font-bold tracking-tight text-app-text-primary font-sans">
             {getFormattedToday()}
           </h2>
-          {filteredCompanies.length > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-app-bg-secondary text-app-text-primary border border-app-border font-sans">
-              <TrendingUp className="h-3.5 w-3.5 text-indigo-505" />
-              <span>先週の振り返り: ES提出+{trendES}社 | Todo達成率{trendTodoRate}% (+{trendTodoDiff}%)</span>
-            </div>
-          )}
+
         </div>
 
         {/* Notification Bell Badge on Top Right */}
