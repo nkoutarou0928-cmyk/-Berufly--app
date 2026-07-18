@@ -362,29 +362,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return () => clearTimeout(timer);
   };
 
-  // Generic database upsert helper for self_analysis table (replaces localStorage queries)
+  // Generic upsert helper for the self_analysis table (used as a per-title key/value store).
+  // Requires the unique index on (user_id, title) added in
+  // supabase/migrations/0001_stable_ids_and_upsert.sql.
   const saveUserDataItem = async (userId: string, title: string, content: string) => {
-    // Delete old record to avoid duplicates
-    const { error: deleteErr } = await supabase
+    const { error } = await supabase
       .from('self_analysis')
-      .delete()
-      .eq('user_id', userId)
-      .eq('title', title);
-    if (deleteErr) {
-      console.error(`[saveUserDataItem] DELETE error for ${title}:`, deleteErr);
-      throw deleteErr;
-    }
-
-    const { error: insertErr } = await supabase
-      .from('self_analysis')
-      .insert({
-        user_id: userId,
-        title,
-        content
-      });
-    if (insertErr) {
-      console.error(`[saveUserDataItem] INSERT error for ${title}:`, insertErr);
-      throw insertErr;
+      .upsert({ user_id: userId, title, content }, { onConflict: 'user_id,title' });
+    if (error) {
+      console.error(`[saveUserDataItem] UPSERT error for ${title}:`, error);
+      throw error;
     }
   };
 
@@ -399,51 +386,41 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const saveCompanies = async (newCompanies: Company[]) => {
-    setIsSyncing(true);
+    // ローカルStateを即座に更新（UI反映のため先に実行）
+    setCompanies(newCompanies);
+
+    const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+    console.log('[🏢 saveCompanies] activeUserId:', activeUserId, '| 件数:', newCompanies.length);
+    if (!activeUserId) {
+      console.warn('[saveCompanies] ⚠️ activeUserIdがnull。Supabase同期をスキップします。');
+      return;
+    }
+    if (!navigator.onLine) {
+      setSyncStatus('offline');
+      return;
+    }
+
+    setSyncStatus('syncing');
     try {
-      // STEP 1: ローカルStateを即座に更新（UI反映のため先に実行）
-      setCompanies(newCompanies);
+      const currentAppIds = newCompanies.map(c => c.id);
 
-      // STEP 2: ユーザーIDを取得（localStorage優先 = 同期的で確実）
-      const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
-      console.log('[🏢 saveCompanies] activeUserId:', activeUserId, '| 件数:', newCompanies.length);
-
-      // STEP 4: Supabase同期（ログインしている場合のみ）
-      if (!activeUserId) {
-        console.warn('[saveCompanies] ⚠️ activeUserIdがnull。Supabase同期をスキップします。');
-        return;
-      }
-
-      // 1. 企業詳細メモを先に削除
-      const { error: memoDelErr } = await supabase
-        .from('company_memos')
-        .delete()
-        .eq('user_id', activeUserId);
-      if (memoDelErr) console.error('[saveCompanies] company_memos delete error:', memoDelErr);
-
-      // 2. 既存の企業情報を削除
-      const { error: deleteErr } = await supabase
-        .from('companies')
-        .delete()
-        .eq('user_id', activeUserId);
-      console.log('[saveCompanies] DELETE error:', deleteErr);
-      if (deleteErr) throw new Error('企業DELETE失敗: ' + deleteErr.message + ' (code: ' + deleteErr.code + ')');
-
-      // 3. 企業情報と詳細メモを再挿入
+      // STEP 1: upsert first, so a mid-operation failure never loses data that
+      // already exists remotely (unlike the previous delete-then-insert).
       if (newCompanies.length > 0) {
-        const companiesToInsert = newCompanies.map(c => ({
+        const companiesToUpsert = newCompanies.map(c => ({
           user_id: activeUserId,
+          app_id: c.id,
           name: c.name,
           status: c.status
         }));
-
-        const { error: insertErr } = await supabase
+        const { error: upsertErr } = await supabase
           .from('companies')
-          .insert(companiesToInsert);
-        if (insertErr) throw new Error('企業INSERT失敗: ' + insertErr.message);
+          .upsert(companiesToUpsert, { onConflict: 'user_id,app_id' });
+        if (upsertErr) throw new Error('企業UPSERT失敗: ' + upsertErr.message + ' (code: ' + upsertErr.code + ')');
 
-        const memosToInsert = newCompanies.map(c => ({
+        const memosToUpsert = newCompanies.map(c => ({
           user_id: activeUserId,
+          company_app_id: c.id,
           company_name: c.name,
           content: JSON.stringify({
             id: c.id,
@@ -468,19 +445,45 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             internSteps: c.internSteps
           })
         }));
-
-        const { error: memoInsertErr } = await supabase
+        const { error: memoUpsertErr } = await supabase
           .from('company_memos')
-          .insert(memosToInsert);
-        if (memoInsertErr) throw new Error('企業詳細メモINSERT失敗: ' + memoInsertErr.message);
+          .upsert(memosToUpsert, { onConflict: 'user_id,company_app_id' });
+        if (memoUpsertErr) throw new Error('企業詳細メモUPSERT失敗: ' + memoUpsertErr.message + ' (code: ' + memoUpsertErr.code + ')');
+      }
+
+      // STEP 2: remove rows that no longer exist locally, only after the upsert succeeded.
+      const { data: existingRows, error: selectErr } = await supabase
+        .from('companies')
+        .select('app_id')
+        .eq('user_id', activeUserId);
+      if (selectErr) throw new Error('企業一覧の取得失敗: ' + selectErr.message);
+
+      const idsToDelete = (existingRows || [])
+        .map(r => r.app_id as string | null)
+        .filter((id): id is string => !!id && !currentAppIds.includes(id));
+
+      if (idsToDelete.length > 0) {
+        const { error: memoDelErr } = await supabase
+          .from('company_memos')
+          .delete()
+          .eq('user_id', activeUserId)
+          .in('company_app_id', idsToDelete);
+        if (memoDelErr) throw new Error('企業詳細メモDELETE失敗: ' + memoDelErr.message);
+
+        const { error: deleteErr } = await supabase
+          .from('companies')
+          .delete()
+          .eq('user_id', activeUserId)
+          .in('app_id', idsToDelete);
+        if (deleteErr) throw new Error('企業DELETE失敗: ' + deleteErr.message);
       }
 
       console.log('[saveCompanies] ✅ 同期完了');
+      setSyncStatus('synced');
     } catch (e: any) {
       console.error('[saveCompanies] ❌ 例外:', e);
+      setSyncStatus('error');
       alert('企業の保存に失敗しました:\n' + (e.message || String(e)));
-    } finally {
-      setIsSyncing(false);
     }
   };
 
