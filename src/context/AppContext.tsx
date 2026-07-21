@@ -36,7 +36,7 @@ interface AppContextType {
   resetPassword: (email: string) => Promise<void>;
   completePasswordReset: (email: string, token: string, newPass: string) => Promise<void>;
   logout: () => void;
-  deleteAccount: () => void;
+  deleteAccount: () => Promise<{ success: boolean }>;
   
   // Navigation actions
   setActiveTab: (tab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about') => void;
@@ -1115,8 +1115,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
   };
 
-  const deleteAccount = () => {
+  // クラウド上の全ユーザーデータを削除する。self_analysisテーブルは
+  // saveUserDataItem経由でtrash_companies/settings/ob_visits/offer_comparisons/notifications
+  // も title キーで保存しているため、丸ごと削除すればそれらも消える。
+  const deleteAllCloudData = async (uid: string) => {
+    const results = await Promise.allSettled([
+      supabase.from('companies').delete().eq('user_id', uid),
+      supabase.from('company_memos').delete().eq('user_id', uid),
+      supabase.from('todos').delete().eq('user_id', uid),
+      supabase.from('self_analysis').delete().eq('user_id', uid)
+    ]);
+
+    return results.every(r => r.status === 'fulfilled' && !r.value.error);
+  };
+
+  const deleteAccount = async () => {
     const uid = currentUser?.uid;
+    let success = true;
+
     if (uid) {
       localStorage.removeItem(`shukatsu_companies_${uid}`);
       localStorage.removeItem(`shukatsu_trash_companies_${uid}`);
@@ -1126,9 +1142,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem(`shukatsu_comparisons_${uid}`);
       localStorage.removeItem(`shukatsu_self_analysis_${uid}`);
       localStorage.removeItem(`shukatsu_notifications_${uid}`);
+
+      try {
+        success = await deleteAllCloudData(uid);
+      } catch (e) {
+        console.error('[deleteAccount] クラウドデータ削除中に例外:', e);
+        success = false;
+      }
     }
-    logout();
-    alert('アカウント情報およびクラウド同期データを完全に抹消しました。');
+
+    await logout();
+
+    if (success) {
+      alert('クラウド上の利用データを削除しました。ログイン用のメールアドレス・パスワードは削除されていないため、再ログインは可能です。');
+    } else {
+      alert('一部のクラウドデータの削除に失敗しました。再度お試しいただくか、サポートまでご連絡ください。');
+    }
+
+    return { success };
   };
 
   // --- End of Account Actions ---

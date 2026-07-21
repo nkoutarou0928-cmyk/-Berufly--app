@@ -51,6 +51,7 @@ export default function SettingsView() {
 
   // States
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Cloud Counts States
   const [cloudCompaniesCount, setCloudCompaniesCount] = useState<number | null>(null);
@@ -592,14 +593,20 @@ export default function SettingsView() {
 
           <button
             type="button"
-            onClick={() => {
-              if (confirm('⚠️ 警告：アカウント消去\n本アカウントに紐づくすべてのクラウド履歴および同期データベースをサーバー（クラウド・ローカル双方）から物理消去します。この操作は復旧できません。本当に消去しますか？')) {
-                deleteAccount();
+            disabled={isDeletingAccount}
+            onClick={async () => {
+              if (confirm('⚠️ 警告：アカウント削除\n本アカウントに紐づくクラウド上の企業・Todo・自己分析データを完全に削除します。ログイン用のメールアドレス・パスワードは削除されず、再ログインは可能です。この操作は復旧できません。本当に削除しますか？')) {
+                setIsDeletingAccount(true);
+                try {
+                  await deleteAccount();
+                } finally {
+                  setIsDeletingAccount(false);
+                }
               }
             }}
-            className="w-full sm:w-auto py-2.5 px-4 text-center bg-red-50 text-red-650 hover:bg-red-100/70 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:bg-rose-950/20 dark:text-rose-455 flex items-center justify-center gap-1.5"
+            className={`w-full sm:w-auto py-2.5 px-4 text-center bg-red-50 text-red-650 hover:bg-red-100/70 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:bg-rose-950/20 dark:text-rose-455 flex items-center justify-center gap-1.5 ${isDeletingAccount ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            ⚠️ アカウント情報の物理削除
+            {isDeletingAccount ? '削除処理中…' : '⚠️ アカウント情報の物理削除'}
           </button>
         </div>
       </div>
