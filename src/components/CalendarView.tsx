@@ -275,7 +275,7 @@ export default function CalendarView() {
           </button>
           <button
             onClick={() => setCurrentDate(new Date())}
-            className="px-2.5 py-1 text-[10px] font-black text-[#222222] dark:text-white hover:bg-gray-100 dark:hover:bg-slate-750 rounded-lg transition-colors cursor-pointer border border-transparent"
+            className="px-2.5 py-1 text-micro font-black text-[#222222] dark:text-white hover:bg-gray-100 dark:hover:bg-slate-750 rounded-lg transition-colors cursor-pointer border border-transparent"
           >
             今月
           </button>
@@ -365,7 +365,7 @@ export default function CalendarView() {
                               navigateToCompany(evt.companyId, evt.type === 'deadline' ? 'es' : 'interview');
                             }
                           }}
-                          className={`text-[10px] px-1.5 py-0.5 rounded-md font-sans truncate font-extrabold shadow-2xs hover:scale-[1.02] transform transition-all cursor-pointer block border ${
+                          className={`text-micro px-1.5 py-0.5 rounded-md font-sans truncate font-extrabold shadow-2xs hover:scale-[1.02] transform transition-all cursor-pointer block border ${
                             evt.type === 'deadline'
                               ? 'bg-rose-100 border-rose-300 text-black dark:bg-rose-950/80 dark:border-rose-800 dark:text-white hover:bg-rose-200 dark:hover:bg-rose-900/80'
                               : evt.type === 'intern_step'
@@ -408,7 +408,7 @@ export default function CalendarView() {
                     }`}
                   >
                     <div className="text-center font-mono py-1">
-                      <span className="text-[10px] block text-[#222222] dark:text-white mb-0.5 font-black">
+                      <span className="text-micro block text-[#222222] dark:text-white mb-0.5 font-black">
                         {daysOfWeek[dateObj.getDay()]}
                       </span>
                       <span 
@@ -438,7 +438,7 @@ export default function CalendarView() {
                               navigateToCompany(evt.companyId, evt.type === 'deadline' ? 'es' : 'interview');
                             }
                           }}
-                          className={`text-[10px] p-1.5 rounded-lg font-extrabold shadow-2xs hover:scale-102 transform transition-all cursor-pointer block border text-left ${
+                          className={`text-micro p-1.5 rounded-lg font-extrabold shadow-2xs hover:scale-102 transform transition-all cursor-pointer block border text-left ${
                             evt.type === 'deadline'
                               ? 'bg-rose-100 border-rose-300 text-black dark:bg-rose-950/80 dark:border-rose-800 dark:text-white hover:bg-rose-200 dark:hover:bg-rose-900/80'
                               : evt.type === 'intern_step'
@@ -451,7 +451,7 @@ export default function CalendarView() {
                           <div className="font-sans truncate">
                             {evt.type === 'todo' ? `${evt.completed ? '✅' : '◽️'} ${evt.title}` : evt.companyName}
                           </div>
-                          <span className="text-[8px] opacity-90 font-sans font-extrabold block mt-0.5 text-gray-800 dark:text-slate-200">
+                          <span className="text-micro opacity-90 font-sans font-extrabold block mt-0.5 text-gray-800 dark:text-slate-200">
                             {evt.type === 'todo' ? 'タスク' : evt.type === 'deadline' ? '書類締切' : evt.type === 'intern_step' ? 'インターン' : '面接面談'}
                           </span>
                         </div>
@@ -507,7 +507,7 @@ export default function CalendarView() {
                     <p className={`text-xs font-extrabold text-black dark:text-white group-hover:${theme.text} transition-colors`}>
                       {evt.type === 'todo' ? evt.title : evt.companyName}
                     </p>
-                    <p className="text-[10px] text-gray-800 dark:text-slate-200 font-extrabold mt-0.5">
+                    <p className="text-micro text-gray-800 dark:text-slate-200 font-extrabold mt-0.5">
                       {evt.type === 'todo' ? 'ToDoタスク' : evt.title}
                     </p>
                   </div>

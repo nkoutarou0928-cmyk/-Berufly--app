@@ -68,7 +68,7 @@ export default function ContactView() {
             <CheckCircle className="h-5 w-5 shrink-0" />
             <div className="text-left flex-1">
               <span className="block text-xs font-black">送信が完了しました</span>
-              <span className="text-[10px] text-emerald-100 block mt-0.5">
+              <span className="text-micro text-emerald-100 block mt-0.5">
                 お問い合わせを受け付けました。ご入力ありがとうございます。
               </span>
             </div>
@@ -93,7 +93,7 @@ export default function ContactView() {
       >
         {/* Name input */}
         <div>
-          <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <label className={`block text-micro uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             お名前 <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -115,7 +115,7 @@ export default function ContactView() {
 
         {/* Email input */}
         <div>
-          <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <label className={`block text-micro uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             メールアドレス <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -137,7 +137,7 @@ export default function ContactView() {
 
         {/* Subject input */}
         <div>
-          <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <label className={`block text-micro uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             件名 <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -159,7 +159,7 @@ export default function ContactView() {
 
         {/* Message body */}
         <div>
-          <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <label className={`block text-micro uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             お問い合わせ内容 <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -180,7 +180,7 @@ export default function ContactView() {
         </div>
 
         {errorMessage && (
-          <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-3 py-2.5 text-[11px] font-medium text-red-600 dark:text-red-400">
+          <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-3 py-2.5 text-micro font-medium text-red-600 dark:text-red-400">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -190,8 +190,8 @@ export default function ContactView() {
         <button
           type="submit"
           disabled={isSending}
-          className={`w-full py-3.5 rounded-2xl text-xs font-black text-white transition-all shadow-md active:scale-97 cursor-pointer flex items-center justify-center gap-1.5 ${
-            isSending ? 'opacity-50 cursor-not-allowed bg-gray-500' : `${theme.bg} ${theme.hover}`
+          className={`w-full py-3.5 rounded-2xl text-xs font-black transition-all shadow-md active:scale-97 cursor-pointer flex items-center justify-center gap-1.5 ${
+            isSending ? 'opacity-50 cursor-not-allowed bg-gray-500 text-white' : `${theme.bg} ${theme.hover} ${theme.onBg}`
           }`}
         >
           {isSending ? (

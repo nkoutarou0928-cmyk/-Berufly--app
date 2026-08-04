@@ -220,7 +220,7 @@ export default function TodosView() {
 
             <button
               type="submit"
-              className={`px-4 py-2 text-white font-bold text-xs rounded-xl transition-all cursor-pointer ${theme.bg} ${theme.hover} shadow-xs flex items-center justify-center gap-1`}
+              className={`px-4 py-2 ${theme.onBg} font-bold text-xs rounded-xl transition-all cursor-pointer ${theme.bg} ${theme.hover} shadow-xs flex items-center justify-center gap-1`}
             >
               <Plus className="h-3.5 w-3.5" />
               追加
@@ -240,9 +240,9 @@ export default function TodosView() {
                 isDark ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-gray-100 text-gray-404'
               }`}
             >
-              <div className="text-2xl">📝</div>
+              <CheckSquare className="h-6 w-6 mx-auto opacity-40" />
               <p>登録されたタスクはありません</p>
-              <p className="text-[10px]">上のフォームから新しく追加できます</p>
+              <p className="text-micro">上のフォームから新しく追加できます</p>
             </motion.div>
           ) : (
             filteredTodos.map(todo => {
@@ -283,7 +283,7 @@ export default function TodosView() {
                           {todo.title}
                         </p>
                         {todo.dueDate && (
-                          <span className={`inline-flex items-center gap-1 text-[10px] mt-1 font-mono ${
+                          <span className={`inline-flex items-center gap-1 text-micro mt-1 font-mono ${
                             isDark ? 'text-slate-400' : 'text-gray-400'
                           }`}>
                             <Calendar className="h-3 w-3" />
@@ -305,11 +305,11 @@ export default function TodosView() {
                   {isGoal && (
                     <div className="pl-7 pt-2 border-t border-gray-50 space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-[11px] font-bold text-gray-700">
+                        <div className="flex items-center gap-1 text-micro font-bold text-gray-700">
                           <Target className={`h-3.5 w-3.5 ${theme.text}`} />
                           サブタスク進捗状況
                         </div>
-                        <span className={`text-[11px] font-bold font-mono ${theme.textDark}`}>{subTasksRate}% ({subTasksCompleted}/{subTasksCount})</span>
+                        <span className={`text-micro font-bold font-mono ${theme.textDark}`}>{subTasksRate}% ({subTasksCompleted}/{subTasksCount})</span>
                       </div>
 
                       {/* Goal progress indicator */}
@@ -329,7 +329,7 @@ export default function TodosView() {
                             key={st.id}
                             className="flex items-center justify-between gap-2 p-1.5 bg-gray-50/50 rounded-lg group"
                           >
-                            <label className="flex items-center gap-2 text-[11px] cursor-pointer min-w-0">
+                            <label className="flex items-center gap-2 text-micro cursor-pointer min-w-0">
                               <input 
                                 type="checkbox"
                                 checked={st.completed}
@@ -364,11 +364,11 @@ export default function TodosView() {
                               handleAddSub(todo.id);
                             }
                           }}
-                          className={`flex-1 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[10px] focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400`}
+                          className={`flex-1 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-micro focus:outline-hidden focus:ring-1 focus:ring-${settings.themeColor}-400`}
                         />
                         <button
                           onClick={() => handleAddSub(todo.id)}
-                          className={`px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold text-[10px] rounded-lg transition-all cursor-pointer flex items-center justify-center`}
+                          className={`px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold text-micro rounded-lg transition-all cursor-pointer flex items-center justify-center`}
                         >
                           追加
                         </button>

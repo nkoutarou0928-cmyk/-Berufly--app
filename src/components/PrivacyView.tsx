@@ -110,7 +110,7 @@ export default function PrivacyView() {
           </p>
         </section>
 
-        <div className="pt-4 border-t border-gray-100 dark:border-slate-800 text-[10px] text-gray-400 dark:text-slate-500 font-sans flex justify-between">
+        <div className="pt-4 border-t border-gray-100 dark:border-slate-800 text-micro text-gray-400 dark:text-slate-500 font-sans flex justify-between">
           <span>改定日：2026年5月31日</span>
           <span>© 2026 Berufly</span>
         </div>

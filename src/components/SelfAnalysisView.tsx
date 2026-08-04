@@ -20,7 +20,9 @@ import {
   Briefcase, 
   MessageSquare,
   Bookmark,
-  TrendingUp
+  TrendingUp,
+  Lightbulb,
+  Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { parseStarData, getDisplayRepresentation, parseSelfAnalysisText } from '../utils/selfAnalysis';
@@ -322,10 +324,10 @@ export default function SelfAnalysisView() {
                   </span>
                   <div>
                     <h3 className={`font-bold text-xs ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>自己PR Sheet</h3>
-                    <p className="text-[10px] text-gray-400 mt-0.5">あなたの強みや、ビジネスシーンで再現できる長所を磨きます</p>
+                    <p className="text-micro text-gray-400 mt-0.5">あなたの強みや、ビジネスシーンで再現できる長所を磨きます</p>
                   </div>
                 </div>
-                <div className="text-right font-mono text-[10px] text-gray-400">
+                <div className="text-right font-mono text-micro text-gray-400">
                   <span className={`font-bold text-xs ${prLength > 400 ? 'text-rose-550' : (isDark ? 'text-slate-300' : 'text-gray-700')}`}>{prLength}</span> / 400 文字目安
                 </div>
               </div>
@@ -336,7 +338,7 @@ export default function SelfAnalysisView() {
                   <button
                     type="button"
                     onClick={() => toggleSelfPrMode('free')}
-                    className={`flex-1 py-1.5 px-3 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-micro font-bold transition-all cursor-pointer ${
                       selfPrMode === 'free'
                         ? (isDark ? 'bg-slate-700 text-slate-100 shadow-2xs' : 'bg-white text-gray-900 shadow-2xs')
                         : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
@@ -347,7 +349,7 @@ export default function SelfAnalysisView() {
                   <button
                     type="button"
                     onClick={() => toggleSelfPrMode('star')}
-                    className={`flex-1 py-1.5 px-3 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-micro font-bold transition-all cursor-pointer ${
                       selfPrMode === 'star'
                         ? (isDark ? 'bg-slate-700 text-slate-100 shadow-2xs' : 'bg-white text-gray-900 shadow-2xs')
                         : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
@@ -381,10 +383,10 @@ export default function SelfAnalysisView() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5 justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[#38bdf8] bg-[#38bdf8]/10 px-2 py-0.5 rounded-md">
+                        <span className="text-micro font-black uppercase tracking-wider text-[#38bdf8] bg-[#38bdf8]/10 px-2 py-0.5 rounded-md">
                           Situation（状況）
                         </span>
-                        <span className="text-[9px] text-gray-400">背景や状況</span>
+                        <span className="text-micro text-gray-400">背景や状況</span>
                       </div>
                       <textarea
                         value={starPR.situation}
@@ -399,10 +401,10 @@ export default function SelfAnalysisView() {
 
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5 justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-md">
+                        <span className="text-micro font-black uppercase tracking-wider text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-md">
                           Task（課題・目標）
                         </span>
-                        <span className="text-[9px] text-gray-400">問題や目標</span>
+                        <span className="text-micro text-gray-400">問題や目標</span>
                       </div>
                       <textarea
                         value={starPR.task}
@@ -417,10 +419,10 @@ export default function SelfAnalysisView() {
 
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5 justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md dark:text-indigo-400">
+                        <span className="text-micro font-black uppercase tracking-wider text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md dark:text-indigo-400">
                           Action（行動）
                         </span>
-                        <span className="text-[9px] text-gray-400">具体的な行動</span>
+                        <span className="text-micro text-gray-400">具体的な行動</span>
                       </div>
                       <textarea
                         value={starPR.action}
@@ -435,10 +437,10 @@ export default function SelfAnalysisView() {
 
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5 justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md dark:text-emerald-400">
+                        <span className="text-micro font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md dark:text-emerald-400">
                           Result（結果）
                         </span>
-                        <span className="text-[9px] text-gray-400">成果や変化</span>
+                        <span className="text-micro text-gray-400">成果や変化</span>
                       </div>
                       <textarea
                         value={starPR.result}
@@ -453,8 +455,8 @@ export default function SelfAnalysisView() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-[11px] text-gray-400 px-1">
-                  <span>💡 {selfPrMode === 'free' ? '企業が読みやすい「結論ファースト」で構成するのがポイントです。' : 'STAR（状況・目標・行動・結果）に沿って整理すると伝わりやすくなります。'}</span>
+                <div className="flex items-center justify-between text-micro text-gray-400 px-1">
+                  <span className="inline-flex items-center gap-1"><Lightbulb className="h-3 w-3 shrink-0" />{selfPrMode === 'free' ? '企業が読みやすい「結論ファースト」で構成するのがポイントです。' : 'STAR（状況・目標・行動・結果）に沿って整理すると伝わりやすくなります。'}</span>
                   {prLength > 0 && (
                     <span className="text-emerald-600 font-bold flex items-center gap-0.5 dark:text-emerald-400 font-mono animate-fade-in">
                       <Check className="h-3 w-3" />
@@ -476,10 +478,10 @@ export default function SelfAnalysisView() {
                   </span>
                   <div>
                     <h3 className={`font-bold text-xs ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>学生時代に最も力を入れたこと（ガクチカ）</h3>
-                    <p className="text-[10px] text-gray-400 mt-0.5">目標達成の動機、立ちはだかった困難、具体的なアクション、最終的な学びを整理します</p>
+                    <p className="text-micro text-gray-400 mt-0.5">目標達成の動機、立ちはだかった困難、具体的なアクション、最終的な学びを整理します</p>
                   </div>
                 </div>
-                <div className="text-right font-mono text-[10px] text-gray-400">
+                <div className="text-right font-mono text-micro text-gray-400">
                   <span className={`font-bold text-xs ${gakuchikaLength > 400 ? 'text-rose-550' : (isDark ? 'text-slate-300' : 'text-gray-700')}`}>{gakuchikaLength}</span> / 400 文字目安
                 </div>
               </div>
@@ -490,7 +492,7 @@ export default function SelfAnalysisView() {
                   <button
                     type="button"
                     onClick={() => toggleGakuchikaMode('free')}
-                    className={`flex-1 py-1.5 px-3 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-micro font-bold transition-all cursor-pointer ${
                       gakuchikaMode === 'free'
                         ? (isDark ? 'bg-slate-700 text-slate-100 shadow-2xs' : 'bg-white text-gray-900 shadow-2xs')
                         : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
@@ -501,7 +503,7 @@ export default function SelfAnalysisView() {
                   <button
                     type="button"
                     onClick={() => toggleGakuchikaMode('star')}
-                    className={`flex-1 py-1.5 px-3 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
+                    className={`flex-1 py-1.5 px-3 rounded-lg text-micro font-bold transition-all cursor-pointer ${
                       gakuchikaMode === 'star'
                         ? (isDark ? 'bg-slate-700 text-slate-100 shadow-2xs' : 'bg-white text-gray-900 shadow-2xs')
                         : 'text-gray-400 hover:text-gray-650 dark:hover:text-slate-350'
@@ -535,10 +537,10 @@ export default function SelfAnalysisView() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5 justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[#38bdf8] bg-[#38bdf8]/10 px-2 py-0.5 rounded-md">
+                        <span className="text-micro font-black uppercase tracking-wider text-[#38bdf8] bg-[#38bdf8]/10 px-2 py-0.5 rounded-md">
                           Situation（状況）
                         </span>
-                        <span className="text-[9px] text-gray-400">背景や状況</span>
+                        <span className="text-micro text-gray-400">背景や状況</span>
                       </div>
                       <textarea
                         value={starGakuchika.situation}
@@ -553,10 +555,10 @@ export default function SelfAnalysisView() {
 
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5 justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-md">
+                        <span className="text-micro font-black uppercase tracking-wider text-[#fbbf24] bg-[#fbbf24]/10 px-2 py-0.5 rounded-md">
                           Task（課題・目標）
                         </span>
-                        <span className="text-[9px] text-gray-400">問題や目標</span>
+                        <span className="text-micro text-gray-400">問題や目標</span>
                       </div>
                       <textarea
                         value={starGakuchika.task}
@@ -571,10 +573,10 @@ export default function SelfAnalysisView() {
 
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5 justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md dark:text-indigo-400">
+                        <span className="text-micro font-black uppercase tracking-wider text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md dark:text-indigo-400">
                           Action（行動）
                         </span>
-                        <span className="text-[9px] text-gray-400">具体的な行動</span>
+                        <span className="text-micro text-gray-400">具体的な行動</span>
                       </div>
                       <textarea
                         value={starGakuchika.action}
@@ -589,10 +591,10 @@ export default function SelfAnalysisView() {
 
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5 justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md dark:text-emerald-400">
+                        <span className="text-micro font-black uppercase tracking-wider text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md dark:text-emerald-400">
                           Result（結果）
                         </span>
-                        <span className="text-[9px] text-gray-400">成果や変化</span>
+                        <span className="text-micro text-gray-400">成果や変化</span>
                       </div>
                       <textarea
                         value={starGakuchika.result}
@@ -607,8 +609,8 @@ export default function SelfAnalysisView() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-[11px] text-gray-400 px-1">
-                  <span>💡 {gakuchikaMode === 'free' ? 'STARフレーム（状況・目標・行動・結果）に従うと相手に伝わりやすくなります。' : 'STAR（状況・目標・行動・結果）に沿って整理すると伝わりやすくなります。'}</span>
+                <div className="flex items-center justify-between text-micro text-gray-400 px-1">
+                  <span className="inline-flex items-center gap-1"><Lightbulb className="h-3 w-3 shrink-0" />{gakuchikaMode === 'free' ? 'STARフレーム（状況・目標・行動・結果）に従うと相手に伝わりやすくなります。' : 'STAR（状況・目標・行動・結果）に沿って整理すると伝わりやすくなります。'}</span>
                   {gakuchikaLength > 0 && (
                     <span className="text-emerald-600 font-bold flex items-center gap-0.5 dark:text-emerald-400 font-mono animate-fade-in">
                       <Check className="h-3 w-3" />
@@ -640,7 +642,7 @@ export default function SelfAnalysisView() {
                 <button
                   type="button"
                   onClick={() => setIsAddingMotivation(true)}
-                  className={`text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all hover:opacity-90 flex items-center gap-1 ${theme.bg} text-white shadow-xs`}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all hover:opacity-90 flex items-center gap-1 ${theme.bg} ${theme.onBg} shadow-xs`}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   新規動機テンプレートを作成
@@ -667,7 +669,7 @@ export default function SelfAnalysisView() {
                   <form onSubmit={handleSaveMotivation} className="space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className={`block text-[10px] font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-650'}`}>
+                        <label className={`block text-micro font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-650'}`}>
                           業界区分（必須）
                         </label>
                         <input
@@ -683,7 +685,7 @@ export default function SelfAnalysisView() {
                       </div>
 
                       <div>
-                        <label className={`block text-[10px] font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-650'}`}>
+                        <label className={`block text-micro font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-650'}`}>
                           志望職種・フィールド（任意）
                         </label>
                         <input
@@ -699,7 +701,7 @@ export default function SelfAnalysisView() {
                     </div>
 
                     <div>
-                      <label className={`block text-[10px] font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-650'}`}>
+                      <label className={`block text-micro font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-650'}`}>
                         志望方向・根本動機の内容（必須）
                       </label>
                       <textarea
@@ -727,7 +729,7 @@ export default function SelfAnalysisView() {
                       <button
                         type="submit"
                         disabled={!motivationIndustry.trim() || !motivationContent.trim()}
-                        className={`text-xs font-bold px-4 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={`text-xs font-bold px-4 py-1.5 ${theme.onBg} rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         保存する
                       </button>
@@ -744,7 +746,7 @@ export default function SelfAnalysisView() {
                   isDark ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-gray-200 text-gray-400'
                 }`}>
                   <p>登録された志望動機はありません。</p>
-                  <p className="text-[10px] text-gray-400">「新規動機テンプレートを作成」から、就活の柱となる理由を準備しましょう！</p>
+                  <p className="text-micro text-gray-400">「新規動機テンプレートを作成」から、就活の柱となる理由を準備しましょう！</p>
                 </div>
               ) : (
                 selfAnalysis.baseMotivations.map(bm => (
@@ -756,13 +758,13 @@ export default function SelfAnalysisView() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={`inline-block text-[10px] font-extrabold font-mono px-2 py-0.5 rounded-md break-words ${
+                        <span className={`inline-block text-micro font-extrabold font-mono px-2 py-0.5 rounded-md break-words ${
                           isDark ? 'bg-slate-800 text-slate-300' : 'bg-gray-150 text-gray-700'
                         }`}>
                           {bm.industry}
                         </span>
                         {bm.occupation && (
-                          <span className={`inline-block text-[10px] px-2 py-0.5 rounded-md break-words ${
+                          <span className={`inline-block text-micro px-2 py-0.5 rounded-md break-words ${
                             isDark ? 'bg-slate-900 border border-slate-800 text-slate-400' : 'bg-white border border-gray-200 text-gray-500'
                           }`}>
                             {bm.occupation}
@@ -825,7 +827,7 @@ export default function SelfAnalysisView() {
                 <button
                   type="button"
                   onClick={() => setIsAddingFAQ(true)}
-                  className={`text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all hover:opacity-90 flex items-center gap-1 ${theme.bg} text-white shadow-xs`}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all hover:opacity-90 flex items-center gap-1 ${theme.bg} ${theme.onBg} shadow-xs`}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   新規FAQ・質問ペアを追加
@@ -838,8 +840,9 @@ export default function SelfAnalysisView() {
               <div className={`p-3.5 rounded-2xl border ${
                 isDark ? 'bg-slate-900/40 border-slate-800/80' : 'bg-gray-50 border-gray-150/50'
               }`}>
-                <span className={`block text-[10px] font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-gray-650'}`}>
-                  ⭐ 定番面接質問・逆引きショートカット
+                <span className={`flex items-center gap-1.5 text-micro font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-gray-650'}`}>
+                  <Star className="h-3 w-3" />
+                  定番面接質問・逆引きショートカット
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {questionPresets.map((preset, idx) => {
@@ -854,7 +857,7 @@ export default function SelfAnalysisView() {
                           setFaqAnswer('');
                           setIsAddingFAQ(true);
                         }}
-                        className={`text-[9.5px] px-2.5 py-1 rounded-lg border text-left cursor-pointer transition-all ${
+                        className={`text-micro px-2.5 py-1 rounded-lg border text-left cursor-pointer transition-all ${
                           isDark 
                             ? 'border-slate-800 bg-slate-950/60 text-slate-400 hover:text-slate-200 hover:border-slate-700' 
                             : 'border-gray-200 bg-white text-gray-500 hover:text-gray-900 hover:border-gray-300'
@@ -886,7 +889,7 @@ export default function SelfAnalysisView() {
 
                   <form onSubmit={handleSaveFAQ} className="space-y-3">
                     <div>
-                      <label className={`block text-[10px] font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-650'}`}>
+                      <label className={`block text-micro font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-650'}`}>
                         質問（Question）
                       </label>
                       <input
@@ -902,7 +905,7 @@ export default function SelfAnalysisView() {
                     </div>
 
                     <div>
-                      <label className={`block text-[10px] font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-650'}`}>
+                      <label className={`block text-micro font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-gray-650'}`}>
                         自分の回答（Answer）
                       </label>
                       <textarea
@@ -930,7 +933,7 @@ export default function SelfAnalysisView() {
                       <button
                         type="submit"
                         disabled={!faqQuestion.trim() || !faqAnswer.trim()}
-                        className={`text-xs font-bold px-4 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={`text-xs font-bold px-4 py-1.5 ${theme.onBg} rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         保存する
                       </button>
@@ -947,7 +950,7 @@ export default function SelfAnalysisView() {
                   isDark ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-gray-200 text-gray-400'
                 }`}>
                   <p>面接想定質問は登録されていません。</p>
-                  <p className="text-[10px] text-gray-405">上の定番ショートカットやお好みのQ&Aを登録しておくと、ES作成時にワンタップでコピペ可能です！</p>
+                  <p className="text-micro text-gray-405">上の定番ショートカットやお好みのQ&Aを登録しておくと、ES作成時にワンタップでコピペ可能です！</p>
                 </div>
               ) : (
                 selfAnalysis.faqs.map(faq => (
@@ -959,7 +962,7 @@ export default function SelfAnalysisView() {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex gap-2 items-start">
-                        <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-md text-white ${theme.bg} mt-0.5 font-mono`}>Q</span>
+                        <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-md ${theme.onBg} ${theme.bg} mt-0.5 font-mono`}>Q</span>
                         <h4 className={`text-xs font-bold leading-relaxed break-words ${isDark ? 'text-slate-155' : 'text-gray-905'}`}>
                           {faq.question}
                         </h4>

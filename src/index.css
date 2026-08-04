@@ -17,6 +17,21 @@
   --app-calendar-today-bg: #E5E7EB;
   --app-calendar-selected-bg: #4F46E5;
   --app-calendar-selected-text: #FFFFFF;
+
+  /* Elevation above the card layer, for modals/sheets/popovers that sit on top of cards */
+  --app-card-bg-raised: #FFFFFF;
+
+  /* Semantic status colors — intentionally independent of the 6 accent theme presets
+     (src/utils/theme.ts) so a status badge never gets mistaken for "this user's theme color". */
+  --app-success-bg: #059669;
+  --app-success-tint: #ECFDF5;
+  --app-success-text: #047857;
+  --app-warning-bg: #D97706;
+  --app-warning-tint: #FFFBEB;
+  --app-warning-text: #B45309;
+  --app-danger-bg: #E11D48;
+  --app-danger-tint: #FFF1F2;
+  --app-danger-text: #BE123C;
 }
 
 .dark {
@@ -34,10 +49,43 @@
   --app-calendar-today-bg: #1E1B4B;
   --app-calendar-selected-bg: #6366F1;
   --app-calendar-selected-text: #FFFFFF;
+
+  /* One step lighter than --app-card-bg so modals/sheets read as "above" the cards behind them
+     instead of blending into the page background (previous #101216 card / #090A0C page had almost
+     no separation once a modal itself used a flat dark fill). */
+  --app-card-bg-raised: #17191E;
+
+  --app-success-bg: #10B981;
+  --app-success-tint: rgba(5, 150, 105, 0.16);
+  --app-success-text: #34D399;
+  --app-warning-bg: #F59E0B;
+  --app-warning-tint: rgba(217, 119, 6, 0.16);
+  --app-warning-text: #FBBF24;
+  --app-danger-bg: #F43F5E;
+  --app-danger-tint: rgba(225, 29, 72, 0.16);
+  --app-danger-text: #FB7185;
 }
 
 @theme {
   --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Typography scale — 7 named steps replacing the ad-hoc text-[9px]..text-[24px] values
+     scattered across components. Prefer these (text-micro, text-caption, ...) over new
+     arbitrary px sizes so new UI stays on-scale by default. */
+  --text-micro: 11px;
+  --text-micro--line-height: 1.4;
+  --text-caption: 12px;
+  --text-caption--line-height: 1.5;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 1.5;
+  --text-body: 14px;
+  --text-body--line-height: 1.6;
+  --text-subhead: 16px;
+  --text-subhead--line-height: 1.4;
+  --text-title: 20px;
+  --text-title--line-height: 1.3;
+  --text-display: 30px;
+  --text-display--line-height: 1.2;
 
   /* 既存の slate パレットを、青みを抑えた目に優しい超深ダークグレーにオーバーライド */
   --color-slate-50: #F9FAFB;
@@ -74,6 +122,18 @@
   --color-app-calendar-today-bg: var(--app-calendar-today-bg);
   --color-app-calendar-selected-bg: var(--app-calendar-selected-bg);
   --color-app-calendar-selected-text: var(--app-calendar-selected-text);
+
+  --color-app-card-bg-raised: var(--app-card-bg-raised);
+
+  --color-app-success-bg: var(--app-success-bg);
+  --color-app-success-tint: var(--app-success-tint);
+  --color-app-success-text: var(--app-success-text);
+  --color-app-warning-bg: var(--app-warning-bg);
+  --color-app-warning-tint: var(--app-warning-tint);
+  --color-app-warning-text: var(--app-warning-text);
+  --color-app-danger-bg: var(--app-danger-bg);
+  --color-app-danger-tint: var(--app-danger-tint);
+  --color-app-danger-text: var(--app-danger-text);
 }
 
 body, input, textarea, select, button {

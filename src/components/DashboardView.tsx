@@ -20,7 +20,8 @@ import {
   CheckCircle2,
   ChevronDown,
   Info,
-  Sparkles
+  Sparkles,
+  Briefcase
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Company, CompanyStatus, SelectionStage } from '../types';
@@ -211,7 +212,7 @@ export default function DashboardView() {
           >
             <Bell className={`h-5 w-5 ${unreadNotifs.length > 0 ? theme.text : 'text-app-text-secondary'}`} />
             {unreadNotifs.length > 0 && (
-              <span className="absolute -top-1 -right-1 block h-4 w-4 bg-rose-500 text-[10px] text-white font-bold rounded-full flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1 -right-1 block h-4 w-4 bg-rose-500 text-micro text-white font-bold rounded-full flex items-center justify-center animate-pulse">
                 {unreadNotifs.length}
               </span>
             )}
@@ -265,8 +266,8 @@ export default function DashboardView() {
                             </span>
                             <div className="flex-1 min-w-0">
                               <p className="text-xs font-bold text-gray-900 dark:text-slate-100">{notif.title}</p>
-                              <p className="text-[11px] text-gray-655 dark:text-slate-350 line-clamp-2 mt-0.5">{notif.message}</p>
-                              <span className="text-[9px] text-gray-455 dark:text-slate-500 font-mono mt-1 block">{notif.timestamp}</span>
+                              <p className="text-micro text-gray-655 dark:text-slate-350 line-clamp-2 mt-0.5">{notif.message}</p>
+                              <span className="text-micro text-gray-455 dark:text-slate-500 font-mono mt-1 block">{notif.timestamp}</span>
                             </div>
                           </div>
                         </div>
@@ -305,9 +306,9 @@ export default function DashboardView() {
 
             <button
               onClick={() => setActiveTab('companies')}
-              className={`px-6 py-3 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-md flex items-center gap-2 hover:opacity-95 ${theme.bg}`}
+              className={`px-6 py-3 ${theme.onBg} text-xs font-bold rounded-xl transition-all cursor-pointer shadow-md flex items-center gap-2 hover:opacity-95 ${theme.bg}`}
             >
-              <span>💼 企業管理ページへ進む</span>
+              <span className="inline-flex items-center gap-1.5"><Briefcase className="h-3.5 w-3.5" />企業管理ページへ進む</span>
             </button>
           </div>
 
@@ -317,16 +318,16 @@ export default function DashboardView() {
             <div className="bg-app-card-bg p-5 rounded-3xl border border-app-card-border shadow-xs flex flex-col justify-between">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5 text-[13px]">
+                  <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5 text-body-sm">
                     <CheckSquare className={`h-4.5 w-4.5 ${theme.text}`} />
                     Todo達成率 ({todoPeriod === 'today' ? '今日' : todoPeriod === 'weekly' ? '今週' : '今月'})
                   </h3>
-                  <p className="text-[10px] text-app-text-secondary mt-0.5">
+                  <p className="text-micro text-app-text-secondary mt-0.5">
                     {todoPeriod === 'today' ? '今日のタスク集計' : todoPeriod === 'weekly' ? '今日と今週のタスク集計' : '今日・今週・今月のタスク集計'}
                   </p>
                 </div>
                 
-                <div className="flex p-0.5 bg-app-bg-secondary rounded-lg text-[9px] font-sans font-bold self-start sm:self-center border border-app-border">
+                <div className="flex p-0.5 bg-app-bg-secondary rounded-lg text-micro font-sans font-bold self-start sm:self-center border border-app-border">
                   {[
                     { id: 'today', label: '今日' },
                     { id: 'weekly', label: '今週' },
@@ -380,7 +381,7 @@ export default function DashboardView() {
                     >
                       {periodCompletionRate}%
                     </motion.span>
-                    <span className="text-[10px] text-app-text-secondary font-medium">{completedPeriodCount} / {totalPeriodCount} 完了</span>
+                    <span className="text-micro text-app-text-secondary font-medium">{completedPeriodCount} / {totalPeriodCount} 完了</span>
                   </div>
                 </div>
 
@@ -389,7 +390,7 @@ export default function DashboardView() {
                 </div>
               </div>
 
-              <div className="border-t border-app-border pt-3 text-[11px] text-app-text-secondary flex justify-between">
+              <div className="border-t border-app-border pt-3 text-micro text-app-text-secondary flex justify-between">
                 <span>完了: {completedPeriodCount}件</span>
                 <span>残タスク: {remainingPeriodCount}件</span>
               </div>
@@ -485,7 +486,7 @@ export default function DashboardView() {
             <span className="text-3xl font-black font-mono text-blue-600 dark:text-blue-400">{totalRegistered}</span>
             <span className="text-xs text-app-text-secondary font-sans">社</span>
           </div>
-          <div className="text-[10px] text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-micro text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
             <span>Interest / ES / Selecting</span>
           </div>
         </div>
@@ -502,7 +503,7 @@ export default function DashboardView() {
             <span className="text-3xl font-black font-mono text-amber-600 dark:text-amber-400">{esSubmittedCount}</span>
             <span className="text-xs text-app-text-secondary font-sans">社</span>
           </div>
-          <div className="text-[10px] text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-micro text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
             <span>（提出完了および選考中）</span>
           </div>
         </div>
@@ -519,7 +520,7 @@ export default function DashboardView() {
             <span className="text-3xl font-black font-mono text-emerald-600 dark:text-emerald-400">{interviewCount}</span>
             <span className="text-xs text-app-text-secondary font-sans">社</span>
           </div>
-          <div className="text-[10px] text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-micro text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
             <span>面接予定・実績のある企業</span>
           </div>
         </div>
@@ -536,7 +537,7 @@ export default function DashboardView() {
             <span className="text-3xl font-black font-mono text-yellow-600 dark:text-yellow-400">{offersCount}</span>
             <span className="text-xs text-app-text-secondary font-sans">社</span>
           </div>
-          <div className="text-[10px] text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
+          <div className="text-micro text-app-text-secondary mt-1 flex items-center gap-0.5 truncate">
             <span>（内定および内々定）</span>
           </div>
         </div>
@@ -549,17 +550,17 @@ export default function DashboardView() {
         <div className="md:col-span-5 bg-app-card-bg p-5 rounded-3xl border border-app-card-border shadow-xs flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5 text-[13px]">
+              <h3 className="text-sm font-bold text-app-text-primary flex items-center gap-1.5 text-body-sm">
                 <CheckSquare className={`h-4.5 w-4.5 ${theme.text}`} />
                 Todo達成率 ({todoPeriod === 'today' ? '今日' : todoPeriod === 'weekly' ? '今週' : '今月'})
               </h3>
-              <p className="text-[10px] text-app-text-secondary mt-0.5">
+              <p className="text-micro text-app-text-secondary mt-0.5">
                 {todoPeriod === 'today' ? '今日のタスク集計' : todoPeriod === 'weekly' ? '今日と今週のタスク集計' : '今日・今週・今月のタスク集計'}
               </p>
             </div>
             
             {/* Period Toggle Buttons */}
-            <div className="flex p-0.5 bg-app-bg-secondary rounded-lg text-[9px] font-sans font-bold self-start sm:self-center border border-app-border">
+            <div className="flex p-0.5 bg-app-bg-secondary rounded-lg text-micro font-sans font-bold self-start sm:self-center border border-app-border">
               {[
                 { id: 'today', label: '今日' },
                 { id: 'weekly', label: '今週' },
@@ -614,7 +615,7 @@ export default function DashboardView() {
                 >
                   {periodCompletionRate}%
                 </motion.span>
-                <span className="text-[10px] text-app-text-secondary font-medium">{completedPeriodCount} / {totalPeriodCount} 完了</span>
+                <span className="text-micro text-app-text-secondary font-medium">{completedPeriodCount} / {totalPeriodCount} 完了</span>
               </div>
             </div>
 
@@ -623,7 +624,7 @@ export default function DashboardView() {
             </div>
           </div>
 
-          <div className="border-t border-app-border pt-3 text-[11px] text-app-text-secondary flex justify-between">
+          <div className="border-t border-app-border pt-3 text-micro text-app-text-secondary flex justify-between">
             <span>完了: {completedPeriodCount}件</span>
             <span>残タスク: {remainingPeriodCount}件</span>
           </div>
@@ -637,11 +638,11 @@ export default function DashboardView() {
                 <TrendingUp className={`h-4.5 w-4.5 ${theme.text}`} />
                 選考フロー図 (ファネル表示)
               </h3>
-              <p className="text-[11px] text-app-text-secondary mt-0.5">
+              <p className="text-micro text-app-text-secondary mt-0.5">
                 ステージごとの企業数と、次のステージへの通過率 (%) を自動集計
               </p>
             </div>
-            <span className="text-[10px] font-bold text-app-text-secondary font-mono">Simulated Funnel</span>
+            <span className="text-micro font-bold text-app-text-secondary font-mono">Simulated Funnel</span>
           </div>
 
           {/* Funnel Layers */}
@@ -652,14 +653,14 @@ export default function DashboardView() {
                 <p className="text-xs font-bold text-app-text-primary">
                   この選考区分の企業は登録されていません
                 </p>
-                <p className="text-[10px] text-app-text-secondary max-w-xs mx-auto leading-relaxed">
+                <p className="text-micro text-app-text-secondary max-w-xs mx-auto leading-relaxed">
                   {selectionTypeFilter === 'intern' 
                     ? 'インターン選考の企業を追加すると、選考進捗ファネルが自動的に作成されます。' 
                     : '本選考の企業を追加すると、応募から内定までの選考状況が視覚化されます。'}
                 </p>
                 <button
                   onClick={() => setActiveTab('companies')}
-                  className={`mt-2 text-[10px] font-bold px-3.5 py-1.5 text-white rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg}`}
+                  className={`mt-2 text-micro font-bold px-3.5 py-1.5 ${theme.onBg} rounded-lg transition hover:opacity-95 cursor-pointer ${theme.bg}`}
                 >
                   企業を追加する
                 </button>
@@ -684,7 +685,7 @@ export default function DashboardView() {
                 {appCountIntern > 0 && (
                   <div className="flex items-center justify-center gap-1 py-0.5">
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                    <span className={`text-micro font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
                       ES提出率: {internEsSubmittedRate}%
                     </span>
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
@@ -709,7 +710,7 @@ export default function DashboardView() {
                 {esSubmittedCountIntern > 0 && (
                   <div className="flex items-center justify-center gap-1 py-0.5">
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                    <span className={`text-micro font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
                       選考進出率: {internSelectingRate}%
                     </span>
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
@@ -734,7 +735,7 @@ export default function DashboardView() {
                 {selectingCountIntern > 0 && (
                   <div className="flex items-center justify-center gap-1 py-0.5">
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-                    <span className={`text-[10px] font-bold text-yellow-600 px-2 py-0.5 bg-yellow-50 rounded-md font-mono`}>
+                    <span className={`text-micro font-bold text-yellow-600 px-2 py-0.5 bg-yellow-50 rounded-md font-mono`}>
                       合格率: {internPassedRate}%
                     </span>
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
@@ -749,7 +750,7 @@ export default function DashboardView() {
                   >
                     <span className="font-bold text-yellow-900 flex items-center gap-1.5">
                       <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
-                      4. 合格・参加決定 🎉
+                      4. 合格・参加決定
                     </span>
                     <span className="font-mono font-black text-yellow-700 group-hover:scale-105 transition-transform">{passedCountIntern} 社</span>
                   </div>
@@ -775,7 +776,7 @@ export default function DashboardView() {
                 {appCount > 0 && (
                   <div className="flex items-center justify-center gap-1 py-0.5">
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                    <span className={`text-micro font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
                       書類通過率: {docPassRate}%
                     </span>
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
@@ -800,7 +801,7 @@ export default function DashboardView() {
                 {docPassCount > 0 && (
                   <div className="flex items-center justify-center gap-1 py-0.5">
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                    <span className={`text-micro font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
                       一次面接通過率: {int1PassRate}%
                     </span>
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
@@ -825,7 +826,7 @@ export default function DashboardView() {
                 {int1Count > 0 && (
                   <div className="flex items-center justify-center gap-1 py-0.5">
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                    <span className={`text-micro font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
                       二次面接通過率: {int2PassRate}%
                     </span>
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
@@ -850,7 +851,7 @@ export default function DashboardView() {
                 {int2Count > 0 && (
                   <div className="flex items-center justify-center gap-1 py-0.5">
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-                    <span className={`text-[10px] font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
+                    <span className={`text-micro font-bold ${theme.textDark} px-2.5 py-0.5 ${theme.lightBg} rounded-md font-mono`}>
                       最終面接進出率: {intFinalPassRate}%
                     </span>
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
@@ -875,7 +876,7 @@ export default function DashboardView() {
                 {intFinalCount > 0 && (
                   <div className="flex items-center justify-center gap-1 py-0.5">
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
-                    <span className="text-[10px] font-bold text-yellow-600 px-2 py-0.5 bg-yellow-50 rounded-md font-mono">
+                    <span className="text-micro font-bold text-yellow-600 px-2 py-0.5 bg-yellow-50 rounded-md font-mono">
                       内定率: {naiteiPassRate}%
                     </span>
                     <div className="h-4 w-px bg-dashed border-l border-gray-300" />
@@ -890,7 +891,7 @@ export default function DashboardView() {
                   >
                     <span className="font-bold text-yellow-900 flex items-center gap-1.5">
                       <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
-                      6. 内定 🎉
+                      6. 内定
                     </span>
                     <span className="font-mono font-black text-yellow-700 group-hover:scale-105 transition-transform">{naiteiCount} 社</span>
                   </div>
@@ -909,11 +910,11 @@ export default function DashboardView() {
               <TrendingUp className="h-4.5 w-4.5 text-amber-500" />
               就活サマリー指標
             </h3>
-            <p className="text-[11px] text-app-text-secondary mt-0.5">応募社数・ES・面接・内定の数</p>
+            <p className="text-micro text-app-text-secondary mt-0.5">応募社数・ES・面接・内定の数</p>
           </div>
           
           {/* Toggle Modes */}
-          <div className="flex p-0.5 bg-app-bg-secondary rounded-lg text-[11px] border border-app-border">
+          <div className="flex p-0.5 bg-app-bg-secondary rounded-lg text-micro border border-app-border">
             <button 
               onClick={() => setGraphMode('weekly')}
               className={`py-1 px-3.5 rounded-md font-semibold transition-all cursor-pointer ${graphMode === 'weekly' ? 'bg-app-card-bg shadow-xs text-app-text-primary' : 'text-app-text-secondary hover:text-app-text-primary'}`}
@@ -950,7 +951,7 @@ export default function DashboardView() {
               <div className="flex items-end justify-between px-4 h-24 pt-4 border-b border-gray-100">
                 {/* Category bars representing count */}
                 <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick(isIntern ? 'entry_done' : 'es_planned')}>
-                  <span className="text-[10px] font-bold font-mono text-blue-500 mb-1 group-hover:scale-110 transition-transform">
+                  <span className="text-micro font-bold font-mono text-blue-500 mb-1 group-hover:scale-110 transition-transform">
                     {isIntern 
                       ? filteredCompanies.filter(c => c.selectionStatusIntern === 'entry_done').length
                       : filteredCompanies.filter(c => c.status === 'es_planned' || c.status === 'interested').length
@@ -966,13 +967,13 @@ export default function DashboardView() {
                         ) / Math.max(1, totalRegistered)) * 80))}px` 
                     }}
                   />
-                  <span className="text-[10px] text-gray-500 font-sans mt-1">
+                  <span className="text-micro text-gray-500 font-sans mt-1">
                     {isIntern ? 'エントリー済' : '興味/予定'}
                   </span>
                 </div>
 
                 <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('es_submitted')}>
-                  <span className="text-[10px] font-bold font-mono text-amber-500 mb-1 group-hover:scale-110 transition-transform">
+                  <span className="text-micro font-bold font-mono text-amber-500 mb-1 group-hover:scale-110 transition-transform">
                     {isIntern 
                       ? filteredCompanies.filter(c => c.selectionStatusIntern === 'es_submitted').length
                       : filteredCompanies.filter(c => c.status === 'es_submitted').length
@@ -988,11 +989,11 @@ export default function DashboardView() {
                         ) / Math.max(1, totalRegistered)) * 80))}px` 
                     }}
                   />
-                  <span className="text-[10px] text-gray-500 font-sans mt-1">ES提出済</span>
+                  <span className="text-micro text-gray-500 font-sans mt-1">ES提出済</span>
                 </div>
 
                 <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick('selecting')}>
-                  <span className="text-[10px] font-bold font-mono text-emerald-500 mb-1 group-hover:scale-110 transition-transform">
+                  <span className="text-micro font-bold font-mono text-emerald-500 mb-1 group-hover:scale-110 transition-transform">
                     {isIntern 
                       ? filteredCompanies.filter(c => c.selectionStatusIntern === 'selecting').length
                       : filteredCompanies.filter(c => c.status === 'selecting').length
@@ -1008,11 +1009,11 @@ export default function DashboardView() {
                         ) / Math.max(1, totalRegistered)) * 80))}px` 
                     }}
                   />
-                  <span className="text-[10px] text-gray-500 font-sans mt-1 font-sans">選考中</span>
+                  <span className="text-micro text-gray-500 font-sans mt-1 font-sans">選考中</span>
                 </div>
 
                 <div className="flex flex-col items-center flex-1 cursor-pointer group" onClick={() => handleGraphBarClick(isIntern ? 'passed' : 'offered')}>
-                  <span className="text-[10px] font-bold font-mono text-yellow-600 mb-1 group-hover:scale-110 transition-transform">
+                  <span className="text-micro font-bold font-mono text-yellow-600 mb-1 group-hover:scale-110 transition-transform">
                     {isIntern 
                       ? filteredCompanies.filter(c => c.selectionStatusIntern === 'passed').length
                       : filteredCompanies.filter(c => c.status === 'offered').length
@@ -1028,12 +1029,12 @@ export default function DashboardView() {
                         ) / Math.max(1, totalRegistered)) * 80))}px` 
                     }}
                   />
-                  <span className="text-[10px] text-gray-500 font-sans mt-1">
+                  <span className="text-micro text-gray-500 font-sans mt-1">
                     {isIntern ? '合格' : '内定'}
                   </span>
                 </div>
               </div>
-              <div className="flex justify-center gap-4 text-[10px]">
+              <div className="flex justify-center gap-4 text-micro">
                 <span className="flex items-center gap-1 text-gray-500 font-sans">
                   <span className="inline-block h-2 w-2 rounded-full bg-blue-400" />
                   {isIntern ? 'エントリー (青)' : '興味 (青)'}
@@ -1069,7 +1070,7 @@ export default function DashboardView() {
                   <circle cx="200" cy="30" r="4" fill={theme.hex} />
                   <circle cx="290" cy="15" r="4" fill={theme.hex} />
                 </svg>
-                <div className="flex justify-between w-full text-[9px] text-gray-400 font-mono mt-1 px-1">
+                <div className="flex justify-between w-full text-micro text-gray-400 font-mono mt-1 px-1">
                   <span>3月 (エントリー開始)</span>
                   <span>4月 (ES提出ピーク)</span>
                   <span>5月 (面接・選考)</span>
@@ -1078,7 +1079,7 @@ export default function DashboardView() {
               </div>
               <div className="mt-4 flex items-center justify-center gap-1 bg-gray-50 p-2 rounded-xl border border-gray-100">
                 <Info className="h-3.5 w-3.5 text-gray-450" />
-                <p className="text-[10px] text-gray-500">
+                <p className="text-micro text-gray-500">
                   選考は5月中旬を境に書類審査から個別面接ステージへと推移しています。
                 </p>
               </div>
@@ -1091,7 +1092,7 @@ export default function DashboardView() {
                 onClick={() => setActiveTab('companies')} 
                 className="p-3 bg-blue-50/40 hover:bg-blue-50 border border-blue-100 rounded-xl transition-all cursor-pointer"
               >
-                <div className="text-[10px] font-bold text-blue-600">
+                <div className="text-micro font-bold text-blue-600">
                   {isIntern ? 'エントリー済み' : 'エントリー興味あり'}
                 </div>
                 <div className="text-sm font-black font-mono text-blue-950 mt-1">
@@ -1106,7 +1107,7 @@ export default function DashboardView() {
                 onClick={() => setActiveTab('companies')} 
                 className="p-3 bg-yellow-50/40 hover:bg-yellow-50 border border-yellow-100 rounded-xl transition-all cursor-pointer"
               >
-                <div className="text-[10px] font-bold text-amber-700">
+                <div className="text-micro font-bold text-amber-700">
                   {isIntern ? 'ES提出済' : '提出予定のES'}
                 </div>
                 <div className="text-sm font-black font-mono text-amber-955 mt-1">
@@ -1121,7 +1122,7 @@ export default function DashboardView() {
                 onClick={() => setActiveTab('companies')} 
                 className="p-3 bg-emerald-50/40 hover:bg-emerald-50 border border-emerald-100 rounded-xl transition-all cursor-pointer"
               >
-                <div className="text-[10px] font-bold text-emerald-700">
+                <div className="text-micro font-bold text-emerald-700">
                   {isIntern ? '選考中の企業' : '面接選考中の企業'}
                 </div>
                 <div className="text-sm font-black font-mono text-emerald-950 mt-1">
@@ -1136,7 +1137,7 @@ export default function DashboardView() {
                 onClick={() => setActiveTab('companies')} 
                 className="p-3 bg-rose-50/40 hover:bg-rose-50 border border-rose-100 rounded-xl transition-all cursor-pointer"
               >
-                <div className="text-[10px] font-bold text-rose-700">
+                <div className="text-micro font-bold text-rose-700">
                   {isIntern ? '不合格・落選' : '不合格/選考終了'}
                 </div>
                 <div className="text-sm font-black font-mono text-rose-955 mt-1">

@@ -34,7 +34,13 @@ import {
   Sparkles,
   X,
   ArrowUpRight,
-  Network
+  Network,
+  Briefcase,
+  ExternalLink,
+  Target,
+  Lightbulb,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Company, CompanyStatus, SelectionStage, ESQuestionMemo, InterviewMemo, ESCategory, ESStatus, InternStatus, InternType, InternStep } from '../types';
@@ -1109,11 +1115,12 @@ export default function CompaniesView() {
                 }}
                 className={`flex-1 py-1.5 text-center text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
                   selectionTab === 'main'
-                    ? `${theme.bg} text-white shadow-xs`
+                    ? `${theme.bg} ${theme.onBg} shadow-xs`
                     : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-slate-200'
                 }`}
               >
-                💼 本選考
+                <Briefcase className="h-3.5 w-3.5" />
+                本選考
               </button>
               <button
                 type="button"
@@ -1123,11 +1130,12 @@ export default function CompaniesView() {
                 }}
                 className={`flex-1 py-1.5 text-center text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
                   selectionTab === 'intern'
-                    ? `${theme.bg} text-white shadow-xs`
+                    ? `${theme.bg} ${theme.onBg} shadow-xs`
                     : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-slate-200'
                 }`}
               >
-                🎖️ インターン選考
+                <Award className="h-3.5 w-3.5" />
+                インターン選考
               </button>
               <button
                 type="button"
@@ -1137,11 +1145,12 @@ export default function CompaniesView() {
                 }}
                 className={`flex-1 py-1.5 text-center text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 ${
                   selectionTab === 'all'
-                    ? `${theme.bg} text-white shadow-xs`
+                    ? `${theme.bg} ${theme.onBg} shadow-xs`
                     : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-slate-200'
                 }`}
               >
-                📊 すべての企業
+                <Building2 className="h-3.5 w-3.5" />
+                すべての企業
               </button>
             </div>
 
@@ -1160,7 +1169,7 @@ export default function CompaniesView() {
                     <button
                       type="button"
                       onClick={() => setViewMode('grouped')}
-                      className={`text-[10px] py-1 px-2.5 rounded-md font-bold cursor-pointer transition-all ${
+                      className={`text-micro py-1 px-2.5 rounded-md font-bold cursor-pointer transition-all ${
                         viewMode === 'grouped'
                           ? (isDark ? 'bg-slate-800 text-slate-200' : 'bg-white text-gray-900 shadow-3xs')
                           : 'text-gray-400 hover:text-gray-650'
@@ -1171,7 +1180,7 @@ export default function CompaniesView() {
                     <button
                       type="button"
                       onClick={() => setViewMode('list')}
-                      className={`text-[10px] py-1 px-2.5 rounded-md font-bold cursor-pointer transition-all ${
+                      className={`text-micro py-1 px-2.5 rounded-md font-bold cursor-pointer transition-all ${
                         viewMode === 'list'
                           ? (isDark ? 'bg-slate-800 text-slate-200' : 'bg-white text-gray-900 shadow-3xs')
                           : 'text-gray-400 hover:text-gray-650'
@@ -1184,7 +1193,7 @@ export default function CompaniesView() {
 
                 <button
                   onClick={() => setShowAddCompanyModal(true)}
-                  className={`flex items-center gap-1 text-[10px] font-black py-1.5 px-3 rounded-lg text-white cursor-pointer transition-all ${theme.bg} ${theme.hover} shadow-xs mr-1.5 md:mr-2`}
+                  className={`flex items-center gap-1 text-micro font-black py-1.5 px-3 rounded-lg ${theme.onBg} cursor-pointer transition-all ${theme.bg} ${theme.hover} shadow-xs mr-1.5 md:mr-2`}
                 >
                   <Plus className="h-3.5 w-3.5" />
                   企業を追加
@@ -1192,7 +1201,7 @@ export default function CompaniesView() {
 
                 <button
                   onClick={() => setShowTrashModal(true)}
-                  className={`flex items-center gap-1 text-[10px] font-black py-1.5 px-3 rounded-lg border cursor-pointer transition-all ${
+                  className={`flex items-center gap-1 text-micro font-black py-1.5 px-3 rounded-lg border cursor-pointer transition-all ${
                     isDark 
                       ? 'bg-slate-900 border-slate-800 text-slate-350 hover:bg-slate-800 hover:text-slate-100' 
                       : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-950'
@@ -1229,7 +1238,7 @@ export default function CompaniesView() {
                     <select
                       value={filterOrigin}
                       onChange={e => setFilterOrigin(e.target.value as any)}
-                      className={`w-full px-2.5 py-2 text-[10px] bg-white rounded-xl border border-gray-200 ${
+                      className={`w-full px-2.5 py-2 text-micro bg-white rounded-xl border border-gray-200 ${
                         isDark ? 'bg-slate-900 text-white border-slate-800' : 'text-gray-700'
                       }`}
                     >
@@ -1244,7 +1253,7 @@ export default function CompaniesView() {
                       <select
                         value={filterStatus}
                         onChange={e => setFilterStatus(e.target.value as any)}
-                        className={`w-full px-2.5 py-2 text-[10px] line-clamp-1 bg-white rounded-xl border border-gray-200 ${
+                        className={`w-full px-2.5 py-2 text-micro line-clamp-1 bg-white rounded-xl border border-gray-200 ${
                           isDark ? 'bg-slate-900 text-white border-slate-800' : 'text-gray-700'
                         }`}
                       >
@@ -1260,7 +1269,7 @@ export default function CompaniesView() {
                       <select
                         value={filterStatusIntern}
                         onChange={e => setFilterStatusIntern(e.target.value as any)}
-                        className={`w-full px-2.5 py-2 text-[10px] line-clamp-1 bg-white rounded-xl border border-gray-200 ${
+                        className={`w-full px-2.5 py-2 text-micro line-clamp-1 bg-white rounded-xl border border-gray-200 ${
                           isDark ? 'bg-slate-900 text-white border-slate-800' : 'text-gray-700'
                         }`}
                       >
@@ -1274,7 +1283,7 @@ export default function CompaniesView() {
                     ) : (
                       <select
                         disabled
-                        className={`w-full px-2.5 py-2 text-[10px] line-clamp-1 bg-gray-50/80 dark:bg-slate-905/40 rounded-xl border border-gray-200 dark:border-slate-800 text-gray-400`}
+                        className={`w-full px-2.5 py-2 text-micro line-clamp-1 bg-gray-50/80 dark:bg-slate-905/40 rounded-xl border border-gray-200 dark:border-slate-800 text-gray-400`}
                       >
                         <option>選考フィルター：無効</option>
                       </select>
@@ -1285,7 +1294,7 @@ export default function CompaniesView() {
                     <select
                       value={filterPreference}
                       onChange={e => setFilterPreference(e.target.value as any)}
-                      className={`w-full px-2.5 py-2 text-[10px] bg-white rounded-xl border border-gray-200 ${
+                      className={`w-full px-2.5 py-2 text-micro bg-white rounded-xl border border-gray-200 ${
                         isDark ? 'bg-slate-900 text-white border-slate-800' : 'text-gray-700'
                       }`}
                     >
@@ -1302,7 +1311,7 @@ export default function CompaniesView() {
                     <select
                       value={filterIndustry}
                       onChange={e => setFilterIndustry(e.target.value)}
-                      className={`w-full px-2.5 py-2 text-[10px] bg-white rounded-xl border border-gray-200 ${
+                      className={`w-full px-2.5 py-2 text-micro bg-white rounded-xl border border-gray-200 ${
                         isDark ? 'bg-slate-900 text-white border-slate-800' : 'text-gray-700'
                       }`}
                     >
@@ -1317,7 +1326,7 @@ export default function CompaniesView() {
                     <select
                       value={sortBy}
                       onChange={e => setSortBy(e.target.value as any)}
-                      className={`w-full px-2.5 py-2 text-[10px] bg-white rounded-xl border border-gray-200 ${
+                      className={`w-full px-2.5 py-2 text-micro bg-white rounded-xl border border-gray-200 ${
                         isDark ? 'bg-slate-900 text-white border-slate-800' : 'text-gray-700'
                       }`}
                     >
@@ -1371,7 +1380,7 @@ export default function CompaniesView() {
                         />
                         <div>
                           <span className="font-bold text-gray-800">エントリーシート回答データの引き継ぎ</span>
-                          <span className="block text-[10px] text-gray-500">登録済みの設問メモ（{company?.esMemos?.length || 0}件）を引き継ぎます</span>
+                          <span className="block text-micro text-gray-500">登録済みの設問メモ（{company?.esMemos?.length || 0}件）を引き継ぎます</span>
                         </div>
                       </label>
 
@@ -1384,7 +1393,7 @@ export default function CompaniesView() {
                         />
                         <div>
                           <span className="font-bold text-gray-800">面接記録メモデータの引き継ぎ</span>
-                          <span className="block text-[10px] text-gray-500">登録済みの面接詳細メモ（{company?.interviewMemos?.length || 0}件）を引き継ぎます</span>
+                          <span className="block text-micro text-gray-500">登録済みの面接詳細メモ（{company?.interviewMemos?.length || 0}件）を引き継ぎます</span>
                         </div>
                       </label>
 
@@ -1397,12 +1406,12 @@ export default function CompaniesView() {
                         />
                         <div>
                           <span className="font-bold text-gray-800">OB訪問・基本備考メモの引き継ぎ</span>
-                          <span className="block text-[10px] text-gray-500">自由形式メモや登録済みのOB訪問詳細データを引き継ぎます</span>
+                          <span className="block text-micro text-gray-500">自由形式メモや登録済みのOB訪問詳細データを引き継ぎます</span>
                         </div>
                       </label>
                     </div>
 
-                    <p className="text-[10px] text-amber-600 leading-normal flex items-start gap-1 font-sans">
+                    <p className="text-micro text-amber-600 leading-normal flex items-start gap-1 font-sans">
                       <span>※</span>
                       <span>本操作を行うと、本選考管理画面に新しく「検討中（興味あり）」として企業レコードが追加されます。現在のインターン用データもそのまま残ります。</span>
                     </p>
@@ -1439,7 +1448,7 @@ export default function CompaniesView() {
                   className="bg-white text-gray-900 rounded-3xl p-6 w-full max-w-md shadow-2xl relative border border-gray-100 z-10 space-y-4"
                 >
                   <div className="flex justify-between items-center sm:pb-1">
-                    <h3 className="text-sm font-black text-gray-900">🏢 新しい企業を登録</h3>
+                    <h3 className="text-sm font-black text-gray-900 flex items-center gap-1.5"><Building2 className="h-4 w-4" />新しい企業を登録</h3>
                     <button 
                       onClick={() => setShowAddCompanyModal(false)}
                       className="text-gray-450 hover:text-gray-755 transition-colors p-1 rounded-full cursor-pointer hover:bg-gray-100"
@@ -1508,7 +1517,7 @@ export default function CompaniesView() {
                               : 'text-gray-500 hover:text-gray-850'
                           }`}
                         >
-                          💼 本選考
+                          <span className="inline-flex items-center gap-1"><Briefcase className="h-3 w-3" />本選考</span>
                         </button>
                         <button
                           type="button"
@@ -1519,7 +1528,7 @@ export default function CompaniesView() {
                               : 'text-gray-500 hover:text-gray-850'
                           }`}
                         >
-                          🎖️ インターン選考
+                          <span className="inline-flex items-center gap-1"><Award className="h-3 w-3" />インターン選考</span>
                         </button>
                       </div>
                     </div>
@@ -1632,7 +1641,7 @@ export default function CompaniesView() {
                     <button
                       type="submit"
                       disabled={!newName.trim() || !newIndustry.trim()}
-                      className={`w-full py-3 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs ${theme.bg} ${theme.hover} disabled:opacity-50 disabled:cursor-not-allowed`}
+                      className={`w-full py-3 ${theme.onBg} text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs ${theme.bg} ${theme.hover} disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       企業を追加する
                     </button>
@@ -1683,20 +1692,20 @@ export default function CompaniesView() {
                                 <span className={isDark ? 'text-slate-200' : 'text-gray-900'}>{co.name}</span>
                                 <div className="flex gap-1 shrink-0">
                                   {co.isForeign ? (
-                                    <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-[8px] font-black leading-none">
+                                    <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-micro font-black leading-none">
                                       外資系
                                     </span>
                                   ) : (
-                                    <span className="px-1.5 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-[8px] font-black leading-none">
+                                    <span className="px-1.5 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-micro font-black leading-none">
                                       日系
                                     </span>
                                   )}
                                   {isMain ? (
-                                    <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-900/40 rounded-sm text-[8px] font-black leading-none">
+                                    <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-900/40 rounded-sm text-micro font-black leading-none">
                                       本選考
                                     </span>
                                   ) : (
-                                    <span className="px-1.5 py-0.5 bg-teal-50 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400 border border-teal-200/50 dark:border-teal-900/40 rounded-sm text-[8px] font-black leading-none">
+                                    <span className="px-1.5 py-0.5 bg-teal-50 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400 border border-teal-200/50 dark:border-teal-900/40 rounded-sm text-micro font-black leading-none">
                                       インターン
                                     </span>
                                   )}
@@ -1707,7 +1716,7 @@ export default function CompaniesView() {
                               {co.industry}
                             </td>
                             <td className="py-3.5 px-4 font-bold">
-                              <span className={`inline-block px-2 py-0.5 rounded-sm text-[9px] font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
+                              <span className={`inline-block px-2 py-0.5 rounded-sm text-micro font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
                                 {isMain 
                                   ? STATUS_LABELS[co.status]
                                   : INTERN_STATUS_LABELS[co.selectionStatusIntern || 'entry_done']}
@@ -1734,7 +1743,7 @@ export default function CompaniesView() {
                     isDark ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-gray-200 text-gray-400'
                   }`}>
                     <p>該当する企業は見つかりませんでした</p>
-                    <p className="text-[10px] text-gray-450 font-sans">検索・フィルター条件を調整してください</p>
+                    <p className="text-micro text-gray-450 font-sans">検索・フィルター条件を調整してください</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
@@ -1763,30 +1772,30 @@ export default function CompaniesView() {
                                   {co.name}
                                 </h4>
                                 {co.isForeign ? (
-                                  <span className="px-1 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-[8px] font-black leading-none">
+                                  <span className="px-1 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-micro font-black leading-none">
                                     外資系
                                   </span>
                                 ) : (
-                                  <span className="px-1 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-[8px] font-black leading-none">
+                                  <span className="px-1 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-micro font-black leading-none">
                                     日系
                                   </span>
                                 )}
                                 {selectionTab === 'main' ? (
-                                  <span className={`inline-block px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
+                                  <span className={`inline-block px-1.5 py-0.5 rounded-sm text-micro font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
                                     {STATUS_LABELS[co.status]}
                                   </span>
                                 ) : (
-                                  <span className={`inline-block px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
+                                  <span className={`inline-block px-1.5 py-0.5 rounded-sm text-micro font-black uppercase text-center border ${design.bg} ${design.text} ${design.border}`}>
                                     {INTERN_STATUS_LABELS[co.selectionStatusIntern || 'entry_done']}
                                   </span>
                                 )}
                                 {selectionTab === 'intern' && co.internType && (
-                                  <span className="px-1.5 py-0.5 bg-gray-150 text-gray-750 text-[8.5px] font-bold rounded-sm">
+                                  <span className="px-1.5 py-0.5 bg-gray-150 text-gray-750 text-micro font-bold rounded-sm">
                                     {INTERN_TYPE_LABELS[co.internType]}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-[10px] text-gray-400 font-sans flex items-center gap-1.5 truncate">
+                              <p className="text-micro text-gray-400 font-sans flex items-center gap-1.5 truncate">
                                 <span>{co.industry}</span>
                                 <span>•</span>
                                 <span className="flex items-center gap-0.5 font-sans">
@@ -1797,7 +1806,7 @@ export default function CompaniesView() {
                               </p>
                               <div className="flex flex-wrap gap-1.5 pt-0.5 font-sans">
                                 {co.esDeadline && (
-                                  <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-sm font-mono ${
+                                  <span className={`inline-flex items-center gap-0.5 text-micro px-1.5 py-0.5 rounded-sm font-mono ${
                                     isDark ? 'bg-rose-950/45 text-rose-300 border border-rose-900' : 'bg-rose-50 text-rose-600 border border-rose-100'
                                   }`}>
                                     <Clock className="h-2.5 w-2.5" />
@@ -1805,7 +1814,7 @@ export default function CompaniesView() {
                                   </span>
                                 )}
                                 {co.interviewDate && (
-                                  <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-sm font-mono ${
+                                  <span className={`inline-flex items-center gap-0.5 text-micro px-1.5 py-0.5 rounded-sm font-mono ${
                                     isDark ? 'bg-blue-950/45 text-blue-300 border border-blue-900' : 'bg-blue-50 text-blue-600 border border-blue-100'
                                   }`}>
                                     <Calendar className="h-2.5 w-2.5" />
@@ -1834,7 +1843,7 @@ export default function CompaniesView() {
                       <div key={status} className="space-y-2.5 text-left">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-gray-750 flex items-center gap-1.5">
-                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-center border mr-1 ${design.bg} ${design.text} ${design.border}`}>
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-micro font-black uppercase text-center border mr-1 ${design.bg} ${design.text} ${design.border}`}>
                               {STATUS_LABELS[status]}
                             </span>
                             <span className="font-mono font-bold text-gray-400">({groupCompanies.length})</span>
@@ -1842,7 +1851,7 @@ export default function CompaniesView() {
                         </div>
 
                         {groupCompanies.length === 0 ? (
-                          <div className={`py-3 px-4 text-center text-[10px] text-gray-400 rounded-2xl border ${
+                          <div className={`py-3 px-4 text-center text-micro text-gray-400 rounded-2xl border ${
                             isDark ? 'bg-slate-900/10 border-slate-800' : 'bg-white border-gray-50'
                           }`}>
                             このステータスに該当する企業はありません
@@ -1869,15 +1878,15 @@ export default function CompaniesView() {
                                     {co.name}
                                   </h4>
                                   {co.isForeign ? (
-                                    <span className="px-1 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-[8px] font-black leading-none">
+                                    <span className="px-1 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-micro font-black leading-none">
                                       外資系
                                     </span>
                                   ) : (
-                                    <span className="px-1 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-[8px] font-black leading-none">
+                                    <span className="px-1 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-micro font-black leading-none">
                                       日系
                                     </span>
                                   )}
-                                  <p className="text-[10px] text-gray-400 font-sans flex items-center gap-1.5 truncate">
+                                  <p className="text-micro text-gray-400 font-sans flex items-center gap-1.5 truncate">
                                     <span>{co.industry}</span>
                                     <span>•</span>
                                     <span className="flex items-center gap-0.5">
@@ -1888,7 +1897,7 @@ export default function CompaniesView() {
                                   </p>
                                   <div className="flex flex-wrap gap-1.5 pt-1 font-sans">
                                     {co.esDeadline && (
-                                      <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-sm font-mono ${
+                                      <span className={`inline-flex items-center gap-0.5 text-micro px-1.5 py-0.5 rounded-sm font-mono ${
                                         isDark ? 'bg-rose-950/45 text-rose-300 border border-rose-900' : 'bg-rose-50 text-rose-600 border border-rose-100'
                                       }`}>
                                         <Clock className="h-2.5 w-2.5" />
@@ -1896,7 +1905,7 @@ export default function CompaniesView() {
                                       </span>
                                     )}
                                     {co.interviewDate && (
-                                      <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-sm font-mono ${
+                                      <span className={`inline-flex items-center gap-0.5 text-micro px-1.5 py-0.5 rounded-sm font-mono ${
                                         isDark ? 'bg-blue-950/45 text-blue-300 border border-blue-900' : 'bg-blue-50 text-blue-600 border border-blue-100'
                                       }`}>
                                         <Calendar className="h-2.5 w-2.5" />
@@ -1923,7 +1932,7 @@ export default function CompaniesView() {
                       <div key={status} className="space-y-2.5 text-left font-sans">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-gray-750 flex items-center gap-1.5">
-                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase text-center border mr-1 ${design.bg} ${design.text} ${design.border}`}>
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-micro font-black uppercase text-center border mr-1 ${design.bg} ${design.text} ${design.border}`}>
                               {INTERN_STATUS_LABELS[status]}
                             </span>
                             <span className="font-mono font-bold text-gray-400">({groupCompanies.length})</span>
@@ -1931,7 +1940,7 @@ export default function CompaniesView() {
                         </div>
 
                         {groupCompanies.length === 0 ? (
-                          <div className={`py-3 px-4 text-center text-[10px] text-gray-400 rounded-2xl border ${
+                          <div className={`py-3 px-4 text-center text-micro text-gray-400 rounded-2xl border ${
                             isDark ? 'bg-slate-900/10 border-slate-800' : 'bg-white border-gray-50'
                           }`}>
                             このステータスに該当するインターンはありません
@@ -1959,19 +1968,19 @@ export default function CompaniesView() {
                                       {co.name}
                                     </h4>
                                     {co.isForeign ? (
-                                      <span className="px-1 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-[8px] font-black leading-none">
+                                      <span className="px-1 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-900/40 rounded-sm text-micro font-black leading-none">
                                         外資系
                                       </span>
                                     ) : (
-                                      <span className="px-1 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-[8px] font-black leading-none">
+                                      <span className="px-1 py-0.5 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400 border border-sky-100/50 dark:border-sky-900/40 rounded-sm text-micro font-black leading-none">
                                         日系
                                       </span>
                                     )}
-                                    <span className="px-1.5 py-0.5 bg-gray-150 text-gray-700 text-[8px] font-bold rounded-sm">
+                                    <span className="px-1.5 py-0.5 bg-gray-150 text-gray-700 text-micro font-bold rounded-sm">
                                       {co.internType ? INTERN_TYPE_LABELS[co.internType] : '1day'}
                                     </span>
                                   </div>
-                                  <p className="text-[10px] text-gray-400 font-sans flex items-center gap-1.5 truncate">
+                                  <p className="text-micro text-gray-400 font-sans flex items-center gap-1.5 truncate">
                                     <span>{co.industry}</span>
                                     <span>•</span>
                                     <span className="flex items-center gap-0.5">
@@ -1982,7 +1991,7 @@ export default function CompaniesView() {
                                   </p>
                                   <div className="flex flex-wrap gap-1.5 pt-1 font-sans">
                                     {co.esDeadline && (
-                                      <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-sm font-mono ${
+                                      <span className={`inline-flex items-center gap-0.5 text-micro px-1.5 py-0.5 rounded-sm font-mono ${
                                         isDark ? 'bg-rose-950/45 text-rose-300 border border-rose-900' : 'bg-rose-50 text-rose-600 border border-rose-100'
                                       }`}>
                                         <Clock className="h-2.5 w-2.5" />
@@ -1990,7 +1999,7 @@ export default function CompaniesView() {
                                       </span>
                                     )}
                                     {co.interviewDate && (
-                                      <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-sm font-mono ${
+                                      <span className={`inline-flex items-center gap-0.5 text-micro px-1.5 py-0.5 rounded-sm font-mono ${
                                         isDark ? 'bg-blue-950/45 text-blue-300 border border-blue-900' : 'bg-blue-50 text-blue-600 border border-blue-100'
                                       }`}>
                                         <Calendar className="h-2.5 w-2.5" />
@@ -2036,19 +2045,19 @@ export default function CompaniesView() {
                       {company?.name}
                     </h2>
                     {company?.isForeign ? (
-                      <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200/50 rounded text-[9px] font-black">
+                      <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200/50 rounded text-micro font-black">
                         外資系
                       </span>
                     ) : (
-                      <span className="px-1.5 py-0.5 bg-sky-50 text-sky-700 border border-sky-100/50 rounded text-[9px] font-black">
+                      <span className="px-1.5 py-0.5 bg-sky-50 text-sky-700 border border-sky-100/50 rounded text-micro font-black">
                         日系
                       </span>
                     )}
-                    <span className={`inline-block text-[9px] font-black px-2 py-0.5 rounded-full border ${STATUS_COLORS[company!.status].bg} ${STATUS_COLORS[company!.status].text} ${STATUS_COLORS[company!.status].border}`}>
+                    <span className={`inline-block text-micro font-black px-2 py-0.5 rounded-full border ${STATUS_COLORS[company!.status].bg} ${STATUS_COLORS[company!.status].text} ${STATUS_COLORS[company!.status].border}`}>
                       {STATUS_LABELS[company!.status]}
                     </span>
                   </div>
-                  <p className="text-[10px] text-gray-400 font-sans mt-0.5 flex items-center gap-1.5">
+                  <p className="text-micro text-gray-400 font-sans mt-0.5 flex items-center gap-1.5">
                     <span>{company?.industry}</span>
                     <span>•</span>
                     <span className="flex items-center gap-0.5">
@@ -2074,14 +2083,15 @@ export default function CompaniesView() {
                     setFbEmail('');
                     setShowFeedbackModal(true);
                   }}
-                  className="p-2 bg-amber-50 text-amber-700 border border-amber-200/50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1.5 text-[11px] font-bold"
+                  className="p-2 bg-amber-50 text-amber-700 border border-amber-200/50 rounded-xl hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1.5 text-micro font-bold"
                 >
-                  ⚠️ 情報の間違いを報告
+                  <AlertTriangle className="h-3 w-3" />
+                  情報の間違いを報告
                 </button>
 
                 <button
                   onClick={() => setCompanyToDelete(company!)}
-                  className="p-2 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-bold"
+                  className="p-2 bg-rose-50 text-rose-600 border border-rose-100 rounded-xl hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-1 text-micro font-bold"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   企業削除
@@ -2102,7 +2112,7 @@ export default function CompaniesView() {
                 <button
                   key={tb.id}
                   onClick={() => setActiveTabState(tb.id as any)}
-                  className={`flex-1 min-w-[70px] text-center py-2 px-2.5 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  className={`flex-1 min-w-[70px] text-center py-2 px-2.5 rounded-lg text-micro font-bold whitespace-nowrap transition-all cursor-pointer ${
                     activeTab === tb.id ? `${theme.lightBg} ${theme.textDark} shadow-xs border border-${settings.themeColor}-200/50` : 'text-gray-500 hover:text-gray-950'
                   }`}
                 >
@@ -2284,16 +2294,17 @@ export default function CompaniesView() {
                             href={company.website} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className={`px-4 py-2.5 rounded-xl border bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-350 dark:hover:bg-slate-800 font-bold text-center text-xs whitespace-nowrap transition`}
+                            className={`px-4 py-2.5 rounded-xl border bg-gray-50 text-gray-700 hover:bg-gray-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-350 dark:hover:bg-slate-800 font-bold text-center text-xs whitespace-nowrap transition inline-flex items-center gap-1`}
                           >
-                            💻 開く
+                            <ExternalLink className="h-3 w-3" />
+                            開く
                           </a>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-3.5 bg-amber-50 rounded-2xl text-[11px] text-amber-800 border border-amber-100 flex items-start gap-2">
+                  <div className="p-3.5 bg-amber-50 rounded-2xl text-micro text-amber-800 border border-amber-100 flex items-start gap-2">
                     <Clock className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-500" />
                     <div>
                       <p className="font-bold">カレンダー同期スケジュール機能</p>
@@ -2310,7 +2321,7 @@ export default function CompaniesView() {
                         <ArrowUpRight className="h-5 w-5 text-indigo-500 mt-0.5" />
                         <div>
                           <h4 className="font-bold text-indigo-900">本選考へデータを引き継ぐ</h4>
-                          <p className="text-[10px] text-indigo-700/80 mt-0.5 leading-relaxed">
+                          <p className="text-micro text-indigo-700/80 mt-0.5 leading-relaxed">
                             このインターン選考の履歴（企業情報の同期、ES文章、面接メモ等）を活かして、本選考の新規エントリーを作成・同期します。
                           </p>
                         </div>
@@ -2318,7 +2329,7 @@ export default function CompaniesView() {
                       <button
                         type="button"
                         onClick={() => setShowConvertToMainModal(true)}
-                        className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-bold shadow-sm transition cursor-pointer flex items-center justify-center gap-1"
+                        className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-micro font-bold shadow-sm transition cursor-pointer flex items-center justify-center gap-1"
                       >
                         <Network className="h-3.5 w-3.5" />
                         本選考管理画面に引継ぎ・追加する
@@ -2345,7 +2356,7 @@ export default function CompaniesView() {
                             const updatedSteps = [...(company.internSteps || []), newStep];
                             updateCompany(company.id, { internSteps: updatedSteps });
                           }}
-                          className={`py-1 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 font-bold rounded-lg text-[10px] flex items-center gap-1 cursor-pointer border border-blue-150 transition`}
+                          className={`py-1 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 font-bold rounded-lg text-micro flex items-center gap-1 cursor-pointer border border-blue-150 transition`}
                         >
                           <Plus className="h-3 w-3" />
                           選考ステップを追加
@@ -2353,7 +2364,7 @@ export default function CompaniesView() {
                       </div>
 
                       {(!company.internSteps || company.internSteps.length === 0) ? (
-                        <div className="p-6 text-center border border-dashed border-gray-200 rounded-2xl text-[10px] text-gray-400 font-sans">
+                        <div className="p-6 text-center border border-dashed border-gray-200 rounded-2xl text-micro text-gray-400 font-sans">
                           登録された選考ステップはありません。上のボタンから追加してください。
                         </div>
                       ) : (
@@ -2363,7 +2374,7 @@ export default function CompaniesView() {
                               <div className="space-y-1">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="font-bold text-gray-850 text-xs font-sans">{step.stepName}</span>
-                                  <span className={`px-1.5 py-0.5 rounded-sm text-[8px] font-bold ${
+                                  <span className={`px-1.5 py-0.5 rounded-sm text-micro font-bold ${
                                     step.result === 'passed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-250 border' :
                                     step.result === 'failed' ? 'bg-rose-50 text-rose-700 border border-rose-250 border' :
                                     step.result === 'selection_pending' ? 'bg-blue-50 text-blue-700 border border-blue-200 border' :
@@ -2374,7 +2385,7 @@ export default function CompaniesView() {
                                      step.result === 'selection_pending' ? '選考中 / 結果待ち' : '未設定'}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-[9px] text-gray-500 font-mono">
+                                <div className="flex items-center gap-1.5 text-micro text-gray-500 font-mono">
                                   <span>日程:</span>
                                   <input 
                                     type="date"
@@ -2383,7 +2394,7 @@ export default function CompaniesView() {
                                       const updated = company.internSteps.map(s => s.id === step.id ? { ...s, date: e.target.value } : s);
                                       updateCompany(company.id, { internSteps: updated });
                                     }}
-                                    className="p-1 pb-0.5 bg-white border border-gray-200 rounded-md font-mono text-[9px] h-6 text-gray-700"
+                                    className="p-1 pb-0.5 bg-white border border-gray-200 rounded-md font-mono text-micro h-6 text-gray-700"
                                   />
                                 </div>
                               </div>
@@ -2395,7 +2406,7 @@ export default function CompaniesView() {
                                     const updated = company.internSteps.map(s => s.id === step.id ? { ...s, result: e.target.value as any } : s);
                                     updateCompany(company.id, { internSteps: updated });
                                   }}
-                                  className="p-1 px-1.5 bg-white border border-gray-200 text-[10px] rounded-lg text-gray-700 font-sans"
+                                  className="p-1 px-1.5 bg-white border border-gray-200 text-micro rounded-lg text-gray-700 font-sans"
                                 >
                                   <option value="selection_pending">結果待ち</option>
                                   <option value="passed">合格</option>
@@ -2434,7 +2445,7 @@ export default function CompaniesView() {
                     <div className="relative">
                       <button 
                         onClick={() => setShowImportES(!showImportES)}
-                        className={`py-1.5 px-3 ${theme.lightBg} hover:opacity-90 border ${theme.border} ${theme.textDark} rounded-lg text-[10px] font-bold flex items-center gap-1 transition-colors cursor-pointer`}
+                        className={`py-1.5 px-3 ${theme.lightBg} hover:opacity-90 border ${theme.border} ${theme.textDark} rounded-lg text-micro font-bold flex items-center gap-1 transition-colors cursor-pointer`}
                       >
                         <Copy className="h-3 w-3" />
                         過去の他社ESデータを流用
@@ -2444,21 +2455,21 @@ export default function CompaniesView() {
                         <>
                           <div className="fixed inset-0 z-40" onClick={() => setShowImportES(false)} />
                           <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 p-3 z-50 overflow-hidden">
-                            <span className="text-[10px] font-black text-gray-500 block mb-2 border-b border-gray-50 pb-1">流用・インポート可能な回答例一覧</span>
+                            <span className="text-micro font-black text-gray-500 block mb-2 border-b border-gray-50 pb-1">流用・インポート可能な回答例一覧</span>
                             <div className="space-y-1.5 max-h-52 overflow-y-auto">
                               {companies.filter(c => c.id !== company!.id && c.esMemos.length > 0).length === 0 ? (
-                                <p className="text-[9px] text-gray-400 py-2 text-center">他にES回答メモを登録している企業がありません</p>
+                                <p className="text-micro text-gray-400 py-2 text-center">他にES回答メモを登録している企業がありません</p>
                               ) : (
                                 companies.filter(c => c.id !== company!.id && c.esMemos.length > 0).map(c => (
-                                  <div key={c.id} className="space-y-1 bg-gray-50 p-1.5 rounded-lg border border-gray-100 text-[10px]">
-                                    <span className="font-bold text-gray-700 block text-[9px]">{c.name}</span>
+                                  <div key={c.id} className="space-y-1 bg-gray-50 p-1.5 rounded-lg border border-gray-100 text-micro">
+                                    <span className="font-bold text-gray-700 block text-micro">{c.name}</span>
                                     <div className="space-y-1 pl-1">
                                       {c.esMemos.map(memo => (
                                         <button
                                           key={memo.id}
                                           type="button"
                                           onClick={() => handleImportESAction(memo, c.name)}
-                                          className="w-full text-left bg-white border border-gray-200 rounded px-1.5 py-0.5 text-[9px] hover:border-indigo-400 block font-sans truncate cursor-pointer text-gray-600"
+                                          className="w-full text-left bg-white border border-gray-200 rounded px-1.5 py-0.5 text-micro hover:border-indigo-400 block font-sans truncate cursor-pointer text-gray-600"
                                           title={memo.question}
                                         >
                                           {memo.question}
@@ -2486,18 +2497,18 @@ export default function CompaniesView() {
                         <div key={memo.id} className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-2 relative group">
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex items-center gap-1.5">
-                              <span className={`inline-block px-2 py-0.5 text-[9px] font-black rounded-lg ${
+                              <span className={`inline-block px-2 py-0.5 text-micro font-black rounded-lg ${
                                 memo.isDraft ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-green-50 text-green-700 border border-green-100'
                               }`}>
                                 {memo.isDraft ? '下書き' : '完成版'}
                               </span>
-                              <span className="text-[10px] text-gray-400 font-mono">（文字数: {memo.answer.length}字）</span>
+                              <span className="text-micro text-gray-400 font-mono">（文字数: {memo.answer.length}字）</span>
                             </div>
 
                             <div className="flex items-center gap-1.5">
                               <button
                                 onClick={() => updateESMemo(company.id, memo.id, { isDraft: !memo.isDraft })}
-                                className={`text-[10px] ${theme.text} hover:underline font-bold`}
+                                className={`text-micro ${theme.text} hover:underline font-bold`}
                               >
                                 {memo.isDraft ? '完成版にする' : '修正（下書き）にする'}
                               </button>
@@ -2511,13 +2522,13 @@ export default function CompaniesView() {
                           </div>
 
                           <div>
-                            <span className="block font-bold text-gray-500 text-[10px] font-mono">QUESTION:</span>
+                            <span className="block font-bold text-gray-500 text-micro font-mono">QUESTION:</span>
                             <p className="font-bold text-gray-900 mt-0.5 leading-relaxed bg-white border border-gray-100 p-2.5 rounded-xl break-words">{memo.question}</p>
                           </div>
 
                           <div>
-                            <span className="block font-bold text-gray-500 text-[10px] font-mono">ANSWER:</span>
-                            <div className="whitespace-pre-wrap text-gray-700 mt-1 leading-relaxed bg-white border border-gray-100 p-3.5 rounded-xl text-[11px] font-sans break-words">
+                            <span className="block font-bold text-gray-500 text-micro font-mono">ANSWER:</span>
+                            <div className="whitespace-pre-wrap text-gray-700 mt-1 leading-relaxed bg-white border border-gray-100 p-3.5 rounded-xl text-micro font-sans break-words">
                               {memo.answer}
                             </div>
                           </div>
@@ -2535,7 +2546,7 @@ export default function CompaniesView() {
                       <button
                         type="button"
                         onClick={() => setShowImportSelfAnalysis(!showImportSelfAnalysis)}
-                        className={`text-[9.5px] font-extrabold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 cursor-pointer transition-all ${
+                        className={`text-micro font-extrabold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 cursor-pointer transition-all ${
                           isDark 
                             ? 'bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-slate-100' 
                             : 'bg-indigo-50 border-indigo-100 text-indigo-700 hover:bg-indigo-100'
@@ -2551,7 +2562,7 @@ export default function CompaniesView() {
                         isDark ? 'bg-slate-950 border-slate-800 text-slate-200' : 'bg-amber-50/30 border-amber-100 text-amber-900'
                       }`}>
                         <div className="flex items-center justify-between border-b pb-1.5 border-dashed border-gray-200 dark:border-slate-800">
-                          <span className={`text-[10.5px] font-bold ${isDark ? 'text-slate-300' : 'text-amber-800'}`}>
+                          <span className={`text-micro font-bold ${isDark ? 'text-slate-300' : 'text-amber-800'}`}>
                             自己分析データから引用する
                           </span>
                           <button
@@ -2570,7 +2581,7 @@ export default function CompaniesView() {
                               isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-150'
                             }`}>
                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-gray-500">自己PR</span>
+                                <span className="text-micro font-bold text-gray-500">自己PR</span>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -2578,12 +2589,12 @@ export default function CompaniesView() {
                                     setNewAnswer(getDisplayRepresentation(selfAnalysis.selfPR));
                                     setShowImportSelfAnalysis(false);
                                   }}
-                                  className={`text-[10px] px-2 py-0.5 rounded-md font-bold text-white transition-all hover:opacity-90 cursor-pointer ${theme.bg}`}
+                                  className={`text-micro px-2 py-0.5 rounded-md font-bold ${theme.onBg} transition-all hover:opacity-90 cursor-pointer ${theme.bg}`}
                                 >
                                   引用する
                                 </button>
                               </div>
-                              <p className="text-[10.5px] text-gray-400 line-clamp-3 leading-relaxed">{getDisplayRepresentation(selfAnalysis.selfPR)}</p>
+                              <p className="text-micro text-gray-400 line-clamp-3 leading-relaxed">{getDisplayRepresentation(selfAnalysis.selfPR)}</p>
                             </div>
                           )}
 
@@ -2593,7 +2604,7 @@ export default function CompaniesView() {
                               isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-150'
                             }`}>
                               <div className="flex items-center justify-between">
-                                <span className="text-[10px] font-bold text-gray-500">学生時代に最も力を入れたこと（ガクチカ）</span>
+                                <span className="text-micro font-bold text-gray-500">学生時代に最も力を入れたこと（ガクチカ）</span>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -2601,25 +2612,25 @@ export default function CompaniesView() {
                                     setNewAnswer(getDisplayRepresentation(selfAnalysis.gakuchika));
                                     setShowImportSelfAnalysis(false);
                                   }}
-                                  className={`text-[10px] px-2 py-0.5 rounded-md font-bold text-white transition-all hover:opacity-90 cursor-pointer ${theme.bg}`}
+                                  className={`text-micro px-2 py-0.5 rounded-md font-bold ${theme.onBg} transition-all hover:opacity-90 cursor-pointer ${theme.bg}`}
                                 >
                                   引用する
                                 </button>
                               </div>
-                              <p className="text-[10.5px] text-gray-400 line-clamp-3 leading-relaxed">{getDisplayRepresentation(selfAnalysis.gakuchika)}</p>
+                              <p className="text-micro text-gray-400 line-clamp-3 leading-relaxed">{getDisplayRepresentation(selfAnalysis.gakuchika)}</p>
                             </div>
                           )}
 
                           {/* 3. 志望動機ベース */}
                           {selfAnalysis.baseMotivations?.length > 0 && (
                             <div className="space-y-1.5">
-                              <span className="block text-[10px] font-bold text-gray-400">志望動機ベース</span>
+                              <span className="block text-micro font-bold text-gray-400">志望動機ベース</span>
                               {selfAnalysis.baseMotivations.map(bm => (
                                 <div key={bm.id} className={`p-2.5 rounded-xl border flex flex-col gap-1.5 ${
                                   isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-150'
                                 }`}>
                                   <div className="flex items-center justify-between">
-                                    <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{bm.industry} / {bm.occupation || '企画職'}</span>
+                                    <span className={`text-micro font-bold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{bm.industry} / {bm.occupation || '企画職'}</span>
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -2627,12 +2638,12 @@ export default function CompaniesView() {
                                         setNewAnswer(bm.content);
                                         setShowImportSelfAnalysis(false);
                                       }}
-                                      className={`text-[10px] px-2 py-0.5 rounded-md font-bold text-white transition-all hover:opacity-90 cursor-pointer ${theme.bg}`}
+                                      className={`text-micro px-2 py-0.5 rounded-md font-bold ${theme.onBg} transition-all hover:opacity-90 cursor-pointer ${theme.bg}`}
                                     >
                                       引用する
                                     </button>
                                   </div>
-                                  <p className="text-[10.5px] text-gray-400 line-clamp-3 leading-relaxed">{bm.content}</p>
+                                  <p className="text-micro text-gray-400 line-clamp-3 leading-relaxed">{bm.content}</p>
                                 </div>
                               ))}
                             </div>
@@ -2641,13 +2652,13 @@ export default function CompaniesView() {
                           {/* 4. 面接想定質問 FAQ */}
                           {selfAnalysis.faqs?.length > 0 && (
                             <div className="space-y-1.5">
-                              <span className="block text-[10px] font-bold text-gray-400">面接想定FAQ</span>
+                              <span className="block text-micro font-bold text-gray-400">面接想定FAQ</span>
                               {selfAnalysis.faqs.map(faq => (
                                 <div key={faq.id} className={`p-2.5 rounded-xl border flex flex-col gap-1.5 ${
                                   isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-150'
                                 }`}>
                                   <div className="flex items-center justify-between">
-                                    <span className={`text-[10px] font-bold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{faq.question}</span>
+                                    <span className={`text-micro font-bold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{faq.question}</span>
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -2655,19 +2666,19 @@ export default function CompaniesView() {
                                         setNewAnswer(faq.answer);
                                         setShowImportSelfAnalysis(false);
                                       }}
-                                      className={`text-[10px] px-2 py-0.5 rounded-md font-bold text-white transition-all hover:opacity-90 cursor-pointer ${theme.bg}`}
+                                      className={`text-micro px-2 py-0.5 rounded-md font-bold ${theme.onBg} transition-all hover:opacity-90 cursor-pointer ${theme.bg}`}
                                     >
                                       引用する
                                     </button>
                                   </div>
-                                  <p className="text-[10.5px] text-gray-400 line-clamp-3 leading-relaxed">{faq.answer}</p>
+                                  <p className="text-micro text-gray-400 line-clamp-3 leading-relaxed">{faq.answer}</p>
                                 </div>
                               ))}
                             </div>
                           )}
 
                           {(!selfAnalysis.selfPR && !selfAnalysis.gakuchika && (!selfAnalysis.baseMotivations || selfAnalysis.baseMotivations.length === 0) && (!selfAnalysis.faqs || selfAnalysis.faqs.length === 0)) && (
-                            <p className="text-center text-[10px] text-gray-450 py-3">自己分析データが登録されていません。「自己分析」タブから設定してください。</p>
+                            <p className="text-center text-micro text-gray-450 py-3">自己分析データが登録されていません。「自己分析」タブから設定してください。</p>
                           )}
                         </div>
                       </div>
@@ -2690,7 +2701,7 @@ export default function CompaniesView() {
                     <div>
                       <div className="flex justify-between items-center mb-1">
                         <label className="block text-gray-600 font-bold">回答・自己PR構文</label>
-                        <span className="text-[10px] text-gray-400 font-bold font-mono">入力文字数: {newAnswer.length} 字</span>
+                        <span className="text-micro text-gray-400 font-bold font-mono">入力文字数: {newAnswer.length} 字</span>
                       </div>
                       <textarea
                         required
@@ -2716,7 +2727,7 @@ export default function CompaniesView() {
                       <button
                         type="submit"
                         disabled={!newQuestion.trim() || !newAnswer.trim()}
-                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={`py-1.5 px-4 ${theme.onBg} font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         設問と回答を保存
                       </button>
@@ -2742,12 +2753,12 @@ export default function CompaniesView() {
                           <div className="p-3 bg-gray-50 flex items-center justify-between flex-wrap gap-2">
                             <div className="flex items-center gap-1.5">
                               <span className="text-xs font-bold text-gray-950 font-sans">{memo.stageName}</span>
-                              <span className={`inline-block text-[9px] ${theme.lightBg} border ${theme.border} rounded px-1.5 ${theme.textDark}`}>
+                              <span className={`inline-block text-micro ${theme.lightBg} border ${theme.border} rounded px-1.5 ${theme.textDark}`}>
                                 {memo.format === 'individual' ? '個人面接' : memo.format === 'group' ? '集団面接' : 'その他'}
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-mono text-gray-500 bg-white border px-2 py-0.5 rounded-md">{memo.date}</span>
+                              <span className="text-micro font-mono text-gray-500 bg-white border px-2 py-0.5 rounded-md">{memo.date}</span>
                               <button
                                 onClick={() => deleteInterviewMemo(company.id, memo.id)}
                                 className="text-gray-300 hover:text-rose-500 hover:bg-rose-50 p-1 rounded-md transition-all cursor-pointer"
@@ -2761,7 +2772,7 @@ export default function CompaniesView() {
                             {memo.questionsAndAnswers.map((qa, i) => (
                               <div key={i} className="space-y-1.5 p-2.5 bg-gray-50/50 rounded-xl">
                                 <div className="font-bold flex items-start gap-1 pr-1 text-gray-900 break-words">
-                                  <span className="text-rose-500">❓</span>
+                                  <HelpCircle className="h-3.5 w-3.5 text-rose-500 shrink-0 mt-0.5" />
                                   <span className="break-words">質問: {qa.q}</span>
                                 </div>
                                 <div className="text-gray-700 font-medium pl-6 leading-relaxed break-words">
@@ -2773,19 +2784,19 @@ export default function CompaniesView() {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
                               {memo.reflections && (
                                 <div className="bg-blue-50/30 border border-blue-100 p-2.5 rounded-xl">
-                                  <span className="block font-black text-blue-800 text-[10px] mb-1">💡 振り返り・手応え</span>
+                                  <span className="flex items-center gap-1 font-black text-blue-800 text-micro mb-1"><Lightbulb className="h-3 w-3" />振り返り・手応え</span>
                                   <p className="text-gray-700 leading-relaxed font-sans break-words">{memo.reflections}</p>
                                 </div>
                               )}
                               {memo.improvements && (
                                 <div className="bg-amber-50/30 border border-amber-100 p-2.5 rounded-xl">
-                                  <span className="block font-black text-amber-800 text-[10px] mb-1">⚠️ 改善・反省点</span>
+                                  <span className="flex items-center gap-1 font-black text-amber-800 text-micro mb-1"><AlertTriangle className="h-3 w-3" />改善・反省点</span>
                                   <p className="text-gray-700 leading-relaxed font-sans break-words">{memo.improvements}</p>
                                 </div>
                               )}
                               {memo.nextPrep && (
                                 <div className="bg-green-50/30 border border-green-100 p-2.5 rounded-xl">
-                                  <span className="block font-black text-emerald-800 text-[10px] mb-1">🎯 次回への準備</span>
+                                  <span className="flex items-center gap-1 font-black text-emerald-800 text-micro mb-1"><Target className="h-3 w-3" />次回への準備</span>
                                   <p className="text-gray-700 leading-relaxed font-sans break-words">{memo.nextPrep}</p>
                                 </div>
                               )}
@@ -2901,7 +2912,7 @@ export default function CompaniesView() {
                       <button
                         type="submit"
                         disabled={!newIntStage.trim() || !newIntQ.trim() || !newIntA.trim()}
-                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={`py-1.5 px-4 ${theme.onBg} font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         面接メモを保存
                       </button>
@@ -2922,7 +2933,7 @@ export default function CompaniesView() {
                     onChange={e => updateCompany(company!.id, { notes: e.target.value })}
                   />
 
-                  <div className="flex items-center gap-1 text-[11px] text-gray-400">
+                  <div className="flex items-center gap-1 text-micro text-gray-400">
                     <CheckCircle className="h-3.5 w-3.5" />
                     <span>このテキストエリアは、入力・編集が行われると自動的に保存されます。</span>
                   </div>
@@ -2952,10 +2963,10 @@ export default function CompaniesView() {
                           <div className="flex items-center gap-2">
                             <UserCheck className={`h-4.5 w-4.5 ${theme.text}`} />
                             <span className="font-bold text-gray-900">{visit.alumniName} 様</span>
-                            <span className="text-[10px] text-gray-400 font-mono">({visit.visitDate})</span>
+                            <span className="text-micro text-gray-400 font-mono">({visit.visitDate})</span>
                           </div>
 
-                          <div className="text-[10px] text-gray-500 font-sans font-bold break-words">
+                          <div className="text-micro text-gray-500 font-sans font-bold break-words">
                             所属部署: {visit.department}
                           </div>
 
@@ -3023,7 +3034,7 @@ export default function CompaniesView() {
                       <button
                         type="submit"
                         disabled={!newObName.trim() || !newObDept.trim() || !newObNotes.trim()}
-                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={`py-1.5 px-4 ${theme.onBg} font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         訪問記録を保存
                       </button>
@@ -3079,11 +3090,11 @@ export default function CompaniesView() {
 
                             <div className="space-y-2.5">
                               <div className="p-2.5 bg-green-50/40 rounded-xl border border-green-100">
-                                <span className="text-emerald-800 font-bold block text-[10px] mb-0.5">👍 魅力・メリット（Pros）</span>
+                                <span className="text-emerald-800 font-bold flex items-center gap-1 text-micro mb-0.5"><ThumbsUp className="h-3 w-3" />魅力・メリット（Pros）</span>
                                 <p className="text-gray-700 font-sans leading-relaxed break-words">{comp.pros || '特になし'}</p>
                               </div>
                               <div className="p-2.5 bg-rose-50/40 rounded-xl border border-rose-100">
-                                <span className="text-rose-800 font-bold block text-[10px] mb-0.5">👎 懸念点・デメリット（Cons）</span>
+                                <span className="text-rose-800 font-bold flex items-center gap-1 text-micro mb-0.5"><ThumbsDown className="h-3 w-3" />懸念点・デメリット（Cons）</span>
                                 <p className="text-gray-700 font-sans leading-relaxed break-words">{comp.cons || '特になし'}</p>
                               </div>
                             </div>
@@ -3187,7 +3198,7 @@ export default function CompaniesView() {
                       <button
                         type="submit"
                         disabled={!newCompRole.trim() || !newCompCommute.trim() || !newCompSalary || Number(newCompSalary) <= 0}
-                        className={`py-1.5 px-4 text-white font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className={`py-1.5 px-4 ${theme.onBg} font-bold rounded-lg ${theme.bg} disabled:opacity-50 disabled:cursor-not-allowed`}
                       >
                         待遇メモを保存
                       </button>
@@ -3249,7 +3260,7 @@ export default function CompaniesView() {
                     <p className="text-gray-500 font-sans leading-relaxed">
                       ゴミ箱に移動したデータは30日間保存され、その間はいつでも完全に復元できます。30日を過ぎると自動的に完全消去されます。
                     </p>
-                    <p className="text-[10px] text-gray-400 font-sans leading-normal">
+                    <p className="text-micro text-gray-400 font-sans leading-normal">
                       ※ 企業に紐づくエントリーシート（ES）回答メモ、面接質問メモ、OB訪問履歴、条件比較データなども一時的に非表示になり、ゴミ箱から戻した際は一緒に復元されます。
                     </p>
                   </div>
@@ -3297,7 +3308,7 @@ export default function CompaniesView() {
                         <Trash2 className="h-4 w-4 text-gray-500" />
                         ゴミ箱（削除済み企業一覧）
                       </h3>
-                      <p className="text-[10px] text-gray-400 font-sans mt-0.5 animate-fade-in">
+                      <p className="text-micro text-gray-400 font-sans mt-0.5 animate-fade-in">
                         削除された企業データは、30日後の保管期間内であれば、いつでも元の状態に復元可能です。
                       </p>
                     </div>
@@ -3313,7 +3324,7 @@ export default function CompaniesView() {
                     {trashCompanies.length === 0 ? (
                       <div className="py-12 text-center text-xs space-y-1.5 text-gray-450 border border-dashed border-gray-250 dark:border-slate-800 rounded-2xl">
                         <p className="font-bold">ゴミ箱は空です</p>
-                        <p className="text-[10px] text-gray-400">削除された企業はありません</p>
+                        <p className="text-micro text-gray-400">削除された企業はありません</p>
                       </div>
                     ) : (
                       trashCompanies.map(co => {
@@ -3328,7 +3339,7 @@ export default function CompaniesView() {
                             <div className="space-y-1 min-w-0 flex-1">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <h4 className="text-xs font-bold text-gray-850 dark:text-gray-155 truncate">{co.name}</h4>
-                                <span className={`px-1.5 py-0.5 rounded-sm text-[8px] font-bold ${
+                                <span className={`px-1.5 py-0.5 rounded-sm text-micro font-bold ${
                                   daysLeft <= 7 
                                     ? 'bg-rose-50 text-rose-600 dark:bg-rose-955/20 dark:text-rose-400 border border-rose-150' 
                                     : 'bg-amber-50 text-amber-700 dark:bg-amber-955/20 dark:text-amber-450 border border-amber-200'
@@ -3336,7 +3347,7 @@ export default function CompaniesView() {
                                   自動消去まで あと {daysLeft} 日
                                 </span>
                               </div>
-                              <p className="text-[10px] text-gray-400 flex items-center gap-1.5 truncate">
+                              <p className="text-micro text-gray-400 flex items-center gap-1.5 truncate">
                                 <span>{co.industry}</span>
                                 <span>•</span>
                                 <span>削除: {new Date(co.deletedAt).toLocaleDateString()}</span>
@@ -3346,7 +3357,7 @@ export default function CompaniesView() {
                             <div className="flex items-center gap-1 flex-shrink-0 font-sans">
                               <button
                                 onClick={() => restoreCompany(co.id)}
-                                className={`py-1 px-2 rounded-lg text-[9.5px] font-bold flex items-center gap-0.5 cursor-pointer transition-all border ${
+                                className={`py-1 px-2 rounded-lg text-micro font-bold flex items-center gap-0.5 cursor-pointer transition-all border ${
                                   isDark 
                                     ? 'bg-indigo-950/40 text-indigo-300 border-indigo-900/50 hover:bg-indigo-900/80 hover:text-indigo-100' 
                                     : 'bg-indigo-50 border border-indigo-100 text-indigo-700 hover:bg-indigo-100'

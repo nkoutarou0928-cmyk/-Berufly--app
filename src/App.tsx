@@ -39,7 +39,9 @@ import {
   RefreshCw,
   Clock,
   Bell,
-  X
+  X,
+  Mail,
+  FileEdit
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -189,7 +191,7 @@ function WelcomeScreen() {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-2 text-[11px] font-black rounded-xl transition-all cursor-pointer ${
+                className={`py-2 text-micro font-black rounded-xl transition-all cursor-pointer ${
                   activeTab === tab.id 
                     ? 'bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-150 shadow-xs' 
                     : 'text-gray-400 dark:text-slate-500 hover:text-gray-900 dark:hover:text-slate-350'
@@ -215,7 +217,7 @@ function WelcomeScreen() {
               <form onSubmit={handleAction} className="space-y-3 text-left">
                 {activeTab === 'signup' && (
                   <div>
-                    <label className="block text-[10px] text-gray-400 font-bold mb-1">ユーザー名</label>
+                    <label className="block text-micro text-gray-400 font-bold mb-1">ユーザー名</label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                         <User className="h-3.5 w-3.5" />
@@ -233,7 +235,7 @@ function WelcomeScreen() {
                 )}
 
                 <div>
-                  <label className="block text-[10px] text-gray-400 font-bold mb-1">メールアドレス</label>
+                  <label className="block text-micro text-gray-400 font-bold mb-1">メールアドレス</label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                       <User className="h-3.5 w-3.5" />
@@ -250,7 +252,7 @@ function WelcomeScreen() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-gray-400 font-bold mb-1">パスワード</label>
+                  <label className="block text-micro text-gray-400 font-bold mb-1">パスワード</label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                       <Lock className="h-3.5 w-3.5" />
@@ -275,7 +277,7 @@ function WelcomeScreen() {
 
                 {activeTab === 'signup' && (
                   <div>
-                    <label className="block text-[10px] text-gray-400 font-bold mb-1">パスワード（確認）</label>
+                    <label className="block text-micro text-gray-400 font-bold mb-1">パスワード（確認）</label>
                     <div className="relative">
                       <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                         <Lock className="h-3.5 w-3.5" />
@@ -297,7 +299,7 @@ function WelcomeScreen() {
                     <button
                       type="button"
                       onClick={() => setActiveTab('forgot_password')}
-                      className="text-[10px] hover:underline font-bold text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 cursor-pointer"
+                      className="text-micro hover:underline font-bold text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 cursor-pointer"
                     >
                       パスワードを忘れた方はこちら
                     </button>
@@ -306,9 +308,12 @@ function WelcomeScreen() {
 
                 <button
                   type="submit"
-                  className={`w-full py-2.5 font-bold rounded-xl text-white ${theme.bg} ${theme.hover} cursor-pointer shadow-sm text-xs active:scale-98 transition mt-2`}
+                  className={`w-full py-2.5 font-bold rounded-xl ${theme.onBg} ${theme.bg} ${theme.hover} cursor-pointer shadow-sm text-xs active:scale-98 transition mt-2`}
                 >
-                  {activeTab === 'signup' ? '✨ 新規アカウントを作成する' : '🔑 ログインしてデータを同期'}
+                  <span className="inline-flex items-center justify-center gap-1.5">
+                    {activeTab === 'signup' ? <Sparkles className="h-3.5 w-3.5" /> : <KeyRound className="h-3.5 w-3.5" />}
+                    {activeTab === 'signup' ? '新規アカウントを作成する' : 'ログインしてデータを同期'}
+                  </span>
                 </button>
               </form>
             )}
@@ -317,16 +322,17 @@ function WelcomeScreen() {
             {activeTab === 'forgot_password' && (
               <form onSubmit={handleRequestReset} className="space-y-4 text-left">
                 <div className="p-4 bg-gray-50 dark:bg-slate-950/20 border border-gray-200 dark:border-slate-800 rounded-2xl">
-                  <span className="text-xs font-bold text-gray-700 dark:text-slate-300 block mb-1">
-                    🔑 パスワード再設定メール送信
+                  <span className="text-xs font-bold text-gray-700 dark:text-slate-300 flex items-center gap-1.5 mb-1">
+                    <KeyRound className="h-3.5 w-3.5" />
+                    パスワード再設定メール送信
                   </span>
-                  <p className="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
+                  <p className="text-micro leading-relaxed text-gray-500 dark:text-gray-400">
                     登録されているメールアドレスを入力してください。24時間有効なパスワードリセット用の再設定コードがメール送信されます。
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-gray-400 font-bold mb-1">メールアドレス</label>
+                  <label className="block text-micro text-gray-400 font-bold mb-1">メールアドレス</label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                       <User className="h-3.5 w-3.5" />
@@ -344,16 +350,19 @@ function WelcomeScreen() {
 
                 <button
                   type="submit"
-                  className={`w-full py-2.5 font-bold rounded-xl text-white ${theme.bg} ${theme.hover} cursor-pointer shadow-sm text-xs active:scale-98 transition`}
+                  className={`w-full py-2.5 font-bold rounded-xl ${theme.onBg} ${theme.bg} ${theme.hover} cursor-pointer shadow-sm text-xs active:scale-98 transition`}
                 >
-                  📧 リセットコードを送信する
+                  <span className="inline-flex items-center justify-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5" />
+                    リセットコードを送信する
+                  </span>
                 </button>
 
                 <div className="text-center mt-2">
                   <button
                     type="button"
                     onClick={() => setActiveTab('login')}
-                    className="text-[10px] font-bold text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 hover:underline cursor-pointer"
+                    className="text-micro font-bold text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 hover:underline cursor-pointer"
                   >
                     ログイン画面に戻る
                   </button>
@@ -365,16 +374,17 @@ function WelcomeScreen() {
             {activeTab === 'reset_password' && (
               <form onSubmit={handleCompleteReset} className="space-y-3 text-left">
                 <div className="p-4 bg-indigo-50/50 dark:bg-slate-950/20 border border-indigo-205/50 rounded-2xl">
-                  <span className="text-xs font-bold text-indigo-800 dark:text-indigo-400 block mb-1">
-                    📝 パスワードの再設定
+                  <span className="text-xs font-bold text-indigo-800 dark:text-indigo-400 flex items-center gap-1.5 mb-1">
+                    <FileEdit className="h-3.5 w-3.5" />
+                    パスワードの再設定
                   </span>
-                  <p className="text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
+                  <p className="text-micro leading-relaxed text-gray-500 dark:text-gray-400">
                     メールに送信された6桁のリセットコードを入力し、新しいパスワード（8文字以上かつ英数字混合）を設定してください。
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-gray-400 font-bold mb-1">リセットコード</label>
+                  <label className="block text-micro text-gray-400 font-bold mb-1">リセットコード</label>
                   <input
                     type="text"
                     required
@@ -386,7 +396,7 @@ function WelcomeScreen() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-gray-400 font-bold mb-1">新しいパスワード</label>
+                  <label className="block text-micro text-gray-400 font-bold mb-1">新しいパスワード</label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                       <Lock className="h-3.5 w-3.5" />
@@ -403,7 +413,7 @@ function WelcomeScreen() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-gray-400 font-bold mb-1">新しいパスワード（確認）</label>
+                  <label className="block text-micro text-gray-400 font-bold mb-1">新しいパスワード（確認）</label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                       <Lock className="h-3.5 w-3.5" />
@@ -421,16 +431,19 @@ function WelcomeScreen() {
 
                 <button
                   type="submit"
-                  className={`w-full py-2.5 font-bold rounded-xl text-white ${theme.bg} ${theme.hover} cursor-pointer shadow-sm text-xs active:scale-98 transition`}
+                  className={`w-full py-2.5 font-bold rounded-xl ${theme.onBg} ${theme.bg} ${theme.hover} cursor-pointer shadow-sm text-xs active:scale-98 transition`}
                 >
-                  🔐 新しいパスワードを保存する
+                  <span className="inline-flex items-center justify-center gap-1.5">
+                    <Lock className="h-3.5 w-3.5" />
+                    新しいパスワードを保存する
+                  </span>
                 </button>
 
                 <div className="text-center mt-2">
                   <button
                     type="button"
                     onClick={() => setActiveTab('login')}
-                    className="text-[10px] font-bold text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 hover:underline cursor-pointer"
+                    className="text-micro font-bold text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 hover:underline cursor-pointer"
                   >
                     ログイン画面に戻る
                   </button>
@@ -590,7 +603,7 @@ function AppContent() {
       }`}>
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className={`h-8 w-8 rounded-xl flex items-center justify-center text-white font-black shadow-xs transition-colors ${theme.bg}`}>
+            <span className={`h-8 w-8 rounded-xl flex items-center justify-center ${theme.onBg} font-black shadow-xs transition-colors ${theme.bg}`}>
               B
             </span>
             <div className="text-left">
@@ -604,17 +617,17 @@ function AppContent() {
             {/* 同期・ユーザー情報 */}
             <div className="flex items-center gap-2 border-l border-gray-150 dark:border-slate-800 pl-3">
               <div className="text-left hidden xs:block">
-                <span className={`text-[10px] font-black block leading-none ${isDark ? 'text-slate-205' : 'text-gray-800'}`}>
+                <span className={`text-micro font-black block leading-none ${isDark ? 'text-slate-205' : 'text-gray-800'}`}>
                   {currentUser?.name || 'ユーザー'}
                 </span>
-                <span className="text-[8px] text-gray-400 font-bold block leading-none mt-0.5">
+                <span className="text-micro text-gray-400 font-bold block leading-none mt-0.5">
                   {currentUser?.email || 'user@example.com'}
                 </span>
               </div>
             </div>
 
             {syncStatus === 'offline' && (
-              <span className="text-[10px] inline-flex items-center gap-1 font-bold border px-2.5 py-0.5 rounded-full font-mono transition-all bg-rose-50 border-rose-200 text-rose-500 dark:bg-rose-950/20 dark:border-rose-800/40 dark:text-rose-400">
+              <span className="text-micro inline-flex items-center gap-1 font-bold border border-transparent px-2.5 py-0.5 rounded-full font-mono transition-all bg-app-danger-tint text-app-danger-text">
                 <CornerDownRight className="h-3 w-3" />
                 OFFLINE
               </span>
@@ -643,7 +656,7 @@ function AppContent() {
         <footer className={`mt-12 pt-6 pb-6 text-center space-y-2.5 transition-colors ${
           isDark ? 'text-slate-500' : 'text-gray-405'
         }`}>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10.5px] font-bold">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-micro font-bold">
             <button 
               type="button" 
               onClick={() => setFooterModalType('about')}
@@ -668,7 +681,7 @@ function AppContent() {
               お問い合わせ
             </button>
           </div>
-          <p className="text-[9.5px] tracking-wide font-sans opacity-70">
+          <p className="text-micro tracking-wide font-sans opacity-70">
             &copy; 2026 Berufly. All Rights Reserved.
           </p>
         </footer>
@@ -695,23 +708,23 @@ function AppContent() {
               <div className="flex-1 min-w-0">
                 <h4 className="text-xs font-black tracking-tight flex items-center gap-1">
                   アプリをホーム画面に追加
-                  <span className="bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-[8px] font-black px-1.5 py-0.5 rounded-sm leading-none">
+                  <span className="bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 text-micro font-black px-1.5 py-0.5 rounded-sm leading-none">
                     推薦
                   </span>
                 </h4>
-                <p className="text-[10px] text-gray-400 dark:text-slate-400 leading-normal mt-1">
+                <p className="text-micro text-gray-400 dark:text-slate-400 leading-normal mt-1">
                   全画面・オフライン起動、プッシュお知らせが可能なネイティブアプリ級の快適さをお楽しみいただけます。
                 </p>
                 <div className="flex gap-2 mt-2.5">
                   <button
                     onClick={handleA2HSInstall}
-                    className="flex-1 py-1.5 text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xs transition active:scale-95 cursor-pointer text-center border-0"
+                    className="flex-1 py-1.5 text-micro font-black bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xs transition active:scale-95 cursor-pointer text-center border-0"
                   >
                     追加する
                   </button>
                   <button
                     onClick={handleA2HSDismiss}
-                    className="px-3.5 py-1.5 text-[10px] font-bold border border-gray-200 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-850 dark:text-slate-300 rounded-xl transition cursor-pointer text-center bg-transparent"
+                    className="px-3.5 py-1.5 text-micro font-bold border border-gray-200 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-850 dark:text-slate-300 rounded-xl transition cursor-pointer text-center bg-transparent"
                   >
                     後で
                   </button>
@@ -748,7 +761,7 @@ function AppContent() {
                 )}
 
                 <Icon className={`h-5 w-5 ${isSelected ? theme.text : (isDark ? 'text-slate-500 hover:text-slate-300' : 'text-gray-400 hover:text-gray-600')}`} />
-                <span className={`text-[9px] font-bold mt-1 tracking-tight font-sans ${
+                <span className={`text-micro font-bold mt-1 tracking-tight font-sans ${
                   isSelected 
                     ? (isDark ? 'text-slate-200 font-extrabold' : 'text-gray-950 font-black') 
                     : (isDark ? 'text-slate-500' : 'text-gray-400')
@@ -776,7 +789,7 @@ function AppContent() {
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
               transition={{ type: 'spring', duration: 0.3 }}
               className={`relative w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl shadow-2xl border flex flex-col p-6 sm:p-8 text-left z-10 ${
-                isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-gray-100 text-gray-900'
+                isDark ? 'bg-slate-850 border-slate-800 text-slate-100' : 'bg-white border-gray-100 text-gray-900'
               }`}
             >
               {/* Close Button */}

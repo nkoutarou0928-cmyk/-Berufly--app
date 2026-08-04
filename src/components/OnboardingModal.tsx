@@ -462,7 +462,7 @@ export const OnboardingModal: React.FC = () => {
         <div className="flex-1 flex flex-col p-6 sm:p-8 select-none">
           {/* 1. Header description text atop the central graphic slide */}
           <div className="text-left space-y-2 mb-4">
-            <span className="inline-block px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400 border border-indigo-500/10">
+            <span className="inline-block px-2.5 py-0.5 rounded-md text-micro font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400 border border-indigo-500/10">
               {slides[currentSlide].tag}
             </span>
             <h3 className="text-lg sm:text-xl font-bold font-sans text-gray-900 dark:text-slate-100 leading-tight">
