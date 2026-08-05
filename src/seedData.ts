@@ -3,14 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Company, TodoItem, AppSettings, NotificationItem, ObVisit, OfferComparison, SelfAnalysis } from './types';
+import { Company, TodoItem, AppSettings, NotificationItem, ObVisit, OfferComparison, SelfAnalysis, IndustryResearch } from './types';
 
 export const INITIAL_COMPANIES: Company[] = [];
+
+export const INITIAL_INDUSTRY_RESEARCH: IndustryResearch[] = [];
 
 export const INITIAL_TODOS: TodoItem[] = [];
 
 export const INITIAL_SETTINGS: AppSettings = {
-  themeColor: 'indigo', // Indigo(デフォルト)
+  themeColor: 'emerald', // ミントグリーン(デフォルト) — indigo/violet系のグラデーションSaaS感を避ける
   notificationsEnabled: true,
   notificationDaysBefore: 3,
   notificationTime: '09:00',

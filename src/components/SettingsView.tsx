@@ -26,7 +26,9 @@ import {
   Smartphone,
   Download,
   Share,
-  Type
+  Type,
+  LogOut,
+  AlertTriangle
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -51,6 +53,7 @@ export default function SettingsView() {
 
   // States
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Cloud Counts States
   const [cloudCompaniesCount, setCloudCompaniesCount] = useState<number | null>(null);
@@ -171,7 +174,7 @@ export default function SettingsView() {
           表示モード選択（ライト／ダーク切替）
         </h3>
         
-        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+        <p className={`text-micro leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
           表示テーマを切り替えられます。システム同期を選択すると、お使いの端末設定（OS）に自動で追従します。
         </p>
 
@@ -215,7 +218,7 @@ export default function SettingsView() {
           文字サイズ（フォントの大きさ）
         </h3>
         
-        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+        <p className={`text-micro leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
           アプリ全体の表示文字サイズを調整できます。スマートフォンの画面サイズや視認性に合わせて調整してください。
         </p>
 
@@ -260,7 +263,7 @@ export default function SettingsView() {
           アプリのインストール / ホーム画面に追加
         </h3>
         
-        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+        <p className={`text-micro leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
           Berufly をスマートフォンのホーム画面やPCのデスクトップにインストールすることで、ブラウザのアドレスバー等を非表示にし、ネイティブアプリのようにスムーズに就活管理が可能です。
         </p>
 
@@ -271,7 +274,7 @@ export default function SettingsView() {
               <span className={`block text-xs font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
                 追加済み
               </span>
-              <span className="text-[10px] text-gray-400 block mt-0.5">
+              <span className="text-micro text-gray-400 block mt-0.5">
                 すでにホーム画面に追加されているか、スタンドアロンモード（PWA）で快適に起動が完了しています。
               </span>
             </div>
@@ -284,7 +287,7 @@ export default function SettingsView() {
               className={`w-full py-3.5 rounded-2xl text-xs font-bold transition-all shadow-xs active:scale-98 cursor-pointer flex items-center justify-center gap-2 ${
                 isInstalled 
                   ? 'bg-gray-100 text-gray-400 border border-gray-200 dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700' 
-                  : `${theme.bg} ${theme.hover} text-white`
+                  : `${theme.bg} ${theme.hover} ${theme.onBg}`
               }`}
             >
               <Download className="h-4.5 w-4.5 animate-bounce" />
@@ -298,12 +301,12 @@ export default function SettingsView() {
                 animate={{ opacity: 1, y: 0 }}
                 className={`p-3.5 rounded-2xl border ${theme.lightBg} ${isDark ? 'border-indigo-900/30 text-indigo-200' : `${theme.textDark} ${theme.border}`}`}
               >
-                <div className="flex items-start gap-2 text-[11px]">
+                <div className="flex items-start gap-2 text-micro">
                   <Share className="h-4.5 w-4.5 text-indigo-500 flex-shrink-0 mt-0.5" />
                   <div className="space-y-1">
                     <p className="font-extrabold text-xs">iOS (Safari) をお使いの方：</p>
-                    <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">「共有ボタンから『ホーム画面に追加』を選択してください」</p>
-                    <ol className="list-decimal pl-4 pt-1 space-y-1 text-[10px] leading-relaxed opacity-90">
+                    <p className="text-micro text-indigo-600 dark:text-indigo-400 font-bold">「共有ボタンから『ホーム画面に追加』を選択してください」</p>
+                    <ol className="list-decimal pl-4 pt-1 space-y-1 text-micro leading-relaxed opacity-90">
                       <li>Safariブラウザ下部にある <span className="font-bold">「共有（四角に上矢印）」ボタン</span> をタップします。</li>
                       <li>開いた一覧メニューを下にスクロールします。</li>
                       <li><span className="font-bold">「ホーム画面に追加」</span> を選択して、右上の「追加」をタップしてください。</li>
@@ -319,12 +322,12 @@ export default function SettingsView() {
                 animate={{ opacity: 1, y: 0 }}
                 className="p-3.5 rounded-2xl border bg-slate-50 border-gray-250 dark:bg-slate-950/20 dark:border-slate-800/80"
               >
-                <div className="flex items-start gap-2 text-[11px]">
+                <div className="flex items-start gap-2 text-micro">
                   <Monitor className="h-4.5 w-4.5 text-slate-500 flex-shrink-0 mt-0.5" />
                   <div className="space-y-1">
                     <p className="font-bold text-gray-800 dark:text-gray-200">PCブラウザ（Chrome / Edge 等）をお使いの方：</p>
-                    <p className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">「アドレスバーのインストールアイコンをクリックしてください」</p>
-                    <ol className="list-decimal pl-4 pt-1 space-y-1 text-[10px] leading-relaxed text-gray-500 dark:text-gray-400">
+                    <p className="text-micro text-slate-600 dark:text-slate-400 font-bold">「アドレスバーのインストールアイコンをクリックしてください」</p>
+                    <ol className="list-decimal pl-4 pt-1 space-y-1 text-micro leading-relaxed text-gray-500 dark:text-gray-400">
                       <li>ブラウザ上部のアドレスバー（URLの入力エリア）の右側に表示される <span className="font-bold">「アプリのインストール」アイコン</span> またはプラスボタンをクリックします。</li>
                       <li>またはブラウザのメニュー「︙」などから、<span className="font-bold">「アプリをインストール」</span> をお試しください。</li>
                     </ol>
@@ -347,7 +350,7 @@ export default function SettingsView() {
           テーマカラー設計
         </h3>
         
-        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+        <p className={`text-micro leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
           アプリのプライマリアクセントとなるシンボルカラーを設定します。カラーのみを視覚的にタップして選ぶことができます。
         </p>
 
@@ -396,7 +399,7 @@ export default function SettingsView() {
               <span className={`font-bold text-xs block ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
                 プッシュ通知システムを有効化
               </span>
-              <span className="text-[10px] text-gray-400 block mt-0.5">締切や面接直前の通知を受け取ります</span>
+              <span className="text-micro text-gray-400 block mt-0.5">締切や面接直前の通知を受け取ります</span>
             </div>
 
             <label className="relative inline-flex items-center cursor-pointer">
@@ -412,7 +415,7 @@ export default function SettingsView() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <div>
-              <label className={`block font-bold text-[10px] mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+              <label className={`block font-bold text-micro mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
                 ES締切事前リマインドタイミング
               </label>
               <select
@@ -430,7 +433,7 @@ export default function SettingsView() {
             </div>
 
             <div>
-              <label className={`block font-bold text-[10px] mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
+              <label className={`block font-bold text-micro mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
                 通知送信時刻
               </label>
               <select
@@ -448,7 +451,7 @@ export default function SettingsView() {
             </div>
           </div>
 
-          <div className={`p-3.5 ${theme.lightBg} rounded-2xl text-[11px] border flex items-start gap-2 ${
+          <div className={`p-3.5 ${theme.lightBg} rounded-2xl text-micro border flex items-start gap-2 ${
             isDark ? 'text-slate-200 border-slate-800' : `${theme.textDark} ${theme.border}`
           }`}>
             <Info className={`h-4 w-4 mt-0.5 flex-shrink-0 ${theme.text}`} />
@@ -473,7 +476,7 @@ export default function SettingsView() {
             <CloudLightning className={`h-4.5 w-4.5 ${theme.text}`} />
             <span>就職クラウドアカウント ＆ データ同期設定</span>
           </div>
-          <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full ${
+          <span className={`inline-flex items-center gap-1 text-micro font-bold px-2 py-0.5 rounded-full ${
             syncStatus === 'syncing' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400' :
             syncStatus === 'offline' ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400' :
             'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-450'
@@ -485,12 +488,12 @@ export default function SettingsView() {
 
         <div className="space-y-4 text-xs">
           <div className="space-y-4">
-            <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 text-[11px] leading-relaxed dark:bg-emerald-950/10 dark:border-emerald-900/30">
+            <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100 text-micro leading-relaxed dark:bg-emerald-950/10 dark:border-emerald-900/30">
               <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-550 animate-pulse" />
                 <span>クラウド同期システム稼働中（SSL暗号化）</span>
               </div>
-              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-gray-600 dark:text-gray-400 font-mono text-[10px]">
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-gray-600 dark:text-gray-400 font-mono text-micro">
                 <div>アカウントID: <span className="font-bold text-gray-900 dark:text-white">{currentUser?.uid}</span></div>
                 <div>接続メール: <span className="font-bold text-gray-900 dark:text-white">{currentUser?.email}</span></div>
                 <div>同期状況: <span className="font-bold text-emerald-600 dark:text-emerald-400">{syncStatus === 'synced' ? '最新（自動・リアルタイム）' : '同期中'}</span></div>
@@ -504,24 +507,24 @@ export default function SettingsView() {
             isDark ? 'bg-slate-800/60' : 'bg-gray-50'
           }`}>
             <div className="p-1">
-              <span className="block text-[10px] text-gray-400">登録企業数</span>
+              <span className="block text-micro text-gray-400">登録企業数</span>
               <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
                 {cloudCompaniesCount !== null ? `${cloudCompaniesCount} 社` : `${companies.length} 社`}
               </span>
             </div>
             <div className={`p-1 border-x ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
-              <span className="block text-[10px] text-gray-400">タスク総数</span>
+              <span className="block text-micro text-gray-400">タスク総数</span>
               <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>
                 {cloudTodosCount !== null ? `${cloudTodosCount} 件` : `${todos.length} 件`}
               </span>
             </div>
             <div className="p-1">
-              <span className="block text-[10px] text-gray-400">OB・訪問記録</span>
+              <span className="block text-micro text-gray-400">OB・訪問記録</span>
               <span className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-gray-800'}`}>{obVisits.length} 件</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-[10px] text-emerald-600 bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100/60 font-medium dark:bg-emerald-950/20 dark:border-emerald-800/30">
+          <div className="flex items-center gap-2 text-micro text-emerald-600 bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100/60 font-medium dark:bg-emerald-950/20 dark:border-emerald-800/30">
             <ShieldCheck className="h-4 w-4 text-emerald-500" />
             <span>SSL通信セキュリティ：クラウド暗号化同期テストを完了しています。</span>
           </div>
@@ -532,15 +535,18 @@ export default function SettingsView() {
               <button
                 type="button"
                 onClick={() => setShowResetConfirm(true)}
-                className="py-1.5 px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 text-[10px] font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 dark:bg-rose-950/20 dark:text-rose-455"
+                className="py-1.5 px-3 bg-rose-50 text-rose-600 hover:bg-rose-100 text-micro font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 dark:bg-rose-950/20 dark:text-rose-455"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 全データの初期化・クリア（ローカルキャッシュ消去）
               </button>
             ) : (
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl space-y-2 dark:bg-rose-950/30 dark:border-rose-900/50">
-                <span className="font-bold text-rose-850 dark:text-rose-300 text-[11px] block">⚠️ 本当にリセットしますか？このプロセスは元に戻せません。</span>
-                <div className="flex gap-2 text-[10px]">
+                <span className="font-bold text-rose-850 dark:text-rose-300 text-micro flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  本当にリセットしますか？このプロセスは元に戻せません。
+                </span>
+                <div className="flex gap-2 text-micro">
                   <button 
                     type="button" 
                     onClick={handleResetData}
@@ -573,7 +579,7 @@ export default function SettingsView() {
           アカウント連携・操作
         </h3>
         
-        <p className={`text-[11px] leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+        <p className={`text-micro leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
           クラウドとの連携解除やアカウント全体の物理削除操作を行うことができます。ログアウトすると、クラウドとの自動同期が一時的に停止します。
         </p>
 
@@ -585,21 +591,33 @@ export default function SettingsView() {
                 logout();
               }
             }}
-            className="w-full sm:w-auto py-2.5 px-4 text-center border border-gray-200 text-gray-700 hover:bg-gray-100 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5"
+            className="w-full sm:w-auto py-2.5 px-4 text-center border border-gray-200 text-gray-700 hover:bg-gray-100 text-micro font-bold rounded-xl transition-all cursor-pointer dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 flex items-center justify-center gap-1.5"
           >
-            🚪 クラウドからログアウト
+            <LogOut className="h-3.5 w-3.5" />
+            クラウドからログアウト
           </button>
 
           <button
             type="button"
-            onClick={() => {
-              if (confirm('⚠️ 警告：アカウント消去\n本アカウントに紐づくすべてのクラウド履歴および同期データベースをサーバー（クラウド・ローカル双方）から物理消去します。この操作は復旧できません。本当に消去しますか？')) {
-                deleteAccount();
+            disabled={isDeletingAccount}
+            onClick={async () => {
+              if (confirm('⚠️ 警告：アカウント削除\n本アカウントに紐づくクラウド上の企業・Todo・自己分析データを完全に削除します。ログイン用のメールアドレス・パスワードは削除されず、再ログインは可能です。この操作は復旧できません。本当に削除しますか？')) {
+                setIsDeletingAccount(true);
+                try {
+                  await deleteAccount();
+                } finally {
+                  setIsDeletingAccount(false);
+                }
               }
             }}
-            className="w-full sm:w-auto py-2.5 px-4 text-center bg-red-50 text-red-650 hover:bg-red-100/70 text-[11px] font-bold rounded-xl transition-all cursor-pointer dark:bg-rose-950/20 dark:text-rose-455 flex items-center justify-center gap-1.5"
+            className={`w-full sm:w-auto py-2.5 px-4 text-center bg-red-50 text-red-650 hover:bg-red-100/70 text-micro font-bold rounded-xl transition-all cursor-pointer dark:bg-rose-950/20 dark:text-rose-455 flex items-center justify-center gap-1.5 ${isDeletingAccount ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            ⚠️ アカウント情報の物理削除
+            {isDeletingAccount ? '削除処理中…' : (
+              <>
+                <AlertTriangle className="h-3.5 w-3.5" />
+                アカウント情報の物理削除
+              </>
+            )}
           </button>
         </div>
       </div>

@@ -96,13 +96,13 @@ export function PWAInstallPrompt() {
             } backdrop-blur-md`}
         >
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-black text-lg shadow-sm shrink-0">
+            <div className={`flex items-center justify-center h-10 w-10 rounded-xl ${theme.bg} ${theme.onBg} font-black text-lg shadow-sm shrink-0`}>
               B
             </div>
 
             <div className="flex-1 text-left">
               <h4 className="text-xs font-bold font-sans">Berufly をホーム画面に追加</h4>
-              <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1 leading-relaxed">
+              <p className="text-micro text-gray-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {isIOS ? (
                   <span className="flex flex-col gap-1">
                     <span>iPhone (Safari)でインストールして快適に使う：</span>
@@ -131,7 +131,7 @@ export function PWAInstallPrompt() {
             <div className="mt-3 flex gap-2">
               <button
                 onClick={handleInstallClick}
-                className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold text-white shadow-xs transition active:scale-98 ${theme.bg} ${theme.hover} flex items-center justify-center gap-1.5`}
+                className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold ${theme.onBg} shadow-xs transition active:scale-98 ${theme.bg} ${theme.hover} flex items-center justify-center gap-1.5`}
               >
                 <Download className="h-3.5 w-3.5" />
                 ホーム画面にBeruflyを追加

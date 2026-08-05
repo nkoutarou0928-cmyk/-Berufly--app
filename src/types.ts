@@ -62,6 +62,36 @@ export interface InternStep {
   notes: string;
 }
 
+export interface CompanyResearch {
+  businessModel: string;   // 事業内容・ビジネスモデル
+  customer: string;        // 3C分析: 顧客・ターゲット市場
+  competitor: string;      // 3C分析: 競合他社との違い
+  strength: string;        // 3C分析: 自社の強み
+  weakness: string;        // 懸念点・弱み
+  cultureNotes: string;    // 社風・カルチャー
+  motivationHints: string; // 志望動機のヒント
+  lastUpdated?: string;
+}
+
+export interface IndustryCompanyNote {
+  id: string;
+  companyName: string; // ブレスト段階の企業名（企業一覧への正式登録は任意）
+  memo: string;        // 自由記述の一言メモ
+}
+
+export interface IndustryResearch {
+  id: string;
+  industryName: string;    // 業界名（プリセット選択 or 自由入力）
+  marketSize: string;      // 市場規模
+  growthTrend: string;     // 成長性・トレンド
+  majorCompanies: string;  // 主要企業
+  characteristics: string; // 業界の特徴・仕事内容
+  challenges: string;      // 業界が抱える課題
+  interestReason: string;  // なぜこの業界に興味を持ったか
+  notes: IndustryCompanyNote[]; // 業界内で自由に書き留める気になる企業メモ
+  lastUpdated?: string;
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -88,6 +118,8 @@ export interface Company {
   selectionType?: 'main' | 'intern'; // 'main' = 本選考, 'intern' = インターン選考
   internType?: InternType; // 1day, 複数日, 長期
   internSteps?: InternStep[];
+
+  research?: CompanyResearch; // 企業研究シート（業界・企業研究タブで編集）
 }
 
 export type TodoScope = 'today' | 'weekly' | 'monthly' | 'goal';

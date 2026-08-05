@@ -4,8 +4,8 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Company, TodoItem, AppSettings, NotificationItem, ObVisit, OfferComparison, CompanyStatus, TodoScope, SelfAnalysis, BaseMotivation, FAQItem, ESCategory, ESStatus } from '../types';
-import { INITIAL_COMPANIES, INITIAL_TODOS, INITIAL_SETTINGS, INITIAL_OB_VISITS, INITIAL_OFFER_COMPARISONS, INITIAL_SELF_ANALYSIS } from '../seedData';
+import { Company, TodoItem, AppSettings, NotificationItem, ObVisit, OfferComparison, CompanyStatus, TodoScope, SelfAnalysis, BaseMotivation, FAQItem, ESCategory, ESStatus, IndustryResearch, CompanyResearch, IndustryCompanyNote } from '../types';
+import { INITIAL_COMPANIES, INITIAL_TODOS, INITIAL_SETTINGS, INITIAL_OB_VISITS, INITIAL_OFFER_COMPARISONS, INITIAL_SELF_ANALYSIS, INITIAL_INDUSTRY_RESEARCH } from '../seedData';
 import { supabase, getSupabaseClientStatus } from '../utils/supabaseClient';
 
 interface AppContextType {
@@ -16,7 +16,7 @@ interface AppContextType {
   obVisits: ObVisit[];
   offerComparisons: OfferComparison[];
   notifications: NotificationItem[];
-  activeTab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about';
+  activeTab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'research' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about';
   selectedCompanyId: string | null;
   selectedTodoId: string | null;
   detailTab: 'basic' | 'es' | 'interview' | 'notes' | 'ob_visits' | 'comparisons'; // Allow detail navigation
@@ -36,10 +36,10 @@ interface AppContextType {
   resetPassword: (email: string) => Promise<void>;
   completePasswordReset: (email: string, token: string, newPass: string) => Promise<void>;
   logout: () => void;
-  deleteAccount: () => void;
+  deleteAccount: () => Promise<{ success: boolean }>;
   
   // Navigation actions
-  setActiveTab: (tab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about') => void;
+  setActiveTab: (tab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'research' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about') => void;
   navigateToCompany: (id: string, subTab?: 'basic' | 'es' | 'interview' | 'notes' | 'ob_visits' | 'comparisons') => void;
   setSelectedCompanyId: (id: string | null) => void;
   
@@ -86,6 +86,17 @@ interface AppContextType {
   addInterviewMemo: (companyId: string, memo: Omit<Company['interviewMemos'][0], 'id'>) => void;
   updateInterviewMemo: (companyId: string, memoId: string, updated: Partial<Company['interviewMemos'][0]>) => void;
   deleteInterviewMemo: (companyId: string, memoId: string) => void;
+  updateCompanyResearch: (companyId: string, updated: Partial<CompanyResearch>) => void;
+
+  // Industry Research actions (業界・企業研究タブ)
+  industryResearch: IndustryResearch[];
+  addIndustryResearch: (research: Omit<IndustryResearch, 'id'>) => void;
+  updateIndustryResearch: (id: string, updated: Partial<IndustryResearch>) => void;
+  deleteIndustryResearch: (id: string) => void;
+  addCompanyNoteToIndustry: (industryId: string, note: Omit<IndustryCompanyNote, 'id'>) => void;
+  updateCompanyNoteInIndustry: (industryId: string, noteId: string, updated: Partial<IndustryCompanyNote>) => void;
+  deleteCompanyNoteFromIndustry: (industryId: string, noteId: string) => void;
+  promoteCompanyNote: (industryId: string, noteId: string) => void;
 
   // Todo actions
   addTodo: (todo: Omit<TodoItem, 'id'>) => void;
@@ -124,6 +135,10 @@ interface AppContextType {
   setFontSize: (size: 'small' | 'medium' | 'large') => void;
   selectionTypeFilter: 'main' | 'intern';
   setSelectionTypeFilter: (type: 'main' | 'intern') => void;
+
+  // Global workspace-bar search (企業一覧の絞り込みに使用)
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -139,12 +154,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isDark, setIsDark] = useState(false);
   const [selfAnalysis, setSelfAnalysis] = useState<SelfAnalysis>(INITIAL_SELF_ANALYSIS);
+  const [industryResearch, setIndustryResearch] = useState<IndustryResearch[]>([]);
   
   // Font Size state
   const [fontSize, setFontSizeState] = useState<'small' | 'medium' | 'large'>('medium');
 
   // Selection Type filter state
   const [selectionTypeFilter, setSelectionTypeFilter] = useState<'main' | 'intern'>('main');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const setFontSize = (size: 'small' | 'medium' | 'large') => {
     setFontSizeState(size);
@@ -170,7 +187,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [fontSize]);
   
   // Navigation UI States
-  const [activeTab, setActiveTabState] = useState<'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about'>('dashboard');
+  const [activeTab, setActiveTabState] = useState<'dashboard' | 'todos' | 'calendar' | 'companies' | 'research' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about'>('dashboard');
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const [detailTab, setDetailTab] = useState<'basic' | 'es' | 'interview' | 'notes' | 'ob_visits' | 'comparisons'>('basic');
@@ -248,6 +265,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       setOfferComparisons([]);
       setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
       setNotifications([]);
+      setIndustryResearch([]);
 
       const onboarded = localStorage.getItem('shukatsu_onboarded');
       if (onboarded !== 'true') {
@@ -319,6 +337,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           setObVisits([]);
           setOfferComparisons([]);
           setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+          setIndustryResearch([]);
         }
       }
     });
@@ -442,7 +461,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
             category: c.category,
             selectionType: c.selectionType,
             internType: c.internType,
-            internSteps: c.internSteps
+            internSteps: c.internSteps,
+            research: c.research
           })
         }));
         const { error: memoUpsertErr } = await supabase
@@ -600,6 +620,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const saveIndustryResearch = async (newResearch: IndustryResearch[]) => {
+    setIndustryResearch(newResearch);
+    const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
+    if (!activeUserId) return;
+    setIsSyncing(true);
+    try {
+      await saveUserDataItem(activeUserId, 'industry_research', JSON.stringify(newResearch));
+      if (authStatus === 'authenticated') triggerSync();
+    } catch (e) {
+      console.error('Failed to sync industry research:', e);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const saveNotifications = async (newNotifs: NotificationItem[]) => {
     setNotifications(newNotifs);
     const activeUserId = localStorage.getItem('shukatsu_user_uid') || (currentUser?.uid ?? null);
@@ -691,6 +726,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setObVisits(INITIAL_OB_VISITS);
     setOfferComparisons(INITIAL_OFFER_COMPARISONS);
     setSelfAnalysis(INITIAL_SELF_ANALYSIS);
+    setIndustryResearch(INITIAL_INDUSTRY_RESEARCH);
   };
 
   // ----------------------------------------------------
@@ -780,7 +816,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
               category: parsed.category || '',
               selectionType: parsed.selectionType || 'main',
               internType: parsed.internType || '1day',
-              internSteps: parsed.internSteps || []
+              internSteps: parsed.internSteps || [],
+              research: parsed.research || undefined
             };
           }
 
@@ -954,12 +991,20 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           try { setSettings({ ...INITIAL_SETTINGS, ...JSON.parse(settingsRow.content) }); } catch (_) {}
         }
 
+        const industryResearchRow = sa.find(r => r.title === 'industry_research');
+        if (industryResearchRow && industryResearchRow.content) {
+          try { setIndustryResearch(JSON.parse(industryResearchRow.content)); } catch (_) { setIndustryResearch([]); }
+        } else {
+          setIndustryResearch([]);
+        }
+
       } else {
         setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
         setTrashCompanies([]);
         setObVisits([]);
         setOfferComparisons([]);
         setNotifications([]);
+        setIndustryResearch([]);
         console.log('[loadUserDataFromSupabase] self_analysis: Supabaseは空。');
       }
 
@@ -1116,10 +1161,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setObVisits([]);
     setOfferComparisons([]);
     setSelfAnalysis({ selfPR: '', gakuchika: '', baseMotivations: [], faqs: [] });
+    setIndustryResearch([]);
   };
 
-  const deleteAccount = () => {
+  // クラウド上の全ユーザーデータを削除する。self_analysisテーブルは
+  // saveUserDataItem経由でtrash_companies/settings/ob_visits/offer_comparisons/notifications
+  // も title キーで保存しているため、丸ごと削除すればそれらも消える。
+  const deleteAllCloudData = async (uid: string) => {
+    const results = await Promise.allSettled([
+      supabase.from('companies').delete().eq('user_id', uid),
+      supabase.from('company_memos').delete().eq('user_id', uid),
+      supabase.from('todos').delete().eq('user_id', uid),
+      supabase.from('self_analysis').delete().eq('user_id', uid)
+    ]);
+
+    return results.every(r => r.status === 'fulfilled' && !r.value.error);
+  };
+
+  const deleteAccount = async () => {
     const uid = currentUser?.uid;
+    let success = true;
+
     if (uid) {
       localStorage.removeItem(`shukatsu_companies_${uid}`);
       localStorage.removeItem(`shukatsu_trash_companies_${uid}`);
@@ -1129,9 +1191,24 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem(`shukatsu_comparisons_${uid}`);
       localStorage.removeItem(`shukatsu_self_analysis_${uid}`);
       localStorage.removeItem(`shukatsu_notifications_${uid}`);
+
+      try {
+        success = await deleteAllCloudData(uid);
+      } catch (e) {
+        console.error('[deleteAccount] クラウドデータ削除中に例外:', e);
+        success = false;
+      }
     }
-    logout();
-    alert('アカウント情報およびクラウド同期データを完全に抹消しました。');
+
+    await logout();
+
+    if (success) {
+      alert('クラウド上の利用データを削除しました。ログイン用のメールアドレス・パスワードは削除されていないため、再ログインは可能です。');
+    } else {
+      alert('一部のクラウドデータの削除に失敗しました。再度お試しいただくか、サポートまでご連絡ください。');
+    }
+
+    return { success };
   };
 
   // --- End of Account Actions ---
@@ -1254,7 +1331,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [companies]);
 
   // Tab switcher wrapper that resets detail view if needed
-  const setActiveTab = (tab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about') => {
+  const setActiveTab = (tab: 'dashboard' | 'todos' | 'calendar' | 'companies' | 'research' | 'analysis' | 'settings' | 'privacy' | 'contact' | 'about') => {
     setActiveTabState(tab);
   };
 
@@ -1487,6 +1564,95 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     saveCompanies(updated);
   };
 
+  const updateCompanyResearch = (companyId: string, updatedFields: Partial<CompanyResearch>) => {
+    const updated = companies.map(co => {
+      if (co.id === companyId) {
+        return {
+          ...co,
+          research: {
+            businessModel: '',
+            customer: '',
+            competitor: '',
+            strength: '',
+            weakness: '',
+            cultureNotes: '',
+            motivationHints: '',
+            ...co.research,
+            ...updatedFields,
+            lastUpdated: new Date().toISOString().split('T')[0]
+          }
+        };
+      }
+      return co;
+    });
+    saveCompanies(updated);
+  };
+
+  // Industry Research Operations (業界・企業研究タブ)
+  const addIndustryResearch = (research: Omit<IndustryResearch, 'id'>) => {
+    const newResearch: IndustryResearch = {
+      ...research,
+      id: `ind-${Date.now()}`,
+      lastUpdated: new Date().toISOString().split('T')[0]
+    };
+    saveIndustryResearch([newResearch, ...industryResearch]);
+  };
+
+  const updateIndustryResearch = (id: string, updatedFields: Partial<IndustryResearch>) => {
+    const updated = industryResearch.map(r =>
+      r.id === id ? { ...r, ...updatedFields, lastUpdated: new Date().toISOString().split('T')[0] } : r
+    );
+    saveIndustryResearch(updated);
+  };
+
+  const deleteIndustryResearch = (id: string) => {
+    saveIndustryResearch(industryResearch.filter(r => r.id !== id));
+  };
+
+  const addCompanyNoteToIndustry = (industryId: string, note: Omit<IndustryCompanyNote, 'id'>) => {
+    const newNote: IndustryCompanyNote = { ...note, id: `indnote-${Date.now()}` };
+    const updated = industryResearch.map(r =>
+      r.id === industryId ? { ...r, notes: [...(r.notes || []), newNote] } : r
+    );
+    saveIndustryResearch(updated);
+  };
+
+  const updateCompanyNoteInIndustry = (industryId: string, noteId: string, updatedFields: Partial<IndustryCompanyNote>) => {
+    const updated = industryResearch.map(r =>
+      r.id === industryId
+        ? { ...r, notes: (r.notes || []).map(n => (n.id === noteId ? { ...n, ...updatedFields } : n)) }
+        : r
+    );
+    saveIndustryResearch(updated);
+  };
+
+  const deleteCompanyNoteFromIndustry = (industryId: string, noteId: string) => {
+    const updated = industryResearch.map(r =>
+      r.id === industryId ? { ...r, notes: (r.notes || []).filter(n => n.id !== noteId) } : r
+    );
+    saveIndustryResearch(updated);
+  };
+
+  // ブレスト段階の企業メモを、正式な「企業一覧」のCompanyレコードへ昇格させる
+  const promoteCompanyNote = (industryId: string, noteId: string) => {
+    const industry = industryResearch.find(r => r.id === industryId);
+    const note = industry?.notes.find(n => n.id === noteId);
+    if (!industry || !note) return;
+
+    addCompany({
+      name: note.companyName,
+      industry: industry.industryName,
+      preference: 3,
+      status: 'interested',
+      selectionStage: 'none',
+      esDeadline: '',
+      interviewDate: '',
+      notes: note.memo || ''
+    });
+
+    deleteCompanyNoteFromIndustry(industryId, noteId);
+  };
+
   // Todo Operations
   const addTodo = (todoData: Omit<TodoItem, 'id'>) => {
     const newTodo: TodoItem = {
@@ -1683,6 +1849,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         addInterviewMemo,
         updateInterviewMemo,
         deleteInterviewMemo,
+        updateCompanyResearch,
+        industryResearch,
+        addIndustryResearch,
+        updateIndustryResearch,
+        deleteIndustryResearch,
+        addCompanyNoteToIndustry,
+        updateCompanyNoteInIndustry,
+        deleteCompanyNoteFromIndustry,
+        promoteCompanyNote,
         addTodo,
         updateTodo,
         deleteTodo,
@@ -1708,7 +1883,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         fontSize,
         setFontSize,
         selectionTypeFilter,
-        setSelectionTypeFilter
+        setSelectionTypeFilter,
+        searchQuery,
+        setSearchQuery
       }}
     >
       {children}

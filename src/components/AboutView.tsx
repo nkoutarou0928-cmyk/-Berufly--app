@@ -43,7 +43,7 @@ export default function AboutView() {
               <Building2 className={`h-4 w-4 ${theme.text}`} />
               <span>スマートな選考・企業管理</span>
             </div>
-            <p className="text-[10px] text-gray-400 dark:text-slate-400">
+            <p className="text-micro text-gray-400 dark:text-slate-400">
               本選考とインターン選考の状況、志望度、ES締め切りなどを可視化。
             </p>
           </div>
@@ -53,7 +53,7 @@ export default function AboutView() {
               <Sparkles className={`h-4 w-4 ${theme.text}`} />
               <span>STARの法則で自己分析</span>
             </div>
-            <p className="text-[10px] text-gray-400 dark:text-slate-400">
+            <p className="text-micro text-gray-400 dark:text-slate-400">
               Situation, Task, Action, Result に沿った説得力のあるエピソードを作成。
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function AboutView() {
               <Calendar className={`h-4 w-4 ${theme.text}`} />
               <span>スケジュールとカレンダー同期</span>
             </div>
-            <p className="text-[10px] text-gray-400 dark:text-slate-400">
+            <p className="text-micro text-gray-400 dark:text-slate-400">
               ESの期日や面接の予定を自動的にカレンダーへ反映・一元管理。
             </p>
           </div>
@@ -73,7 +73,7 @@ export default function AboutView() {
               <FileText className={`h-4 w-4 ${theme.text}`} />
               <span>ES・面接の振り返りメモ</span>
             </div>
-            <p className="text-[10px] text-gray-400 dark:text-slate-400">
+            <p className="text-micro text-gray-400 dark:text-slate-400">
               選考ごとの質問回答や反省点を蓄積し、就活力を持続的にアップデート。
             </p>
           </div>

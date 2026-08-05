@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { getTheme } from '../utils/theme';
-import { Mail, User, BookOpen, MessageSquare, Send, CheckCircle } from 'lucide-react';
+import { supabase } from '../utils/supabaseClient';
+import { Mail, User, BookOpen, MessageSquare, Send, CheckCircle, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function ContactView() {
@@ -12,11 +13,12 @@ export default function ContactView() {
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
-  
+
   const [isSending, setIsSending] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !subject || !message) {
       alert('すべての入力必須項目を入力してください。');
@@ -24,23 +26,32 @@ export default function ContactView() {
     }
 
     setIsSending(true);
+    setErrorMessage('');
 
-    // Simulate send round-trip latency
+    const { error } = await supabase
+      .from('contact_messages')
+      .insert({ name, email, subject, message });
+
+    setIsSending(false);
+
+    if (error) {
+      console.error('[ContactView] お問い合わせ送信エラー:', error);
+      setErrorMessage('送信に失敗しました。時間をおいて再度お試しください。');
+      return;
+    }
+
+    setShowToast(true);
+
+    // Clear fields
+    setName('');
+    setEmail('');
+    setSubject('');
+    setMessage('');
+
+    // Auto dismiss toast after 4 seconds
     setTimeout(() => {
-      setIsSending(false);
-      setShowToast(true);
-      
-      // Clear fields
-      setName('');
-      setEmail('');
-      setSubject('');
-      setMessage('');
-
-      // Auto dismiss toast after 4 seconds
-      setTimeout(() => {
-        setShowToast(false);
-      }, 4000);
-    }, 1000);
+      setShowToast(false);
+    }, 4000);
   };
 
   return (
@@ -56,8 +67,8 @@ export default function ContactView() {
           >
             <CheckCircle className="h-5 w-5 shrink-0" />
             <div className="text-left flex-1">
-              <span className="block text-xs font-black">送信が完了しました（デモ）</span>
-              <span className="text-[10px] text-emerald-100 block mt-0.5">
+              <span className="block text-xs font-black">送信が完了しました</span>
+              <span className="text-micro text-emerald-100 block mt-0.5">
                 お問い合わせを受け付けました。ご入力ありがとうございます。
               </span>
             </div>
@@ -82,7 +93,7 @@ export default function ContactView() {
       >
         {/* Name input */}
         <div>
-          <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <label className={`block text-micro uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             お名前 <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -104,7 +115,7 @@ export default function ContactView() {
 
         {/* Email input */}
         <div>
-          <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <label className={`block text-micro uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             メールアドレス <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -126,7 +137,7 @@ export default function ContactView() {
 
         {/* Subject input */}
         <div>
-          <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <label className={`block text-micro uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             件名 <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -148,7 +159,7 @@ export default function ContactView() {
 
         {/* Message body */}
         <div>
-          <label className={`block text-[10px] uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+          <label className={`block text-micro uppercase tracking-wider font-bold mb-1.5 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
             お問い合わせ内容 <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -168,12 +179,19 @@ export default function ContactView() {
           </div>
         </div>
 
+        {errorMessage && (
+          <div className="flex items-center gap-2 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 px-3 py-2.5 text-micro font-medium text-red-600 dark:text-red-400">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         {/* Submit button */}
         <button
           type="submit"
           disabled={isSending}
-          className={`w-full py-3.5 rounded-2xl text-xs font-black text-white transition-all shadow-md active:scale-97 cursor-pointer flex items-center justify-center gap-1.5 ${
-            isSending ? 'opacity-50 cursor-not-allowed bg-gray-500' : `${theme.bg} ${theme.hover}`
+          className={`w-full py-3.5 rounded-2xl text-xs font-black transition-all shadow-md active:scale-97 cursor-pointer flex items-center justify-center gap-1.5 ${
+            isSending ? 'opacity-50 cursor-not-allowed bg-gray-500 text-white' : `${theme.bg} ${theme.hover} ${theme.onBg}`
           }`}
         >
           {isSending ? (
