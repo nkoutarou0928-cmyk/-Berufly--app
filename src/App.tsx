@@ -12,6 +12,7 @@ const DashboardView = lazy(() => import('./components/DashboardView'));
 const TodosView = lazy(() => import('./components/TodosView'));
 const CalendarView = lazy(() => import('./components/CalendarView'));
 const CompaniesView = lazy(() => import('./components/CompaniesView'));
+const ResearchView = lazy(() => import('./components/ResearchView'));
 const SettingsView = lazy(() => import('./components/SettingsView'));
 const SelfAnalysisView = lazy(() => import('./components/SelfAnalysisView'));
 const PrivacyView = lazy(() => import('./components/PrivacyView'));
@@ -20,12 +21,14 @@ const AboutView = lazy(() => import('./components/AboutView'));
 
 import { OnboardingModal } from './components/OnboardingModal';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { Sidebar } from './components/Sidebar';
 
 import { 
-  Home, 
-  CheckSquare, 
-  Calendar, 
-  Building2, 
+  Home,
+  CheckSquare,
+  Calendar,
+  Building2,
+  Compass,
   Settings,
   Sparkles,
   Lock,
@@ -41,7 +44,9 @@ import {
   Bell,
   X,
   Mail,
-  FileEdit
+  FileEdit,
+  Search,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -160,16 +165,14 @@ function WelcomeScreen() {
 
   return (
     <div className={`min-h-screen flex items-center justify-center bg-[#F8F9FA] dark:bg-[#0f172a] px-4 py-8 font-sans ${fontSizeClass}`}>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-sky-400/10 via-transparent to-transparent pointer-events-none" />
-      
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
         className="w-full max-w-md bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800 rounded-3xl p-6.5 shadow-2xl relative z-10"
       >
         <div className="text-center space-y-2 mb-6">
-          <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-black text-xl shadow-md">
+          <div className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${theme.bg} ${theme.onBg} font-black text-xl shadow-md`}>
             B
           </div>
           <h2 className="text-xl font-black tracking-tight text-gray-900 dark:text-slate-100 font-sans">
@@ -458,15 +461,17 @@ function WelcomeScreen() {
 }
 
 function AppContent() {
-  const { 
-    activeTab, 
-    setActiveTab, 
-    settings, 
-    isDark, 
-    authStatus, 
-    currentUser, 
+  const {
+    activeTab,
+    setActiveTab,
+    settings,
+    isDark,
+    authStatus,
+    currentUser,
     syncStatus,
-    fontSize
+    fontSize,
+    searchQuery,
+    setSearchQuery
   } = useApp();
   
   const theme = getTheme(settings.themeColor);
@@ -558,6 +563,8 @@ function AppContent() {
               return <AnimatePresence mode="wait"><CalendarView /></AnimatePresence>;
             case 'companies':
               return <CompaniesView />;
+            case 'research':
+              return <ResearchView />;
             case 'analysis':
               return <SelfAnalysisView />;
             case 'settings':
@@ -581,6 +588,7 @@ function AppContent() {
     { id: 'todos' as const, label: 'Todo', icon: CheckSquare },
     { id: 'calendar' as const, label: 'カレンダー', icon: Calendar },
     { id: 'companies' as const, label: '企業一覧', icon: Building2 },
+    { id: 'research' as const, label: '研究', icon: Compass },
     { id: 'analysis' as const, label: '自己分析', icon: Sparkles },
     { id: 'settings' as const, label: '設定', icon: Settings },
   ];
@@ -592,53 +600,88 @@ function AppContent() {
 
   const fontSizeClass = fontSize === 'small' ? 'text-sm' : fontSize === 'large' ? 'text-lg' : 'text-base';
 
+  const currentTabLabel = tabs.find(t => t.id === activeTab)?.label || 'Berufly';
+
   return (
-    <div className={`min-h-screen flex flex-col justify-between font-sans transition-colors duration-200 ${fontSizeClass} ${
+    <div className={`min-h-screen flex font-sans transition-colors duration-200 ${fontSizeClass} ${
       isDark ? 'bg-[#0f172a] text-slate-100' : 'bg-[#F8F9FA] text-gray-900'
     }`}>
-      
-      {/* Visual top decorative header bar */}
-      <header className={`sticky top-0 backdrop-blur-md border-b z-30 transition-all ${
-        isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-gray-100'
-      }`}>
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className={`h-8 w-8 rounded-xl flex items-center justify-center ${theme.onBg} font-black shadow-xs transition-colors ${theme.bg}`}>
-              B
-            </span>
-            <div className="text-left">
-              <span className={`text-xs font-black tracking-tight block ${isDark ? 'text-slate-100' : 'text-gray-900'}`}>
-                Berufly
+
+      <Sidebar tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} theme={theme} userName={currentUser?.name} />
+
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Mobile workspace bar (colored, hidden on wide screens where the Sidebar takes over) */}
+        <header className={`lg:hidden sticky top-0 z-30 transition-colors ${theme.barBg} text-white px-4 pt-4 pb-3`}>
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-1.5">
+              <span className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs shrink-0">
+                B
+              </span>
+              <span className="text-sm font-bold">Berufly</span>
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            </div>
+            <div className="flex items-center gap-2">
+              {syncStatus === 'offline' && (
+                <span className="text-micro inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-full bg-white/15">
+                  <CornerDownRight className="h-3 w-3" />
+                  OFFLINE
+                </span>
+              )}
+              <span className="h-6 w-6 rounded-full bg-white/25 flex items-center justify-center text-[10px] font-bold shrink-0">
+                {(currentUser?.name || 'ユ').slice(0, 1)}
               </span>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3">
-            {/* 同期・ユーザー情報 */}
-            <div className="flex items-center gap-2 border-l border-gray-150 dark:border-slate-800 pl-3">
-              <div className="text-left hidden xs:block">
-                <span className={`text-micro font-black block leading-none ${isDark ? 'text-slate-205' : 'text-gray-800'}`}>
-                  {currentUser?.name || 'ユーザー'}
-                </span>
-                <span className="text-micro text-gray-400 font-bold block leading-none mt-0.5">
-                  {currentUser?.email || 'user@example.com'}
-                </span>
-              </div>
-            </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/60" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="企業を検索"
+              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-full bg-white/15 placeholder-white/60 text-white focus:outline-hidden focus:bg-white/20 transition-colors"
+            />
+          </div>
+        </header>
 
+        {/* Desktop topbar (light/dark neutral, hidden on narrow screens where the mobile bar takes over) */}
+        <header className={`hidden lg:flex items-center gap-4 h-14 px-6 sticky top-0 z-30 border-b transition-colors ${
+          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-gray-100'
+        }`}>
+          <span className="text-sm font-bold shrink-0">{currentTabLabel}</span>
+          <div className="relative flex-1 max-w-sm">
+            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="企業やタスクを検索"
+              className={`w-full pl-9 pr-3 py-1.5 text-xs rounded-full focus:outline-hidden transition-colors ${
+                isDark ? 'bg-slate-800 placeholder-slate-500 text-slate-100' : 'bg-gray-100 placeholder-gray-400 text-gray-800'
+              }`}
+            />
+          </div>
+          <div className="ml-auto flex items-center gap-3">
             {syncStatus === 'offline' && (
               <span className="text-micro inline-flex items-center gap-1 font-bold border border-transparent px-2.5 py-0.5 rounded-full font-mono transition-all bg-app-danger-tint text-app-danger-text">
                 <CornerDownRight className="h-3 w-3" />
                 OFFLINE
               </span>
             )}
+            <div className="text-right">
+              <span className={`text-micro font-black block leading-none ${isDark ? 'text-slate-205' : 'text-gray-800'}`}>
+                {currentUser?.name || 'ユーザー'}
+              </span>
+              <span className="text-micro text-gray-400 font-bold block leading-none mt-0.5">
+                {currentUser?.email || 'user@example.com'}
+              </span>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Primary responsive view panel */}
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-5 pb-44 flex flex-col justify-between">
-        <div className="flex-1">
+        {/* Primary responsive view panel */}
+        <main className="flex-1 w-full max-w-3xl mx-auto lg:mx-0 lg:max-w-none px-4 lg:px-8 py-5 lg:py-6 pb-44 lg:pb-10 flex flex-col justify-between">
+          <div className="flex-1">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -686,6 +729,7 @@ function AppContent() {
           </p>
         </footer>
       </main>
+      </div>
 
       {/* PWA Add to Home Screen Banner overlay */}
       <AnimatePresence>
@@ -702,7 +746,7 @@ function AppContent() {
             }`}
           >
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-xl shadow-inner shrink-0">
+              <div className={`p-2 ${theme.bg} ${theme.onBg} rounded-xl shadow-inner shrink-0`}>
                 <Smartphone className="h-4.5 w-4.5 animate-bounce" />
               </div>
               <div className="flex-1 min-w-0">
@@ -736,7 +780,7 @@ function AppContent() {
       </AnimatePresence>
 
       {/* Floating Bottom Navigational Bar */}
-      <nav className={`fixed bottom-3 left-1/2 transform -translate-x-1/2 w-[calc(100%-24px)] max-w-md backdrop-blur-md border rounded-2xl p-1.5 z-40 transition-all ${
+      <nav className={`lg:hidden fixed bottom-3 left-1/2 transform -translate-x-1/2 w-[calc(100%-24px)] max-w-md backdrop-blur-md border rounded-2xl p-1.5 z-40 transition-all ${
         isDark ? 'bg-slate-900/95 border-slate-800 shadow-2xl shadow-black/40' : 'bg-white/95 border-gray-100 shadow-xl'
       }`}>
         <div className="flex items-center justify-around h-12">

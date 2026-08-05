@@ -96,7 +96,7 @@ export function PWAInstallPrompt() {
             } backdrop-blur-md`}
         >
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white font-black text-lg shadow-sm shrink-0">
+            <div className={`flex items-center justify-center h-10 w-10 rounded-xl ${theme.bg} ${theme.onBg} font-black text-lg shadow-sm shrink-0`}>
               B
             </div>
 

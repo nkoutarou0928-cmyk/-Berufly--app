@@ -16,8 +16,8 @@ export interface ThemePreset {
   accent: string;
   hover: string;
   ring: string;
-  bannerBg: string;
   textDark: string;
+  barBg: string; // deep workspace-bar/sidebar shade (Slack-style nav chrome) — stays constant across light/dark mode
 }
 
 export const THEME_PRESETS: ThemePreset[] = [
@@ -34,8 +34,8 @@ export const THEME_PRESETS: ThemePreset[] = [
     accent: 'accent-rose-500',
     hover: 'hover:bg-rose-700',
     ring: 'focus:ring-rose-400',
-    bannerBg: 'bg-gradient-to-r from-rose-50 to-pink-50/40',
-    textDark: 'text-rose-700'
+    textDark: 'text-rose-700',
+    barBg: 'bg-rose-900'
   },
   {
     id: 'sky',
@@ -50,8 +50,8 @@ export const THEME_PRESETS: ThemePreset[] = [
     accent: 'accent-sky-500',
     hover: 'hover:bg-sky-700',
     ring: 'focus:ring-sky-400',
-    bannerBg: 'bg-gradient-to-r from-sky-50 to-indigo-50/40',
-    textDark: 'text-sky-700'
+    textDark: 'text-sky-700',
+    barBg: 'bg-sky-900'
   },
   {
     id: 'emerald',
@@ -66,8 +66,8 @@ export const THEME_PRESETS: ThemePreset[] = [
     accent: 'accent-emerald-500',
     hover: 'hover:bg-emerald-700',
     ring: 'focus:ring-emerald-400',
-    bannerBg: 'bg-gradient-to-r from-emerald-50 to-teal-50/40',
-    textDark: 'text-emerald-700'
+    textDark: 'text-emerald-700',
+    barBg: 'bg-emerald-900'
   },
   {
     id: 'violet',
@@ -82,8 +82,8 @@ export const THEME_PRESETS: ThemePreset[] = [
     accent: 'accent-violet-500',
     hover: 'hover:bg-violet-700',
     ring: 'focus:ring-violet-400',
-    bannerBg: 'bg-gradient-to-r from-violet-50 to-purple-50/40',
-    textDark: 'text-violet-700'
+    textDark: 'text-violet-700',
+    barBg: 'bg-violet-900'
   },
   {
     id: 'orange',
@@ -98,8 +98,8 @@ export const THEME_PRESETS: ThemePreset[] = [
     accent: 'accent-orange-500',
     hover: 'hover:bg-orange-700',
     ring: 'focus:ring-orange-400',
-    bannerBg: 'bg-gradient-to-r from-orange-50 to-amber-50/40',
-    textDark: 'text-orange-700'
+    textDark: 'text-orange-700',
+    barBg: 'bg-orange-900'
   },
   {
     id: 'amber',
@@ -116,12 +116,13 @@ export const THEME_PRESETS: ThemePreset[] = [
     accent: 'accent-amber-500',
     hover: 'hover:bg-amber-500',
     ring: 'focus:ring-amber-300',
-    bannerBg: 'bg-gradient-to-r from-amber-50/80 to-yellow-50/40',
-    textDark: 'text-amber-700'
+    textDark: 'text-amber-700',
+    barBg: 'bg-amber-900'
   }
 ];
 
 export function getTheme(colorName: string): ThemePreset {
-  // Check if saved theme color exists, default to 'violet' or similar elegant pastel if invalid
-  return THEME_PRESETS.find(p => p.color === colorName) || THEME_PRESETS[3];
+  // Default to emerald when unset/invalid — calmer and less "generic AI SaaS gradient"
+  // than the indigo/violet combo this app used to fall back to.
+  return THEME_PRESETS.find(p => p.color === colorName) || THEME_PRESETS[2];
 }

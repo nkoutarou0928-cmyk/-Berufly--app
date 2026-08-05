@@ -75,7 +75,9 @@ export default function CompaniesView() {
     deleteOfferComparison,
     isDark,
     selfAnalysis,
-    saveCompanies
+    saveCompanies,
+    searchQuery,
+    setSearchQuery
   } = useApp();
 
   const theme = getTheme(settings.themeColor);
@@ -331,7 +333,8 @@ export default function CompaniesView() {
   };
 
   // Search, filter, and sort states
-  const [searchQuery, setSearchQuery] = useState('');
+  // searchQuery/setSearchQuery now come from AppContext so the workspace-bar search
+  // (visible in the header on every screen) drives the same filtering as this page's own box.
   const [filterStatus, setFilterStatus] = useState<CompanyStatus | 'all'>('all');
   const [filterPreference, setFilterPreference] = useState<'all' | '1' | '2' | '3' | '4' | '5'>('all');
   const [filterIndustry, setFilterIndustry] = useState<string>('all');
@@ -618,6 +621,24 @@ export default function CompaniesView() {
     offered: '内定',
     rejected: '不合格'
   };
+
+  // チャンネルリスト風の企業アバター用カラー（企業名から決定論的に割り当て、毎回同じ色になる）
+  const AVATAR_COLORS = ['bg-rose-500', 'bg-sky-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500', 'bg-orange-500', 'bg-teal-500', 'bg-indigo-500', 'bg-pink-500', 'bg-cyan-600'];
+  const getAvatarColor = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  };
+  const isUrgentDeadline = (deadline: string) => {
+    if (!deadline) return false;
+    const diffDays = Math.ceil((new Date(deadline).getTime() - new Date(new Date().toISOString().split('T')[0]).getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 3;
+  };
+  const CompanyAvatar = ({ name }: { name: string }) => (
+    <span className={`h-9 w-9 rounded-full ${getAvatarColor(name)} text-white text-xs font-bold flex items-center justify-center shrink-0`}>
+      {name.charAt(0)}
+    </span>
+  );
 
   const STATUS_COLORS: Record<CompanyStatus, { bg: string; text: string; border: string }> = {
     interested: { bg: 'bg-gray-50', text: 'text-gray-600', border: 'border-gray-200' },
@@ -1758,13 +1779,19 @@ export default function CompaniesView() {
                               setSelectedCompanyId(co.id);
                               setActiveTabState('basic');
                             }}
-                            className={`p-4 rounded-3xl border shadow-3xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between group text-left ${
-                              isDark 
-                                ? `bg-slate-900 border-slate-800/80 hover:border-${settings.themeColor}-400` 
+                            className={`p-4 rounded-3xl border shadow-3xs hover:shadow-md transition-all cursor-pointer flex items-center gap-3 justify-between group text-left ${
+                              isDark
+                                ? `bg-slate-900 border-slate-800/80 hover:border-${settings.themeColor}-400`
                                 : `bg-white border-gray-100 hover:border-${settings.themeColor}-200`
                             }`}
                           >
-                            <div className="space-y-1.5 min-w-0">
+                            <div className="relative shrink-0">
+                              <CompanyAvatar name={co.name} />
+                              {isUrgentDeadline(co.esDeadline) && (
+                                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+                              )}
+                            </div>
+                            <div className="space-y-1.5 min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h4 className={`text-xs font-bold truncate transition-colors ${
                                   isDark ? 'text-slate-100 group-hover:text-white' : 'text-gray-950 group-hover:text-black'
@@ -1865,13 +1892,19 @@ export default function CompaniesView() {
                                   setSelectedCompanyId(co.id);
                                   setActiveTabState('basic');
                                 }}
-                                className={`p-3.5 rounded-2xl border shadow-3xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between group ${
-                                  isDark 
-                                    ? `bg-slate-900 border-slate-800 hover:border-${settings.themeColor}-400` 
+                                className={`p-3.5 rounded-2xl border shadow-3xs hover:shadow-md transition-all cursor-pointer flex items-center gap-3 justify-between group ${
+                                  isDark
+                                    ? `bg-slate-900 border-slate-800 hover:border-${settings.themeColor}-400`
                                     : `bg-white border-gray-100 hover:border-${settings.themeColor}-200`
                                 }`}
                               >
-                                <div className="space-y-1 min-w-0">
+                                <div className="relative shrink-0">
+                                  <CompanyAvatar name={co.name} />
+                                  {isUrgentDeadline(co.esDeadline) && (
+                                    <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+                                  )}
+                                </div>
+                                <div className="space-y-1 min-w-0 flex-1">
                                   <h4 className={`text-xs font-bold truncate group-hover:${theme.text} transition-colors ${
                                     isDark ? 'text-slate-100 font-sans' : 'text-gray-950 font-sans'
                                   }`}>
@@ -1954,13 +1987,19 @@ export default function CompaniesView() {
                                   setSelectedCompanyId(co.id);
                                   setActiveTabState('basic');
                                 }}
-                                className={`p-3.5 rounded-2xl border shadow-3xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between group ${
-                                  isDark 
-                                    ? `bg-slate-900 border-slate-800 hover:border-${settings.themeColor}-400` 
+                                className={`p-3.5 rounded-2xl border shadow-3xs hover:shadow-md transition-all cursor-pointer flex items-center gap-3 justify-between group ${
+                                  isDark
+                                    ? `bg-slate-900 border-slate-800 hover:border-${settings.themeColor}-400`
                                     : `bg-white border-gray-100 hover:border-${settings.themeColor}-200`
                                 }`}
                               >
-                                <div className="space-y-1 min-w-0">
+                                <div className="relative shrink-0">
+                                  <CompanyAvatar name={co.name} />
+                                  {isUrgentDeadline(co.esDeadline) && (
+                                    <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+                                  )}
+                                </div>
+                                <div className="space-y-1 min-w-0 flex-1">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <h4 className={`text-xs font-bold truncate group-hover:${theme.text} transition-colors ${
                                       isDark ? 'text-slate-100' : 'text-gray-950'
@@ -2316,7 +2355,7 @@ export default function CompaniesView() {
 
                   {/* For Intern: Transition to Main Application Section */}
                   {company?.selectionType === 'intern' && (
-                    <div className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl border border-indigo-100 space-y-3 font-sans">
+                    <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 space-y-3 font-sans">
                       <div className="flex items-start gap-2.5">
                         <ArrowUpRight className="h-5 w-5 text-indigo-500 mt-0.5" />
                         <div>

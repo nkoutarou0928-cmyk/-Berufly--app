@@ -381,35 +381,35 @@ export const OnboardingModal: React.FC = () => {
     {
       title: 'Beruflyで就活を一元管理しよう',
       description: 'Beruflyはあなたの就職活動を全力でサポートする一元管理アプリです。複雑な選考状況やES締め切り、日々のタスクをたった一つでスマートに整頓します。',
-      color: 'from-indigo-500/10 to-blue-500/10',
+      color: 'bg-indigo-500/10',
       tag: '就活サポーター Berufly',
       screenId: 'dashboard'
     },
     {
       title: '気になる企業を登録して選考を管理しよう',
       description: '気になる企業を「興味あり」から「内定」までの選考フェーズ（書類、一次、二次、最終）に分けて直感的に管理。面接履歴や振り返りメモ、OB訪問ログもシームレスに蓄積できます。',
-      color: 'from-emerald-500/10 to-teal-500/10',
+      color: 'bg-emerald-500/10',
       tag: '選考管理 & 企業詳細',
       screenId: 'companies'
     },
     {
       title: '締め切りや面接日を自動でカレンダーに反映',
       description: '登録したES（エントリーシート）の締め切りや面接日程は、自動的にアプリ内カレンダーに反映。締め切り数日前や面接当日にアラームでリマインドされ、大事なチャンスを逃しません。',
-      color: 'from-amber-500/10 to-orange-500/10',
+      color: 'bg-amber-500/10',
       tag: 'カレンダー ＆ リマインダー',
       screenId: 'calendar'
     },
     {
       title: '日々のタスクと目標を管理して就活を加速しよう',
       description: '日・週・月ごとのタスクに分解して志望企業ごとの準備をサポート。大きな「目標」に対して進捗度を可視化でき、モチベーションを保ったまま就活を加速できます。',
-      color: 'from-rose-500/10 to-red-500/10',
+      color: 'bg-rose-500/10',
       tag: '強力なタスクエンジン',
       screenId: 'todo'
     },
     {
       title: 'さっそく始めよう！',
       description: '準備はすべて整いました。Beruflyを起動して、あなたの就職活動をスマートに進めましょう。',
-      color: 'from-purple-500/10 to-indigo-500/10',
+      color: 'bg-violet-500/10',
       tag: 'Berufly を起動する',
       screenId: 'account-select'
     }
@@ -474,7 +474,7 @@ export const OnboardingModal: React.FC = () => {
           </div>
 
           {/* 2. central / bottom viewport smartphone device preview frame */}
-          <div className={`w-full py-4 rounded-2xl bg-gradient-to-br ${slides[currentSlide].color} flex items-center justify-center mb-6 border border-gray-150/40 dark:border-slate-800/10 relative overflow-hidden`}>
+          <div className={`w-full py-4 rounded-2xl ${slides[currentSlide].color} flex items-center justify-center mb-6 border border-gray-150/40 dark:border-slate-800/10 relative overflow-hidden`}>
             
             {/* Ambient Graphic Accent elements */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500/5 dark:bg-indigo-500/5 rounded-full blur-3xl -z-10" />

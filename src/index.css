@@ -196,6 +196,55 @@ body {
   color: var(--app-text-secondary) !important;
 }
 
+/* Colored tint callouts (status badges, reflection/pros-cons boxes, info panels) —
+   these are written once as light-mode pastels (e.g. bg-amber-50 + text-amber-800) without
+   a dark: variant. Rather than editing every occurrence, remap the whole family here so any
+   existing or future use of a "-50/-100 tint + -600..900 label text" pair stays legible on a
+   near-black background instead of rendering as a washed-out, low-contrast panel. */
+.dark .bg-amber-50, .dark .bg-amber-50\/30, .dark .bg-amber-50\/40, .dark .bg-amber-100 { background-color: rgba(245, 158, 11, 0.14) !important; }
+.dark .border-amber-100, .dark .border-amber-200 { border-color: rgba(245, 158, 11, 0.3) !important; }
+.dark .text-amber-600, .dark .text-amber-700, .dark .text-amber-800, .dark .text-amber-900 { color: #FBBF24 !important; }
+
+.dark .bg-blue-50, .dark .bg-blue-50\/30, .dark .bg-blue-50\/40, .dark .bg-blue-100 { background-color: rgba(59, 130, 246, 0.14) !important; }
+.dark .border-blue-100, .dark .border-blue-200 { border-color: rgba(59, 130, 246, 0.3) !important; }
+.dark .text-blue-600, .dark .text-blue-700, .dark .text-blue-800 { color: #60A5FA !important; }
+
+.dark .bg-emerald-50, .dark .bg-emerald-50\/40, .dark .bg-emerald-50\/50, .dark .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.14) !important; }
+.dark .border-emerald-100, .dark .border-emerald-200 { border-color: rgba(16, 185, 129, 0.3) !important; }
+.dark .text-emerald-600, .dark .text-emerald-700, .dark .text-emerald-800 { color: #34D399 !important; }
+
+.dark .bg-green-50, .dark .bg-green-50\/30, .dark .bg-green-50\/40 { background-color: rgba(34, 197, 94, 0.14) !important; }
+.dark .border-green-100 { border-color: rgba(34, 197, 94, 0.3) !important; }
+.dark .text-green-700 { color: #4ADE80 !important; }
+
+.dark .bg-indigo-50, .dark .bg-indigo-50\/50, .dark .bg-indigo-50\/70, .dark .bg-indigo-100, .dark .bg-indigo-100\/80 { background-color: rgba(99, 102, 241, 0.16) !important; }
+.dark .border-indigo-100, .dark .border-indigo-200 { border-color: rgba(99, 102, 241, 0.32) !important; }
+.dark .text-indigo-600, .dark .text-indigo-700, .dark .text-indigo-800, .dark .text-indigo-900 { color: #A5B4FC !important; }
+
+.dark .bg-purple-50, .dark .bg-purple-100 { background-color: rgba(168, 85, 247, 0.16) !important; }
+.dark .border-purple-200 { border-color: rgba(168, 85, 247, 0.32) !important; }
+.dark .text-purple-800 { color: #C084FC !important; }
+
+.dark .bg-red-50, .dark .bg-red-100\/70 { background-color: rgba(239, 68, 68, 0.14) !important; }
+.dark .border-red-200 { border-color: rgba(239, 68, 68, 0.3) !important; }
+.dark .text-red-600 { color: #F87171 !important; }
+
+.dark .bg-rose-50, .dark .bg-rose-50\/40, .dark .bg-rose-100 { background-color: rgba(244, 63, 94, 0.14) !important; }
+.dark .border-rose-100, .dark .border-rose-200 { border-color: rgba(244, 63, 94, 0.3) !important; }
+.dark .text-rose-600, .dark .text-rose-700, .dark .text-rose-800 { color: #FB7185 !important; }
+
+.dark .bg-sky-50 { background-color: rgba(14, 165, 233, 0.14) !important; }
+.dark .border-sky-100 { border-color: rgba(14, 165, 233, 0.3) !important; }
+.dark .text-sky-600, .dark .text-sky-700 { color: #38BDF8 !important; }
+
+.dark .bg-teal-50 { background-color: rgba(20, 184, 166, 0.14) !important; }
+.dark .border-teal-200 { border-color: rgba(20, 184, 166, 0.3) !important; }
+.dark .text-teal-700 { color: #2DD4BF !important; }
+
+.dark .bg-yellow-50, .dark .bg-yellow-50\/40 { background-color: rgba(234, 179, 8, 0.14) !important; }
+.dark .border-yellow-100, .dark .border-yellow-200 { border-color: rgba(234, 179, 8, 0.3) !important; }
+.dark .text-yellow-600, .dark .text-yellow-700, .dark .text-yellow-900 { color: #FACC15 !important; }
+
 /* Form controls adaptive dark styling */
 .dark input,
 .dark textarea,
